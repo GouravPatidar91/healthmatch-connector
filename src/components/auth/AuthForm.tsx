@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { mockUsers } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AuthForm = () => {
   const { toast } = useToast();
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -24,22 +27,37 @@ const AuthForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    // In a real app, we'd validate credentials against a backend
-    // For this demo, we'll simulate successful login
-    toast({
-      title: "Login successful",
-      description: "Welcome back to HealthMatch!",
-    });
-    
-    // Redirect to dashboard
-    navigate("/dashboard");
+    try {
+      const { error } = await signIn(formData.email, formData.password);
+      
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message || "Please check your credentials",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Redirect happens automatically via the auth state change
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
@@ -48,18 +66,38 @@ const AuthForm = () => {
         description: "Passwords do not match",
         variant: "destructive",
       });
+      setLoading(false);
       return;
     }
     
-    // In a real app, we'd send registration data to backend
-    // For this demo, we'll simulate successful registration
-    toast({
-      title: "Registration successful",
-      description: "Welcome to HealthMatch!",
-    });
-    
-    // Redirect to dashboard
-    navigate("/dashboard");
+    try {
+      const { error } = await signUp(formData.email, formData.password, { name: formData.name });
+      
+      if (error) {
+        toast({
+          title: "Registration failed",
+          description: error.message || "Please check your information",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to confirm your account or sign in now.",
+      });
+      
+      // Switch to login tab
+      setIsRegistering(false);
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -104,7 +142,13 @@ const AuthForm = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full">Login</Button>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? "Logging in..." : "Login"}
+              </Button>
             </CardFooter>
           </form>
         </TabsContent>
@@ -165,7 +209,13 @@ const AuthForm = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full">Register</Button>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? "Creating account..." : "Register"}
+              </Button>
             </CardFooter>
           </form>
         </TabsContent>

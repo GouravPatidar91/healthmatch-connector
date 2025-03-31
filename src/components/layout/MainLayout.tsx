@@ -1,15 +1,16 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { signOut, user } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -21,9 +22,9 @@ const MainLayout = () => {
     { name: "Settings", path: "/settings", icon: Settings },
   ];
   
-  const handleLogout = () => {
-    // In a real app, we would clear auth tokens, etc.
-    navigate("/");
+  const handleLogout = async () => {
+    await signOut();
+    // The navigation will happen automatically due to the auth state change
   };
   
   useEffect(() => {
@@ -41,6 +42,11 @@ const MainLayout = () => {
         
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center space-x-2">
+            {user && (
+              <div className="mr-4 text-sm text-medical-neutral-dark">
+                Hi, {user.user_metadata.name || user.email}
+              </div>
+            )}
             <Button 
               variant="ghost" 
               className="text-medical-neutral-dark"
@@ -63,6 +69,12 @@ const MainLayout = () => {
                   <Heart className="text-medical-blue h-6 w-6" />
                   <span className="font-bold text-xl text-medical-blue">HealthMatch</span>
                 </div>
+                
+                {user && (
+                  <div className="px-4 py-2 mb-2 text-sm text-medical-neutral-dark border-b">
+                    Signed in as: {user.user_metadata.name || user.email}
+                  </div>
+                )}
                 
                 <nav className="flex flex-col gap-2">
                   {navigationItems.map((item) => (
