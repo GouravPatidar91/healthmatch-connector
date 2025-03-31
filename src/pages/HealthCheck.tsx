@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { symptomCategories, mockDiseases } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { useUserHealthChecks } from "@/services/userDataService";
 
 const HealthCheck = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { saveHealthCheck } = useUserHealthChecks();
+  
   const [step, setStep] = useState(1);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [severity, setSeverity] = useState<string>("mild");
@@ -68,7 +72,36 @@ const HealthCheck = () => {
     }
   };
   
-  const handleBookAppointment = () => {
+  const handleSaveHealthCheck = async () => {
+    try {
+      // Save health check data to Supabase
+      await saveHealthCheck({
+        symptoms: selectedSymptoms,
+        severity,
+        duration,
+        notes: additionalInfo,
+        previous_conditions: possibleConditions.map(c => c.name)
+      });
+      
+      toast({
+        title: "Health check saved",
+        description: "Your health check data has been saved successfully."
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save your health check data.",
+        variant: "destructive"
+      });
+      console.error("Error saving health check:", error);
+    }
+  };
+  
+  const handleBookAppointment = async () => {
+    // First save the health check
+    await handleSaveHealthCheck();
+    
+    // Then navigate to appointments page
     navigate("/appointments", { 
       state: { 
         fromHealthCheck: true,
@@ -263,12 +296,19 @@ const HealthCheck = () => {
               {step === 2 ? "See Results" : "Next"}
             </Button>
           ) : (
-            <Button 
-              onClick={handleBookAppointment}
-              className="ml-auto"
-            >
-              Book Appointment
-            </Button>
+            <div className="ml-auto space-x-2">
+              <Button 
+                variant="outline"
+                onClick={handleSaveHealthCheck}
+              >
+                Save Results
+              </Button>
+              <Button 
+                onClick={handleBookAppointment}
+              >
+                Book Appointment
+              </Button>
+            </div>
           )}
         </CardFooter>
       </Card>

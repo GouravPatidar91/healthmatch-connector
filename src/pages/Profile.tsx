@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,50 +9,70 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { mockUsers, regions } from "@/data/mockData";
+import { regions } from "@/data/mockData";
+import { useUserProfile, Profile as ProfileType } from "@/services/userDataService";
+import { format } from "date-fns";
 
 const Profile = () => {
   const { toast } = useToast();
-  const [user, setUser] = useState({
-    name: mockUsers[0].name,
-    email: mockUsers[0].email,
-    age: mockUsers[0].age,
-    address: mockUsers[0].address,
-    region: mockUsers[0].region,
-    phone: mockUsers[0].phone || "",
-    medicalHistory: "",
-    allergies: "",
-    medications: "",
-    emergencyContact: {
-      name: "",
-      relationship: "",
-      phone: ""
-    }
+  const { profile, loading, updateProfile } = useUserProfile();
+  const [formData, setFormData] = useState<Partial<ProfileType>>({
+    first_name: "",
+    last_name: "",
+    date_of_birth: "",
+    gender: "",
+    phone: "",
+    address: "",
+    region: "",
   });
+  const [medicalHistory, setMedicalHistory] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [medications, setMedications] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState({
+    name: "",
+    relationship: "",
+    phone: ""
+  });
+  
+  // Initialize form when profile loads
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+        date_of_birth: profile.date_of_birth || "",
+        gender: profile.gender || "",
+        phone: profile.phone || "",
+        address: profile.address || "",
+        region: profile.region || "",
+      });
+    }
+  }, [profile]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setUser(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
   
   const handleEmergencyContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setUser(prev => ({
+    setEmergencyContact(prev => ({
       ...prev,
-      emergencyContact: {
-        ...prev.emergencyContact,
-        [name]: value
-      }
+      [name]: value
     }));
   };
   
-  const handleSaveProfile = () => {
-    // In a real app, this would send updated profile to backend
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved."
-    });
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfile(formData);
+    } catch (error) {
+      console.error("Error saving profile:", error);
+    }
   };
+  
+  if (loading) {
+    return <div className="p-4 text-center">Loading your profile...</div>;
+  }
   
   return (
     <div>
@@ -73,40 +94,56 @@ const Profile = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="first_name">First Name</Label>
                   <Input
-                    id="name"
-                    name="name"
-                    value={user.name}
+                    id="first_name"
+                    name="first_name"
+                    value={formData.first_name}
                     onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="last_name">Last Name</Label>
                   <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={user.email}
+                    id="last_name"
+                    name="last_name"
+                    value={formData.last_name}
                     onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
+                  <Label htmlFor="date_of_birth">Date of Birth</Label>
                   <Input
-                    id="age"
-                    name="age"
-                    type="number"
-                    value={user.age}
-                    onChange={e => setUser(prev => ({ ...prev, age: parseInt(e.target.value) || 0 }))}
+                    id="date_of_birth"
+                    name="date_of_birth"
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={handleChange}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select 
+                    value={formData.gender} 
+                    onValueChange={value => setFormData(prev => ({ ...prev, gender: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input
                     id="phone"
                     name="phone"
-                    value={user.phone}
+                    value={formData.phone}
                     onChange={handleChange}
                   />
                 </div>
@@ -115,15 +152,15 @@ const Profile = () => {
                   <Input
                     id="address"
                     name="address"
-                    value={user.address}
+                    value={formData.address}
                     onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="region">Region</Label>
                   <Select 
-                    value={user.region} 
-                    onValueChange={value => setUser(prev => ({ ...prev, region: value }))}
+                    value={formData.region} 
+                    onValueChange={value => setFormData(prev => ({ ...prev, region: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a region" />
@@ -175,8 +212,8 @@ const Profile = () => {
                   id="medical-history"
                   name="medicalHistory"
                   placeholder="List any past surgeries, hospitalizations, or chronic conditions..."
-                  value={user.medicalHistory}
-                  onChange={handleChange}
+                  value={medicalHistory}
+                  onChange={e => setMedicalHistory(e.target.value)}
                   rows={4}
                 />
               </div>
@@ -187,8 +224,8 @@ const Profile = () => {
                   id="allergies"
                   name="allergies"
                   placeholder="List any allergies to medications, foods, or other substances..."
-                  value={user.allergies}
-                  onChange={handleChange}
+                  value={allergies}
+                  onChange={e => setAllergies(e.target.value)}
                   rows={3}
                 />
               </div>
@@ -199,8 +236,8 @@ const Profile = () => {
                   id="medications"
                   name="medications"
                   placeholder="List any medications you're currently taking..."
-                  value={user.medications}
-                  onChange={handleChange}
+                  value={medications}
+                  onChange={e => setMedications(e.target.value)}
                   rows={3}
                 />
               </div>
@@ -231,7 +268,7 @@ const Profile = () => {
                   <Input
                     id="emergency-name"
                     name="name"
-                    value={user.emergencyContact.name}
+                    value={emergencyContact.name}
                     onChange={handleEmergencyContactChange}
                   />
                 </div>
@@ -240,7 +277,7 @@ const Profile = () => {
                   <Input
                     id="emergency-relationship"
                     name="relationship"
-                    value={user.emergencyContact.relationship}
+                    value={emergencyContact.relationship}
                     onChange={handleEmergencyContactChange}
                   />
                 </div>
@@ -249,7 +286,7 @@ const Profile = () => {
                   <Input
                     id="emergency-phone"
                     name="phone"
-                    value={user.emergencyContact.phone}
+                    value={emergencyContact.phone}
                     onChange={handleEmergencyContactChange}
                   />
                 </div>

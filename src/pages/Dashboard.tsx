@@ -5,21 +5,32 @@ import { Activity, Calendar, Users, AlertTriangle, ArrowRight } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserStats, useUserAppointments } from "@/services/userDataService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { stats, loading: statsLoading } = useUserStats();
+  const { appointments, loading: appointmentsLoading } = useUserAppointments();
   
   // Get user's name from metadata if available, or use email as fallback
   const userName = user?.user_metadata?.name || 
                    user?.email?.split('@')[0] || 
                    "User";
   
-  const recentAppointment = {
-    doctor: "Dr. Sarah Johnson",
-    specialty: "General Practitioner",
-    date: "October 15, 2023",
-    time: "10:00 AM",
+  // Find the most recent upcoming appointment
+  const upcomingAppointment = !appointmentsLoading && appointments.length > 0
+    ? appointments.find(apt => 
+        new Date(`${apt.date}T${apt.time}`) >= new Date() && 
+        apt.status !== 'cancelled'
+      )
+    : null;
+
+  const recentAppointment = upcomingAppointment || {
+    doctor_name: "Dr. Sarah Johnson",
+    doctor_specialty: "General Practitioner",
+    date: "2023-10-15",
+    time: "10:00:00",
   };
 
   return (
@@ -47,19 +58,23 @@ const Dashboard = () => {
             <Calendar className="h-4 w-4 text-medical-blue" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-medical-neutral-dark mt-1">Next: {recentAppointment.date}</p>
+            <div className="text-2xl font-bold">{statsLoading ? "..." : stats.upcomingAppointments}</div>
+            <p className="text-xs text-medical-neutral-dark mt-1">
+              {upcomingAppointment ? `Next: ${upcomingAppointment.date}` : "No upcoming appointments"}
+            </p>
           </CardContent>
         </Card>
         
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-medical-neutral-dark">Doctors Consulted</CardTitle>
+            <CardTitle className="text-sm font-medium text-medical-neutral-dark">Health Checks</CardTitle>
             <Users className="h-4 w-4 text-medical-blue" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-medical-neutral-dark mt-1">Across 2 specialties</p>
+            <div className="text-2xl font-bold">{statsLoading ? "..." : stats.healthChecksCount}</div>
+            <p className="text-xs text-medical-neutral-dark mt-1">
+              {stats.healthChecksCount > 0 ? "Track your health history" : "Start tracking your health"}
+            </p>
           </CardContent>
         </Card>
         
@@ -114,12 +129,12 @@ const Dashboard = () => {
             <CardDescription>Your upcoming medical appointment</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentAppointment ? (
+            {upcomingAppointment ? (
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <div>
-                    <h3 className="font-semibold">{recentAppointment.doctor}</h3>
-                    <p className="text-sm text-medical-neutral-dark">{recentAppointment.specialty}</p>
+                    <h3 className="font-semibold">{recentAppointment.doctor_name}</h3>
+                    <p className="text-sm text-medical-neutral-dark">{recentAppointment.doctor_specialty}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-medium">{recentAppointment.date}</p>

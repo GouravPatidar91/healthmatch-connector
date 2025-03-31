@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,156 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, MapPin, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { useUserAppointments, Appointment } from "@/services/userDataService";
+
+const formatDateForDisplay = (dateStr: string) => {
+  try {
+    return format(new Date(dateStr), "MMMM d, yyyy");
+  } catch (error) {
+    return dateStr;
+  }
+};
+
+const AppointmentsList = () => {
+  const { appointments, loading, updateAppointment } = useUserAppointments();
+  
+  const handleCancel = async (id: string) => {
+    await updateAppointment(id, { status: 'cancelled' });
+  };
+  
+  if (loading) {
+    return <div className="p-4 text-center">Loading your appointments...</div>;
+  }
+  
+  const upcomingAppointments = appointments.filter(
+    apt => new Date(`${apt.date}T${apt.time}`) >= new Date() && apt.status !== 'cancelled'
+  );
+  
+  const pastAppointments = appointments.filter(
+    apt => new Date(`${apt.date}T${apt.time}`) < new Date() || apt.status === 'cancelled'
+  );
+  
+  return (
+    <>
+      <TabsContent value="upcoming">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Appointments</CardTitle>
+            <CardDescription>View your scheduled appointments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {upcomingAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingAppointments.map((appointment) => (
+                  <div key={appointment.id} className="p-4 bg-white rounded-lg shadow-sm">
+                    <div className="flex flex-col md:flex-row justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">{appointment.doctor_name}</h3>
+                        <p className="text-medical-neutral-dark">{appointment.doctor_specialty}</p>
+                        <div className="flex items-center mt-2">
+                          <MapPin className="h-4 w-4 text-medical-neutral-dark mr-1" />
+                          <span className="text-sm">Medical Center</span>
+                        </div>
+                      </div>
+                      <div className="mt-4 md:mt-0 md:text-right">
+                        <div className="flex items-center justify-start md:justify-end">
+                          <CalendarIcon className="h-4 w-4 text-medical-blue mr-1" />
+                          <span>{formatDateForDisplay(appointment.date)}</span>
+                        </div>
+                        <div className="flex items-center justify-start md:justify-end mt-1">
+                          <Clock className="h-4 w-4 text-medical-blue mr-1" />
+                          <span>{appointment.time}</span>
+                        </div>
+                        <Badge className="mt-2" variant="outline">{appointment.status}</Badge>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t">
+                      <Button variant="outline" className="w-full sm:w-auto">Reschedule</Button>
+                      <Button 
+                        variant="ghost" 
+                        className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto text-medical-red-dark"
+                        onClick={() => handleCancel(appointment.id!)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-medical-blue/10 p-6 rounded-lg text-center">
+                <p className="text-lg font-medium">You have no upcoming appointments</p>
+                <Button 
+                  className="mt-4"
+                  onClick={() => document.getElementById('new-tab')?.click()}
+                >
+                  Book an Appointment
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+      
+      <TabsContent value="past">
+        <Card>
+          <CardHeader>
+            <CardTitle>Past Appointments</CardTitle>
+            <CardDescription>View your previous appointments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {pastAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {pastAppointments.map((appointment) => (
+                  <div key={appointment.id} className="p-4 bg-white rounded-lg shadow-sm border">
+                    <div className="flex flex-col md:flex-row justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">{appointment.doctor_name}</h3>
+                        <p className="text-medical-neutral-dark">{appointment.doctor_specialty}</p>
+                      </div>
+                      <div className="mt-4 md:mt-0 md:text-right">
+                        <div className="flex items-center justify-start md:justify-end">
+                          <CalendarIcon className="h-4 w-4 text-medical-neutral-dark mr-1" />
+                          <span>{formatDateForDisplay(appointment.date)}</span>
+                        </div>
+                        <div className="flex items-center justify-start md:justify-end mt-1">
+                          <Clock className="h-4 w-4 text-medical-neutral-dark mr-1" />
+                          <span>{appointment.time}</span>
+                        </div>
+                        <Badge 
+                          className="mt-2" 
+                          variant={appointment.status === 'cancelled' ? "destructive" : "default"}
+                        >
+                          {appointment.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    {appointment.reason && (
+                      <div className="mt-3 text-sm text-medical-neutral-dark">
+                        <span className="font-medium">Reason:</span> {appointment.reason}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-medical-neutral-dark">
+                <p>You have no past appointments.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </>
+  );
+};
 
 const Appointments = () => {
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const { addAppointment } = useUserAppointments();
+  
   const fromHealthCheck = location.state?.fromHealthCheck || false;
   const symptoms = location.state?.symptoms || [];
   const possibleConditions = location.state?.possibleConditions || [];
@@ -67,7 +213,7 @@ const Appointments = () => {
     return availabilityForDay?.slots || [];
   };
   
-  const confirmAppointment = () => {
+  const confirmAppointment = async () => {
     if (!selectedDoctor || !selectedDate || !selectedTime) {
       toast({
         title: "Missing information",
@@ -77,80 +223,52 @@ const Appointments = () => {
       return;
     }
     
-    // In a real app, this would send data to the backend
-    toast({
-      title: "Appointment Booked!",
-      description: `Your appointment with ${selectedDoctor.name} on ${format(selectedDate, "MMMM d, yyyy")} at ${selectedTime} has been confirmed.`
-    });
-    
-    navigate("/dashboard");
+    try {
+      const formattedDate = format(selectedDate, "yyyy-MM-dd");
+      
+      const newAppointment: Omit<Appointment, 'user_id'> = {
+        doctor_name: selectedDoctor.name,
+        doctor_specialty: selectedDoctor.specialization,
+        date: formattedDate,
+        time: selectedTime,
+        reason: reason,
+        status: 'pending'
+      };
+      
+      await addAppointment(newAppointment);
+      
+      // Reset form
+      setSelectedDoctor(null);
+      setSelectedDate(new Date());
+      setSelectedTime("");
+      setReason("");
+      setStep(1);
+      
+      // Switch to upcoming tab to show the new appointment
+      document.getElementById('upcoming-tab')?.click();
+      
+    } catch (error) {
+      console.error("Error booking appointment:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem booking your appointment. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Book an Appointment</h1>
       
-      <Tabs defaultValue="upcoming" className="mb-6">
+      <Tabs defaultValue={fromHealthCheck ? "new" : "upcoming"} className="mb-6">
         <TabsList>
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+          <TabsTrigger id="upcoming-tab" value="upcoming">Upcoming</TabsTrigger>
           <TabsTrigger value="past">Past</TabsTrigger>
-          <TabsTrigger value="new" className="bg-medical-green-light">Book New</TabsTrigger>
+          <TabsTrigger id="new-tab" value="new" className="bg-medical-green-light">Book New</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="upcoming">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Appointments</CardTitle>
-              <CardDescription>View your scheduled appointments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-medical-blue/10 p-6 rounded-lg text-center">
-                <p className="text-lg font-medium">You have one upcoming appointment</p>
-                <div className="mt-4 p-4 bg-white rounded-lg shadow-sm">
-                  <div className="flex flex-col md:flex-row justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg">Dr. Sarah Johnson</h3>
-                      <p className="text-medical-neutral-dark">General Practitioner</p>
-                      <div className="flex items-center mt-2">
-                        <MapPin className="h-4 w-4 text-medical-neutral-dark mr-1" />
-                        <span className="text-sm">City Medical Center</span>
-                      </div>
-                    </div>
-                    <div className="mt-4 md:mt-0 md:text-right">
-                      <div className="flex items-center justify-start md:justify-end">
-                        <CalendarIcon className="h-4 w-4 text-medical-blue mr-1" />
-                        <span>October 15, 2023</span>
-                      </div>
-                      <div className="flex items-center justify-start md:justify-end mt-1">
-                        <Clock className="h-4 w-4 text-medical-blue mr-1" />
-                        <span>10:00 AM</span>
-                      </div>
-                      <Badge className="mt-2" variant="outline">Confirmed</Badge>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t">
-                    <Button variant="outline" className="w-full sm:w-auto">Reschedule</Button>
-                    <Button variant="ghost" className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto text-medical-red-dark">Cancel</Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="past">
-          <Card>
-            <CardHeader>
-              <CardTitle>Past Appointments</CardTitle>
-              <CardDescription>View your previous appointments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-medical-neutral-dark">
-                <p>You have no past appointments.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <AppointmentsList />
         
         <TabsContent value="new">
           <Card>
