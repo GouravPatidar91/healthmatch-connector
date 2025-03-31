@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { symptomCategories, mockDiseases } from "@/data/mockData";
-import { useToast } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
 
 const HealthCheck = () => {
   const { toast } = useToast();
@@ -30,9 +29,6 @@ const HealthCheck = () => {
   };
   
   const analyzeSymptoms = () => {
-    // In a real app, this would be a more sophisticated analysis
-    // Here we'll just check for overlap with known disease symptoms
-    
     const matchedDiseases = mockDiseases
       .map(disease => {
         const matchedSymptoms = disease.relatedSymptoms.filter(symptom => 
@@ -53,7 +49,6 @@ const HealthCheck = () => {
     
     setPossibleConditions(matchedDiseases);
     
-    // Move to results step
     setStep(3);
   };
   
@@ -74,8 +69,6 @@ const HealthCheck = () => {
   };
   
   const handleBookAppointment = () => {
-    // Save the health check data (would go to API in real app)
-    // Then navigate to appointment booking
     navigate("/appointments", { 
       state: { 
         fromHealthCheck: true,
