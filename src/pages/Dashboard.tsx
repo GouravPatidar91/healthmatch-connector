@@ -4,9 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Activity, Calendar, Users, AlertTriangle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Get user's name from metadata if available, or use email as fallback
+  const userName = user?.user_metadata?.name || 
+                   user?.email?.split('@')[0] || 
+                   "User";
   
   const recentAppointment = {
     doctor: "Dr. Sarah Johnson",
@@ -18,7 +25,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-medical-neutral-darkest">Welcome, John</h1>
+        <h1 className="text-3xl font-bold text-medical-neutral-darkest">Welcome, {userName}</h1>
         <p className="text-medical-neutral-dark">Here's an overview of your health journey</p>
       </div>
 
