@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const AuthForm = () => {
   const { toast } = useToast();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,6 +21,13 @@ const AuthForm = () => {
     password: "",
     confirmPassword: "",
   });
+
+  // Redirect user if already authenticated
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -43,7 +50,7 @@ const AuthForm = () => {
         return;
       }
       
-      // Redirect happens automatically via the auth state change
+      // The redirect happens in the useEffect when user state changes
     } catch (error: any) {
       toast({
         title: "Login failed",
