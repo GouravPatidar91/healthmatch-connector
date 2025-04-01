@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,11 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { regions } from "@/data/mockData";
 import { useUserProfile, Profile as ProfileType } from "@/services/userDataService";
-import { format } from "date-fns";
 
 const Profile = () => {
   const { toast } = useToast();
-  const { profile, loading, updateProfile } = useUserProfile();
+  const { profile, loading, error, updateProfile } = useUserProfile();
   const [formData, setFormData] = useState<Partial<ProfileType>>({
     first_name: "",
     last_name: "",
@@ -25,6 +23,7 @@ const Profile = () => {
     address: "",
     region: "",
   });
+  const [isSaving, setIsSaving] = useState(false);
   const [medicalHistory, setMedicalHistory] = useState("");
   const [allergies, setAllergies] = useState("");
   const [medications, setMedications] = useState("");
@@ -34,9 +33,9 @@ const Profile = () => {
     phone: ""
   });
   
-  // Initialize form when profile loads
   useEffect(() => {
     if (profile) {
+      console.log("Setting form data from profile:", profile);
       setFormData({
         first_name: profile.first_name || "",
         last_name: profile.last_name || "",
@@ -46,6 +45,8 @@ const Profile = () => {
         address: profile.address || "",
         region: profile.region || "",
       });
+    } else {
+      console.log("No profile data available");
     }
   }, [profile]);
   
@@ -64,9 +65,22 @@ const Profile = () => {
   
   const handleSaveProfile = async () => {
     try {
+      setIsSaving(true);
+      console.log("Saving profile with data:", formData);
       await updateProfile(formData);
+      toast({
+        title: "Success",
+        description: "Your profile has been updated"
+      });
     } catch (error) {
       console.error("Error saving profile:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update profile",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
   
@@ -194,7 +208,9 @@ const Profile = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveProfile}>Save Changes</Button>
+              <Button onClick={handleSaveProfile} disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -250,7 +266,9 @@ const Profile = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveProfile}>Save Changes</Button>
+              <Button onClick={handleSaveProfile} disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -299,7 +317,9 @@ const Profile = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveProfile}>Save Changes</Button>
+              <Button onClick={handleSaveProfile} disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>

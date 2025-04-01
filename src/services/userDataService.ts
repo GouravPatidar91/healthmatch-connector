@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -112,6 +113,7 @@ export const useUserProfile = () => {
         throw new Error('User not authenticated');
       }
 
+      // First, check if profile exists
       const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
@@ -119,30 +121,59 @@ export const useUserProfile = () => {
         .maybeSingle();
 
       if (fetchError) {
-        throw fetchError;
+        console.error('Error checking profile existence:', fetchError);
+        throw new Error('Error checking if profile exists');
       }
 
       let result;
 
+      // If profile doesn't exist, create it
       if (!existingProfile) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .insert([{ id: user.id, ...updatedProfile }])
-          .select()
-          .single();
+        console.log('Creating new profile for user:', user.id);
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .insert([{ 
+              id: user.id, 
+              ...updatedProfile,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
 
-        if (error) throw error;
-        result = data;
+          if (error) {
+            console.error('Error creating profile:', error);
+            throw new Error(`Failed to create profile: ${error.message}`);
+          }
+          result = data;
+        } catch (insertErr) {
+          console.error('Failed to insert profile:', insertErr);
+          throw insertErr;
+        }
       } else {
-        const { data, error } = await supabase
-          .from('profiles')
-          .update(updatedProfile)
-          .eq('id', user.id)
-          .select()
-          .single();
+        // If profile exists, update it
+        console.log('Updating existing profile for user:', user.id);
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .update({
+              ...updatedProfile,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+            .select()
+            .single();
 
-        if (error) throw error;
-        result = data;
+          if (error) {
+            console.error('Error updating profile:', error);
+            throw new Error(`Failed to update profile: ${error.message}`);
+          }
+          result = data;
+        } catch (updateErr) {
+          console.error('Failed to update profile:', updateErr);
+          throw updateErr;
+        }
       }
 
       setProfile(result);
@@ -156,7 +187,7 @@ export const useUserProfile = () => {
       console.error('Error updating profile:', err);
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: err instanceof Error ? err.message : "Failed to update profile",
         variant: "destructive"
       });
       throw err;
