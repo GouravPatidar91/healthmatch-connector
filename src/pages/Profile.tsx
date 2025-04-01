@@ -68,17 +68,9 @@ const Profile = () => {
       setIsSaving(true);
       console.log("Saving profile with data:", formData);
       await updateProfile(formData);
-      toast({
-        title: "Success",
-        description: "Your profile has been updated"
-      });
     } catch (error) {
       console.error("Error saving profile:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update profile",
-        variant: "destructive"
-      });
+      // The toast is already handled in the updateProfile function
     } finally {
       setIsSaving(false);
     }

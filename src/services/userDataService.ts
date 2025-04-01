@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -127,53 +126,49 @@ export const useUserProfile = () => {
 
       let result;
 
-      // If profile doesn't exist, create it
+      // If profile doesn't exist, create it with service_role key
       if (!existingProfile) {
         console.log('Creating new profile for user:', user.id);
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .insert([{ 
-              id: user.id, 
-              ...updatedProfile,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }])
-            .select()
-            .single();
+        
+        // When creating a new profile, we need to use an upsert approach 
+        // to ensure RLS policies are respected
+        const { data, error } = await supabase
+          .from('profiles')
+          .upsert([{ 
+            id: user.id, 
+            ...updatedProfile,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
 
-          if (error) {
-            console.error('Error creating profile:', error);
-            throw new Error(`Failed to create profile: ${error.message}`);
-          }
-          result = data;
-        } catch (insertErr) {
-          console.error('Failed to insert profile:', insertErr);
-          throw insertErr;
+        if (error) {
+          console.error('Error creating profile:', error);
+          throw new Error(`Failed to create profile: ${error.message}`);
         }
+        
+        result = data;
       } else {
         // If profile exists, update it
         console.log('Updating existing profile for user:', user.id);
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .update({
-              ...updatedProfile,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id)
-            .select()
-            .single();
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({
+            ...updatedProfile,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+          .select()
+          .single();
 
-          if (error) {
-            console.error('Error updating profile:', error);
-            throw new Error(`Failed to update profile: ${error.message}`);
-          }
-          result = data;
-        } catch (updateErr) {
-          console.error('Failed to update profile:', updateErr);
-          throw updateErr;
+        if (error) {
+          console.error('Error updating profile:', error);
+          throw new Error(`Failed to update profile: ${error.message}`);
         }
+        
+        result = data;
       }
 
       setProfile(result);
