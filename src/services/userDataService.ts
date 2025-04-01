@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -82,7 +81,7 @@ export const useUserProfile = () => {
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           throw error;
@@ -113,24 +112,46 @@ export const useUserProfile = () => {
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
-        .update(updatedProfile)
+        .select('*')
         .eq('id', user.id)
-        .select()
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        throw error;
+      if (fetchError) {
+        throw fetchError;
       }
 
-      setProfile(data);
+      let result;
+
+      if (!existingProfile) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .insert([{ id: user.id, ...updatedProfile }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        result = data;
+      } else {
+        const { data, error } = await supabase
+          .from('profiles')
+          .update(updatedProfile)
+          .eq('id', user.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        result = data;
+      }
+
+      setProfile(result);
       toast({
         title: "Success",
         description: "Profile updated successfully"
       });
       
-      return data;
+      return result;
     } catch (err) {
       console.error('Error updating profile:', err);
       toast({
@@ -172,7 +193,6 @@ export const useUserAppointments = () => {
           throw error;
         }
 
-        // Map each row to ensure it has the correct type
         const typedAppointments: Appointment[] = (data || []).map(mapDbRowToAppointment);
         setAppointments(typedAppointments);
       } catch (err) {
@@ -202,7 +222,6 @@ export const useUserAppointments = () => {
       const appointmentWithUserId = {
         ...newAppointment,
         user_id: user.id,
-        // Ensure status is of the correct type
         status: validateAppointmentStatus(newAppointment.status || 'pending')
       };
 
@@ -216,7 +235,6 @@ export const useUserAppointments = () => {
         throw error;
       }
 
-      // Add the new appointment to state with proper typing
       setAppointments(prev => [...prev, mapDbRowToAppointment(data)]);
       toast({
         title: "Success",
@@ -237,7 +255,6 @@ export const useUserAppointments = () => {
 
   const updateAppointment = async (id: string, updates: Partial<Appointment>) => {
     try {
-      // Ensure status is of the correct type if it's being updated
       const safeUpdates = { 
         ...updates,
         ...(updates.status && { status: validateAppointmentStatus(updates.status) })
@@ -254,7 +271,6 @@ export const useUserAppointments = () => {
         throw error;
       }
 
-      // Update the appointments state with proper typing
       setAppointments(prev => 
         prev.map(appointment => 
           appointment.id === id ? mapDbRowToAppointment(data) : appointment
@@ -401,7 +417,6 @@ export const useUserStats = () => {
           return;
         }
 
-        // Fetch appointment count
         const { count: appointmentsCount, error: appointmentsError } = await supabase
           .from('appointments')
           .select('*', { count: 'exact', head: true })
@@ -409,7 +424,6 @@ export const useUserStats = () => {
 
         if (appointmentsError) throw appointmentsError;
 
-        // Fetch upcoming appointments count
         const today = new Date().toISOString().split('T')[0];
         const { count: upcomingCount, error: upcomingError } = await supabase
           .from('appointments')
@@ -420,7 +434,6 @@ export const useUserStats = () => {
 
         if (upcomingError) throw upcomingError;
 
-        // Fetch health checks count
         const { count: healthChecksCount, error: healthChecksError } = await supabase
           .from('health_checks')
           .select('*', { count: 'exact', head: true })
