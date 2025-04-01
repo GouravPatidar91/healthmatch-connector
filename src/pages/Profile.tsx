@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,9 +69,10 @@ const Profile = () => {
       setIsSaving(true);
       console.log("Saving profile with data:", formData);
       await updateProfile(formData);
+      // Toast is now handled in the updateProfile function
     } catch (error) {
       console.error("Error saving profile:", error);
-      // The toast is already handled in the updateProfile function
+      // Toast is now handled in the updateProfile function
     } finally {
       setIsSaving(false);
     }
