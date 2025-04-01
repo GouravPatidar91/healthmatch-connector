@@ -18,6 +18,22 @@ export interface Appointment {
   updated_at?: string;
 }
 
+// Helper function to ensure status is of the correct type
+const validateAppointmentStatus = (status: string | null): 'pending' | 'confirmed' | 'cancelled' | 'completed' => {
+  if (status === 'pending' || status === 'confirmed' || status === 'cancelled' || status === 'completed') {
+    return status;
+  }
+  return 'pending'; // Default value if status is invalid
+};
+
+// Helper function to convert database row to Appointment type
+const mapDbRowToAppointment = (row: any): Appointment => {
+  return {
+    ...row,
+    status: validateAppointmentStatus(row.status)
+  };
+};
+
 // Health check type definition
 export interface HealthCheck {
   id?: string;
@@ -156,7 +172,9 @@ export const useUserAppointments = () => {
           throw error;
         }
 
-        setAppointments(data || []);
+        // Map each row to ensure it has the correct type
+        const typedAppointments: Appointment[] = (data || []).map(mapDbRowToAppointment);
+        setAppointments(typedAppointments);
       } catch (err) {
         console.error('Error fetching appointments:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch appointments'));
@@ -183,7 +201,9 @@ export const useUserAppointments = () => {
 
       const appointmentWithUserId = {
         ...newAppointment,
-        user_id: user.id
+        user_id: user.id,
+        // Ensure status is of the correct type
+        status: validateAppointmentStatus(newAppointment.status || 'pending')
       };
 
       const { data, error } = await supabase
@@ -196,13 +216,14 @@ export const useUserAppointments = () => {
         throw error;
       }
 
-      setAppointments(prev => [...prev, data]);
+      // Add the new appointment to state with proper typing
+      setAppointments(prev => [...prev, mapDbRowToAppointment(data)]);
       toast({
         title: "Success",
         description: "Appointment booked successfully"
       });
       
-      return data;
+      return mapDbRowToAppointment(data);
     } catch (err) {
       console.error('Error adding appointment:', err);
       toast({
@@ -216,9 +237,15 @@ export const useUserAppointments = () => {
 
   const updateAppointment = async (id: string, updates: Partial<Appointment>) => {
     try {
+      // Ensure status is of the correct type if it's being updated
+      const safeUpdates = { 
+        ...updates,
+        ...(updates.status && { status: validateAppointmentStatus(updates.status) })
+      };
+
       const { data, error } = await supabase
         .from('appointments')
-        .update(updates)
+        .update(safeUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -227,9 +254,10 @@ export const useUserAppointments = () => {
         throw error;
       }
 
+      // Update the appointments state with proper typing
       setAppointments(prev => 
         prev.map(appointment => 
-          appointment.id === id ? data : appointment
+          appointment.id === id ? mapDbRowToAppointment(data) : appointment
         )
       );
       
@@ -238,7 +266,7 @@ export const useUserAppointments = () => {
         description: "Appointment updated successfully"
       });
       
-      return data;
+      return mapDbRowToAppointment(data);
     } catch (err) {
       console.error('Error updating appointment:', err);
       toast({
