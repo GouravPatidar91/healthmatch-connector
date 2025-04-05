@@ -1,1 +1,14 @@
+
 project_id = "bpflebtklgnivcanhlbp"
+
+[functions.emergency-call]
+verify_jwt = true
+
+[functions.call-twiml]
+verify_jwt = false
+
+[functions.collect-symptoms]
+verify_jwt = false
+
+[functions.call-status-webhook]
+verify_jwt = false
