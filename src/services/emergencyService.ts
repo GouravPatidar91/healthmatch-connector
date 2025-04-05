@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 
 export interface EmergencyCallData {
   patient_name: string;
@@ -21,17 +20,17 @@ export interface Doctor {
 }
 
 export async function createEmergencyCall(callData: EmergencyCallData) {
-  const { user } = useAuth();
-  
-  if (!user) {
-    throw new Error("User must be logged in to create an emergency call");
-  }
-  
   try {
+    const { data: user } = await supabase.auth.getSession();
+    
+    if (!user.session?.user) {
+      throw new Error("User must be logged in to create an emergency call");
+    }
+    
     const { data, error } = await supabase
-      .from('emergency_calls')
+      .from("emergency_calls")
       .insert({
-        user_id: user.id,
+        user_id: user.session.user.id,
         patient_name: callData.patient_name,
         age: callData.age,
         gender: callData.gender,
@@ -76,17 +75,17 @@ export async function findNearbyDoctors(latitude: number, longitude: number, spe
 }
 
 export async function getUserEmergencyCalls() {
-  const { user } = useAuth();
-  
-  if (!user) {
-    throw new Error("User must be logged in to view emergency calls");
-  }
-  
   try {
+    const { data: user } = await supabase.auth.getSession();
+    
+    if (!user.session?.user) {
+      throw new Error("User must be logged in to view emergency calls");
+    }
+    
     const { data, error } = await supabase
-      .from('emergency_calls')
-      .select('*')
-      .eq('user_id', user.id)
+      .from("emergency_calls")
+      .select()
+      .eq('user_id', user.session.user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -102,22 +101,22 @@ export async function getUserEmergencyCalls() {
 }
 
 export async function assignDoctorToEmergencyCall(emergencyCallId: string, doctorId: string) {
-  const { user } = useAuth();
-  
-  if (!user) {
-    throw new Error("User must be logged in to update emergency calls");
-  }
-  
   try {
+    const { data: user } = await supabase.auth.getSession();
+    
+    if (!user.session?.user) {
+      throw new Error("User must be logged in to update emergency calls");
+    }
+    
     const { data, error } = await supabase
-      .from('emergency_calls')
+      .from("emergency_calls")
       .update({
         doctor_id: doctorId,
         status: 'assigned',
         updated_at: new Date().toISOString()
       })
       .eq('id', emergencyCallId)
-      .eq('user_id', user.id) // Ensure user only updates their own calls
+      .eq('user_id', user.session.user.id) // Ensure user only updates their own calls
       .select()
       .single();
 
