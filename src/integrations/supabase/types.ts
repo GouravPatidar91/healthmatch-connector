@@ -59,6 +59,90 @@ export type Database = {
           },
         ]
       }
+      doctors: {
+        Row: {
+          address: string
+          available: boolean
+          created_at: string
+          hospital: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          region: string
+          specialization: string
+        }
+        Insert: {
+          address: string
+          available?: boolean
+          created_at?: string
+          hospital: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          region: string
+          specialization: string
+        }
+        Update: {
+          address?: string
+          available?: boolean
+          created_at?: string
+          hospital?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          region?: string
+          specialization?: string
+        }
+        Relationships: []
+      }
+      emergency_calls: {
+        Row: {
+          address: string
+          age: number | null
+          created_at: string
+          doctor_id: string | null
+          gender: string | null
+          id: string
+          patient_name: string
+          severity: string | null
+          status: string
+          symptoms: string[]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address: string
+          age?: number | null
+          created_at?: string
+          doctor_id?: string | null
+          gender?: string | null
+          id?: string
+          patient_name: string
+          severity?: string | null
+          status?: string
+          symptoms: string[]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string
+          age?: number | null
+          created_at?: string
+          doctor_id?: string | null
+          gender?: string | null
+          id?: string
+          patient_name?: string
+          severity?: string | null
+          status?: string
+          symptoms?: string[]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       health_checks: {
         Row: {
           created_at: string
@@ -147,7 +231,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      find_nearest_doctor: {
+        Args: {
+          lat: number
+          long: number
+          specialization_filter?: string
+        }
+        Returns: {
+          id: string
+          name: string
+          specialization: string
+          hospital: string
+          address: string
+          distance: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

@@ -10,6 +10,7 @@ import HealthCheck from "./pages/HealthCheck";
 import Appointments from "./pages/Appointments";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Emergency from "./pages/Emergency";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/health-check" element={<HealthCheck />} />
               <Route path="/appointments" element={<Appointments />} />
+              <Route path="/emergency" element={<Emergency />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
