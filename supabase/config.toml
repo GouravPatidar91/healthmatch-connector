@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.call-status-webhook]
 verify_jwt = false
+
+[functions.call-status]
+verify_jwt = true

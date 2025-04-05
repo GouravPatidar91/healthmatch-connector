@@ -22,6 +22,22 @@ serve(async (req) => {
     // Get the request body
     const { phoneNumber, userId, patientName } = await req.json();
 
+    // Check for required credentials
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+      console.error('Missing Twilio credentials. Make sure TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are set as environment variables.');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Twilio credentials are not configured. Please set up the required environment variables.',
+          missingCredentials: {
+            accountSid: !TWILIO_ACCOUNT_SID,
+            authToken: !TWILIO_AUTH_TOKEN, 
+            phoneNumber: !TWILIO_PHONE_NUMBER
+          }
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Validate inputs
     if (!phoneNumber || !userId) {
       return new Response(

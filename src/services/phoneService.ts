@@ -31,6 +31,12 @@ export async function initiateEmergencyCall(callDetails: CallDetails) {
     
     if (error) {
       console.error("Error initiating call:", error);
+      
+      // Check if it's likely a credentials issue based on the error pattern
+      if (error.message && error.message.includes("non-2xx status code")) {
+        throw new Error("Failed to initiate call. The emergency call service is not properly configured. Please contact support.");
+      }
+      
       throw error;
     }
     
