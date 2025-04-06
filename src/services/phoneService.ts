@@ -54,7 +54,11 @@ export async function initiateEmergencyCall(callDetails: CallDetails) {
       throw new Error(data.error);
     }
     
-    return data;
+    return {
+      callSid: data.callSid,
+      status: data.status,
+      emergencyCallId: data.emergencyCallId
+    };
   } catch (error) {
     console.error("Failed to initiate emergency call:", error);
     throw error;
@@ -79,6 +83,30 @@ export async function getCallStatus(callSid: string) {
     return data;
   } catch (error) {
     console.error("Failed to get call status:", error);
+    throw error;
+  }
+}
+
+/**
+ * Gets the details of an emergency call from the database
+ * @param emergencyCallId The ID of the emergency call record
+ */
+export async function getEmergencyCallDetails(emergencyCallId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('emergency_calls')
+      .select('*')
+      .eq('id', emergencyCallId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error("Error fetching emergency call details:", error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Failed to get emergency call details:", error);
     throw error;
   }
 }

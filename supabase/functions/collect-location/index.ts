@@ -28,63 +28,55 @@ serve(async (req) => {
     const speechResult = formData.get('SpeechResult');
     const callSid = formData.get('CallSid');
     const from = formData.get('From');
-    const to = formData.get('To');
     
-    console.log('Received speech result:', speechResult);
+    console.log('Received location information:', speechResult);
     console.log('Call SID:', callSid);
-    console.log('Call from:', from);
-    console.log('Call to:', to);
-    
-    // Validate that this is a call from our Twilio number
-    const isFromTwilio = to === TWILIO_PHONE_NUMBER;
-    if (!isFromTwilio) {
-      console.log('Warning: Call not from our Twilio number. Received on:', to);
-    }
 
     // Get call parameters from our database
     const { data: callData } = await supabase
       .from('emergency_calls')
-      .select('id, user_id, patient_name')
+      .select('id, user_id, patient_name, symptoms, severity')
       .eq('twilio_sid', callSid)
       .maybeSingle();
 
-    // Generate TwiML for the next step
+    // Generate TwiML for the final step - call completion
     const twiml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <Response>
         <Say voice="Polly.Joanna">
-          Thank you for describing your symptoms. Now, I need to understand the severity of your condition.
+          Thank you for providing your location. We have recorded all your information and will find the nearest available doctor for you.
+          Medical assistance will be coordinated based on your condition. Please stay on the line for further instructions or hang up if you need to prepare for emergency services.
         </Say>
-        
-        <Gather input="speech" timeout="5" action="${BASE_URL}/functions/v1/collect-severity" method="POST">
-          <Say voice="Polly.Joanna">
-            On a scale from low to critical, how severe is your condition? Please say low, medium, high, or critical.
-          </Say>
-        </Gather>
-        
+        <Pause length="2"/>
         <Say voice="Polly.Joanna">
-          I didn't hear anything. Let's try again.
+          If this is a life-threatening emergency, please dial 911 directly. Thank you for using our emergency service.
         </Say>
-        
-        <Redirect>${BASE_URL}/functions/v1/collect-symptoms</Redirect>
+        <Hangup />
       </Response>
     `;
 
-    // Update the emergency call record with the symptoms
+    // Update the emergency call record with the location and mark as complete
     if (callData?.id && speechResult) {
       const { error } = await supabase
         .from('emergency_calls')
         .update({
-          symptoms: [speechResult.toString()],
-          status: 'collecting_data',
+          address: speechResult.toString(),
+          status: 'completed',
           updated_at: new Date().toISOString()
         })
         .eq('id', callData.id);
 
       if (error) {
-        console.error('Error updating emergency call record:', error);
+        console.error('Error updating emergency call record with location:', error);
       } else {
-        console.log('Successfully stored symptoms for call ID:', callData.id);
+        console.log('Successfully completed data collection for call ID:', callData.id);
+        
+        // Try to find doctors nearby - this will be used by the frontend
+        if (callData.severity === 'high' || callData.severity === 'critical') {
+          console.log('High severity case - attempting to find doctors');
+          // Here we would normally trigger a notification to doctors
+          // For now we just log it
+        }
       }
     } else if (!callData && callSid && speechResult && from) {
       // If we don't have a record yet but have a call SID, create one
@@ -93,16 +85,17 @@ serve(async (req) => {
         .insert({
           twilio_sid: callSid.toString(),
           patient_name: 'Unknown Patient',
-          symptoms: [speechResult.toString()],
-          address: 'Location unknown',
-          status: 'collecting_data',
+          symptoms: ['Symptoms unknown'],
+          severity: 'medium',
+          address: speechResult.toString(),
+          status: 'completed',
           phone_number: from.toString()
         });
 
       if (error) {
-        console.error('Error creating new emergency call record:', error);
+        console.error('Error creating completed emergency call record:', error);
       } else {
-        console.log('Created new emergency call record for untracked call with SID:', callSid);
+        console.log('Created and completed new emergency call record for call with SID:', callSid);
       }
     }
 
@@ -111,14 +104,14 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in collect-symptoms:', error);
+    console.error('Error in collect-location:', error);
     
     // Return a simple TwiML with an error message
     const errorTwiml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <Response>
         <Say voice="Polly.Joanna">
-          I'm sorry, we're experiencing technical difficulties processing your symptoms. Please hang up and dial 911 directly if this is a medical emergency.
+          I'm sorry, we're experiencing technical difficulties processing your location. Your information has been recorded, and we will try to contact you. Please hang up and dial 911 directly if this is a medical emergency.
         </Say>
         <Hangup />
       </Response>

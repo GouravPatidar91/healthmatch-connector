@@ -1,21 +1,34 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { PhoneIcon, PhoneOffIcon, Loader2Icon } from "lucide-react";
+import { PhoneIcon, PhoneOffIcon, Loader2Icon, InfoIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { initiateEmergencyCall, getCallStatus } from "@/services/phoneService";
+import { initiateEmergencyCall, getCallStatus, getEmergencyCallDetails } from "@/services/phoneService";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 
 interface PhoneCallFormData {
   phoneNumber: string;
   patientName: string;
+}
+
+interface EmergencyCallDetails {
+  id: string;
+  patient_name: string;
+  symptoms: string[];
+  severity: string | null;
+  address: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  phone_number?: string;
 }
 
 const PhoneCallInterface: React.FC = () => {
@@ -25,6 +38,8 @@ const PhoneCallInterface: React.FC = () => {
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [callSid, setCallSid] = useState<string | null>(null);
   const [callStatus, setCallStatus] = useState<string | null>(null);
+  const [emergencyCallId, setEmergencyCallId] = useState<string | null>(null);
+  const [emergencyCallDetails, setEmergencyCallDetails] = useState<EmergencyCallDetails | null>(null);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
   const [errorDetails, setErrorDetails] = useState<any>(null);
   
@@ -34,6 +49,28 @@ const PhoneCallInterface: React.FC = () => {
       patientName: user?.user_metadata?.name || ""
     }
   });
+
+  // Fetch emergency call details when we have an ID
+  useEffect(() => {
+    if (emergencyCallId && isCallActive) {
+      const fetchCallDetails = async () => {
+        try {
+          const details = await getEmergencyCallDetails(emergencyCallId);
+          if (details) {
+            setEmergencyCallDetails(details);
+          }
+        } catch (error) {
+          console.error("Error fetching emergency call details:", error);
+        }
+      };
+      
+      // Call immediately then poll
+      fetchCallDetails();
+      const detailsInterval = setInterval(fetchCallDetails, 5000);
+      
+      return () => clearInterval(detailsInterval);
+    }
+  }, [emergencyCallId, isCallActive]);
 
   // Start an emergency call
   const startEmergencyCall = async (data: PhoneCallFormData) => {
@@ -57,6 +94,7 @@ const PhoneCallInterface: React.FC = () => {
       
       setCallSid(result.callSid);
       setCallStatus(result.status);
+      setEmergencyCallId(result.emergencyCallId || null);
       setIsCallActive(true);
       
       toast({
@@ -95,15 +133,26 @@ const PhoneCallInterface: React.FC = () => {
       setCallStatus(statusResult.status);
       
       // Continue polling if the call is not completed
-      if (statusResult.status !== 'completed' && statusResult.status !== 'failed') {
+      if (statusResult.status !== 'completed' && 
+          statusResult.status !== 'failed' && 
+          statusResult.status !== 'busy' && 
+          statusResult.status !== 'no-answer') {
         setTimeout(() => pollCallStatus(sid), 5000); // Poll every 5 seconds
       } else {
-        // Call is completed
-        setIsCallActive(false);
-        toast({
-          title: "Call Ended",
-          description: `Your emergency call has ended with status: ${statusResult.status}`,
-        });
+        // Call is completed or failed
+        if (statusResult.status === 'completed') {
+          toast({
+            title: "Call Ended",
+            description: `Your emergency call has ended. Health information collected.`,
+          });
+        } else {
+          toast({
+            title: "Call Ended",
+            description: `Your emergency call has ended with status: ${statusResult.status}`,
+            variant: "destructive"
+          });
+          setIsCallActive(false);
+        }
       }
       
     } catch (error) {
@@ -116,11 +165,29 @@ const PhoneCallInterface: React.FC = () => {
     setIsCallActive(false);
     setCallSid(null);
     setCallStatus(null);
+    setEmergencyCallId(null);
+    setEmergencyCallDetails(null);
     
     toast({
       title: "Call Request Cancelled",
       description: "Your emergency call request has been cancelled."
     });
+  };
+
+  // Helper function to get severity badge color
+  const getSeverityColor = (severity: string | null) => {
+    switch (severity) {
+      case 'critical':
+        return "bg-red-500 hover:bg-red-600";
+      case 'high':
+        return "bg-orange-500 hover:bg-orange-600";
+      case 'medium':
+        return "bg-yellow-500 hover:bg-yellow-600";
+      case 'low':
+        return "bg-green-500 hover:bg-green-600";
+      default:
+        return "bg-gray-500 hover:bg-gray-600";
+    }
   };
   
   return (
@@ -206,6 +273,7 @@ const PhoneCallInterface: React.FC = () => {
                   {callStatus === 'initiated' && "Call is being connected to your phone..."}
                   {callStatus === 'ringing' && "Your phone is ringing. Please answer the call."}
                   {callStatus === 'in-progress' && "Call is active. Please respond to the AI assistant's questions."}
+                  {callStatus === 'completed' && "Call has completed. Health information has been collected."}
                   {!callStatus && "Connecting to emergency services..."}
                 </AlertDescription>
               </Alert>
@@ -228,6 +296,47 @@ const PhoneCallInterface: React.FC = () => {
               <div className="text-center">
                 <p className="text-sm text-gray-500 mb-2">Call Status: {callStatus || "Connecting..."}</p>
               </div>
+              
+              {/* Show health information if available */}
+              {emergencyCallDetails && (emergencyCallDetails.symptoms?.length > 0 || emergencyCallDetails.severity) && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white p-4 rounded-lg border border-gray-200 mt-4"
+                >
+                  <div className="flex items-center mb-3">
+                    <InfoIcon className="h-5 w-5 text-blue-500 mr-2" />
+                    <h3 className="font-medium">Health Information Collected</h3>
+                  </div>
+                  
+                  {emergencyCallDetails.symptoms?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-sm font-medium text-gray-700">Symptoms:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {emergencyCallDetails.symptoms.map((symptom, index) => (
+                          <li key={index} className="text-sm text-gray-600">{symptom}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {emergencyCallDetails.severity && (
+                    <div className="mb-3">
+                      <p className="text-sm font-medium text-gray-700">Severity:</p>
+                      <Badge className={`mt-1 ${getSeverityColor(emergencyCallDetails.severity)}`}>
+                        {emergencyCallDetails.severity.toUpperCase()}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {emergencyCallDetails.address && emergencyCallDetails.address !== "To be collected" && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Location:</p>
+                      <p className="text-sm text-gray-600">{emergencyCallDetails.address}</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </div>
           )}
         </CardContent>
@@ -239,7 +348,7 @@ const PhoneCallInterface: React.FC = () => {
               className="w-full"
               onClick={endEmergencyCall}
             >
-              <PhoneOffIcon className="mr-2" /> Cancel Call Request
+              <PhoneOffIcon className="mr-2" /> {callStatus === 'completed' ? 'Close' : 'Cancel Call Request'}
             </Button>
           )}
         </CardFooter>

@@ -25,11 +25,30 @@ serve(async (req) => {
   const url = new URL(req.url);
   const patientName = url.searchParams.get('patientName') || 'Patient';
   const userId = url.searchParams.get('userId') || '';
+  const callSid = url.searchParams.get('CallSid') || '';
+  
+  console.log('TwiML requested for patient:', patientName);
+  console.log('Call SID from TwiML request:', callSid);
 
   try {
-    // Create a new emergency call record in the database
-    if (userId) {
-      const { error } = await supabase
+    // If we have a call SID, look for an existing emergency call record
+    let emergencyCallId = null;
+    if (callSid) {
+      const { data: emergencyCall } = await supabase
+        .from('emergency_calls')
+        .select('id')
+        .eq('twilio_sid', callSid)
+        .maybeSingle();
+      
+      if (emergencyCall) {
+        emergencyCallId = emergencyCall.id;
+        console.log('Found existing emergency call:', emergencyCallId);
+      }
+    }
+    
+    // Create a new emergency call record in the database if none exists
+    if (!emergencyCallId && userId) {
+      const { data: newEmergencyCall, error } = await supabase
         .from('emergency_calls')
         .insert({
           user_id: userId,
@@ -37,10 +56,16 @@ serve(async (req) => {
           status: 'initiated',
           symptoms: [],
           address: 'To be collected during call',
-        });
+          twilio_sid: callSid || null
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error creating emergency call record:', error);
+      } else if (newEmergencyCall) {
+        emergencyCallId = newEmergencyCall.id;
+        console.log('Created new emergency call record:', emergencyCallId);
       }
     }
 
@@ -55,7 +80,7 @@ serve(async (req) => {
         
         <Gather input="speech" timeout="5" action="${BASE_URL}/functions/v1/collect-symptoms" method="POST">
           <Say voice="Polly.Joanna">
-            Please describe your symptoms or medical emergency.
+            Please describe your symptoms or medical emergency in detail.
           </Say>
         </Gather>
         
