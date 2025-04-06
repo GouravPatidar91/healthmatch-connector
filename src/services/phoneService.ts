@@ -40,6 +40,20 @@ export async function initiateEmergencyCall(callDetails: CallDetails) {
       throw error;
     }
     
+    // Check if there's an error message in the data (from the edge function)
+    if (data && data.error) {
+      console.error("Error from edge function:", data);
+      
+      // If we have missing credentials info, pass it along
+      if (data.missingCredentials) {
+        const customError = new Error(data.error) as any;
+        customError.missingCredentials = data.missingCredentials;
+        throw customError;
+      }
+      
+      throw new Error(data.error);
+    }
+    
     return data;
   } catch (error) {
     console.error("Failed to initiate emergency call:", error);

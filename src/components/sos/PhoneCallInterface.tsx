@@ -11,6 +11,7 @@ import { initiateEmergencyCall, getCallStatus } from "@/services/phoneService";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface PhoneCallFormData {
   phoneNumber: string;
@@ -24,6 +25,8 @@ const PhoneCallInterface: React.FC = () => {
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [callSid, setCallSid] = useState<string | null>(null);
   const [callStatus, setCallStatus] = useState<string | null>(null);
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
   
   const form = useForm<PhoneCallFormData>({
     defaultValues: {
@@ -66,8 +69,15 @@ const PhoneCallInterface: React.FC = () => {
         pollCallStatus(result.callSid);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error starting emergency call:", error);
+      
+      // If the error contains missingCredentials data, show the detailed error sheet
+      if (error.missingCredentials) {
+        setErrorDetails(error);
+        setShowErrorDetails(true);
+      }
+      
       toast({
         title: "Call Failed",
         description: error instanceof Error ? error.message : "Failed to initiate emergency call",
@@ -114,125 +124,159 @@ const PhoneCallInterface: React.FC = () => {
   };
   
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle>Emergency Phone Assistance</CardTitle>
-        <CardDescription>
-          {isCallActive 
-            ? "Our AI assistant will call you and collect emergency details" 
-            : "Enter your phone number to receive an emergency call from our AI assistant"}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {!isCallActive ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(startEmergencyCall)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                rules={{ 
-                  required: "Phone number is required",
-                  pattern: {
-                    value: /^\+?[0-9]{10,15}$/,
-                    message: "Please enter a valid phone number"
-                  }
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormDescription>Enter your phone number to receive the emergency call</FormDescription>
-                    <FormControl>
-                      <Input placeholder="555-123-4567" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <>
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardHeader>
+          <CardTitle>Emergency Phone Assistance</CardTitle>
+          <CardDescription>
+            {isCallActive 
+              ? "Our AI assistant will call you and collect emergency details" 
+              : "Enter your phone number to receive an emergency call from our AI assistant"}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {!isCallActive ? (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(startEmergencyCall)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  rules={{ 
+                    required: "Phone number is required",
+                    pattern: {
+                      value: /^\+?[0-9]{10,15}$/,
+                      message: "Please enter a valid phone number"
+                    }
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormDescription>Enter your phone number to receive the emergency call</FormDescription>
+                      <FormControl>
+                        <Input placeholder="555-123-4567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="patientName"
+                  rules={{ 
+                    required: "Patient name is required"
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Patient Name</FormLabel>
+                      <FormDescription>Who needs medical assistance?</FormDescription>
+                      <FormControl>
+                        <Input placeholder="Enter name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button
+                  type="submit"
+                  disabled={isCallLoading}
+                  className="bg-red-600 hover:bg-red-700 w-full mt-4 text-white font-bold py-4 rounded-full"
+                >
+                  {isCallLoading ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> Initiating Call
+                    </>
+                  ) : (
+                    <>
+                      <PhoneIcon className="mr-2" /> Start Emergency Call
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+          ) : (
+            <div className="space-y-6">
+              <Alert className="bg-blue-50 border-blue-200">
+                <PhoneIcon className="h-4 w-4 text-blue-500" />
+                <AlertTitle>Call in Progress</AlertTitle>
+                <AlertDescription>
+                  {callStatus === 'queued' && "Your call is queued and will begin shortly..."}
+                  {callStatus === 'initiated' && "Call is being connected to your phone..."}
+                  {callStatus === 'ringing' && "Your phone is ringing. Please answer the call."}
+                  {callStatus === 'in-progress' && "Call is active. Please respond to the AI assistant's questions."}
+                  {!callStatus && "Connecting to emergency services..."}
+                </AlertDescription>
+              </Alert>
               
-              <FormField
-                control={form.control}
-                name="patientName"
-                rules={{ 
-                  required: "Patient name is required"
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Patient Name</FormLabel>
-                    <FormDescription>Who needs medical assistance?</FormDescription>
-                    <FormControl>
-                      <Input placeholder="Enter name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Button
-                type="submit"
-                disabled={isCallLoading}
-                className="bg-red-600 hover:bg-red-700 w-full mt-4 text-white font-bold py-4 rounded-full"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex justify-center"
               >
-                {isCallLoading ? (
-                  <>
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> Initiating Call
-                  </>
-                ) : (
-                  <>
-                    <PhoneIcon className="mr-2" /> Start Emergency Call
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
-        ) : (
-          <div className="space-y-6">
-            <Alert className="bg-blue-50 border-blue-200">
-              <PhoneIcon className="h-4 w-4 text-blue-500" />
-              <AlertTitle>Call in Progress</AlertTitle>
-              <AlertDescription>
-                {callStatus === 'queued' && "Your call is queued and will begin shortly..."}
-                {callStatus === 'initiated' && "Call is being connected to your phone..."}
-                {callStatus === 'ringing' && "Your phone is ringing. Please answer the call."}
-                {callStatus === 'in-progress' && "Call is active. Please respond to the AI assistant's questions."}
-                {!callStatus && "Connecting to emergency services..."}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-32 w-32 rounded-full bg-red-500 opacity-20 animate-ping"></div>
+                  </div>
+                  <div className="relative h-32 w-32 rounded-full bg-red-600 flex items-center justify-center">
+                    <PhoneIcon size={48} className="text-white" />
+                  </div>
+                </div>
+              </motion.div>
+              
+              <div className="text-center">
+                <p className="text-sm text-gray-500 mb-2">Call Status: {callStatus || "Connecting..."}</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+        
+        <CardFooter>
+          {isCallActive && (
+            <Button 
+              variant="destructive"
+              className="w-full"
+              onClick={endEmergencyCall}
+            >
+              <PhoneOffIcon className="mr-2" /> Cancel Call Request
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+
+      {/* Error Details Sheet */}
+      <Sheet open={showErrorDetails} onOpenChange={setShowErrorDetails}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Configuration Error</SheetTitle>
+            <SheetDescription>
+              The emergency call service is missing required Twilio credentials.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <Alert variant="destructive">
+              <AlertTitle>Missing Twilio Configuration</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>The following credentials are required to make emergency calls:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {errorDetails?.missingCredentials?.accountSid && (
+                    <li>Twilio Account SID</li>
+                  )}
+                  {errorDetails?.missingCredentials?.authToken && (
+                    <li>Twilio Auth Token</li>
+                  )}
+                  {errorDetails?.missingCredentials?.phoneNumber && (
+                    <li>Twilio Phone Number</li>
+                  )}
+                </ul>
+                <p className="pt-2">Please contact system administrator to configure these credentials.</p>
               </AlertDescription>
             </Alert>
-            
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex justify-center"
-            >
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-32 w-32 rounded-full bg-red-500 opacity-20 animate-ping"></div>
-                </div>
-                <div className="relative h-32 w-32 rounded-full bg-red-600 flex items-center justify-center">
-                  <PhoneIcon size={48} className="text-white" />
-                </div>
-              </div>
-            </motion.div>
-            
-            <div className="text-center">
-              <p className="text-sm text-gray-500 mb-2">Call Status: {callStatus || "Connecting..."}</p>
-            </div>
           </div>
-        )}
-      </CardContent>
-      
-      <CardFooter>
-        {isCallActive && (
-          <Button 
-            variant="destructive"
-            className="w-full"
-            onClick={endEmergencyCall}
-          >
-            <PhoneOffIcon className="mr-2" /> Cancel Call Request
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 
