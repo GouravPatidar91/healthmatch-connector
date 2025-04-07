@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Activity, Calendar, Users, AlertTriangle, ArrowRight } from "lucide-react";
+import { Activity, Calendar, Users, AlertTriangle, ArrowRight, Phone as PhoneIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,9 +35,20 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-medical-neutral-darkest">Welcome, {userName}</h1>
-        <p className="text-medical-neutral-dark">Here's an overview of your health journey</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-medical-neutral-darkest">Welcome, {userName}</h1>
+          <p className="text-medical-neutral-dark">Here's an overview of your health journey</p>
+        </div>
+        
+        <Button 
+          onClick={() => navigate('/emergency')}
+          className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+          size="lg"
+        >
+          <PhoneIcon className="h-4 w-4" />
+          Emergency Services
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -119,6 +130,14 @@ const Dashboard = () => {
             >
               <span>Update Medical History</span>
               <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline"
+              className="flex justify-between items-center bg-red-50 hover:bg-red-100 border-red-200 text-red-700"
+              onClick={() => navigate('/emergency')}
+            >
+              <span>Emergency Services</span>
+              <PhoneIcon className="h-4 w-4" />
             </Button>
           </CardContent>
         </Card>
