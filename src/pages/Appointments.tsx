@@ -298,7 +298,7 @@ const Appointments = () => {
                         <SelectValue placeholder={profileLoading ? "Loading your region..." : "Select region"} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All regions</SelectItem>
+                        <SelectItem value="all">All regions</SelectItem>
                         <SelectItem value="North">North</SelectItem>
                         <SelectItem value="South">South</SelectItem>
                         <SelectItem value="East">East</SelectItem>
@@ -368,7 +368,7 @@ const Appointments = () => {
                         <Button 
                           variant="outline" 
                           className="mt-4"
-                          onClick={() => setSelectedRegion("")}
+                          onClick={() => setSelectedRegion("all")}
                         >
                           View All Doctors
                         </Button>
