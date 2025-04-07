@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { mockDoctors } from "@/data/mockData";
 import { Doctor } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star, MapPin, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { useUserAppointments, Appointment } from "@/services/userDataService";
 import { useUserProfile } from "@/services/userDataService";
+import { useDoctors } from "@/services/doctorService";
 
 const formatDateForDisplay = (dateStr: string) => {
   try {
@@ -164,6 +163,7 @@ const Appointments = () => {
   const navigate = useNavigate();
   const { addAppointment } = useUserAppointments();
   const { profile, loading: profileLoading } = useUserProfile();
+  const { doctors, loading: doctorsLoading } = useDoctors();
   
   const fromHealthCheck = location.state?.fromHealthCheck || false;
   const symptoms = location.state?.symptoms || [];
@@ -182,21 +182,20 @@ const Appointments = () => {
   
   const [step, setStep] = useState(1);
 
-  // Set user's region as the default selected region when profile is loaded
   useEffect(() => {
     if (profile?.region) {
       setSelectedRegion(profile.region);
       filterDoctorsByRegion(profile.region);
     } else {
-      setFilteredDoctors(mockDoctors);
+      setFilteredDoctors(doctors);
     }
-  }, [profile]);
+  }, [profile, doctors]);
   
   const filterDoctorsByRegion = (region: string) => {
     if (!region || region === "all") {
-      setFilteredDoctors(mockDoctors);
+      setFilteredDoctors(doctors);
     } else {
-      setFilteredDoctors(mockDoctors.filter(doctor => doctor.region === region));
+      setFilteredDoctors(doctors.filter(doctor => doctor.region === region));
     }
   };
   
@@ -249,14 +248,12 @@ const Appointments = () => {
       
       await addAppointment(newAppointment);
       
-      // Reset form
       setSelectedDoctor(null);
       setSelectedDate(new Date());
       setSelectedTime("");
       setReason("");
       setStep(1);
       
-      // Switch to upcoming tab to show the new appointment
       document.getElementById('upcoming-tab')?.click();
       
       toast({
@@ -316,7 +313,7 @@ const Appointments = () => {
                   </div>
                   
                   <div className="grid gap-4">
-                    {profileLoading ? (
+                    {doctorsLoading || profileLoading ? (
                       <div className="text-center py-8">
                         <p>Loading doctors in your region...</p>
                       </div>
@@ -342,12 +339,12 @@ const Appointments = () => {
                               </div>
                               
                               <div className="mt-4 flex flex-wrap gap-1">
-                                {doctor.availability.slice(0, 3).map((day, index) => (
+                                {doctor.availability && doctor.availability.slice(0, 3).map((day, index) => (
                                   <Badge key={index} variant="outline" className="text-xs">
                                     {day.day.slice(0, 3)}
                                   </Badge>
                                 ))}
-                                {doctor.availability.length > 3 && (
+                                {doctor.availability && doctor.availability.length > 3 && (
                                   <Badge variant="outline" className="text-xs">
                                     +{doctor.availability.length - 3} more
                                   </Badge>
@@ -415,11 +412,9 @@ const Appointments = () => {
                         onSelect={setSelectedDate}
                         className="border rounded-md"
                         disabled={(date) => {
-                          // Disable dates in the past
                           const today = new Date();
                           today.setHours(0, 0, 0, 0);
                           
-                          // Disable weekend (6 = Saturday, 0 = Sunday)
                           const day = date.getDay();
                           const isWeekend = day === 0 || day === 6;
                           
