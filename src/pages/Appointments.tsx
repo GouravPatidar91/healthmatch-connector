@@ -170,7 +170,7 @@ const Appointments = () => {
   const possibleConditions = location.state?.possibleConditions || [];
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -193,7 +193,7 @@ const Appointments = () => {
   }, [profile]);
   
   const filterDoctorsByRegion = (region: string) => {
-    if (!region) {
+    if (!region || region === "all") {
       setFilteredDoctors(mockDoctors);
     } else {
       setFilteredDoctors(mockDoctors.filter(doctor => doctor.region === region));
@@ -259,6 +259,10 @@ const Appointments = () => {
       // Switch to upcoming tab to show the new appointment
       document.getElementById('upcoming-tab')?.click();
       
+      toast({
+        title: "Appointment booked",
+        description: "Your appointment has been successfully booked.",
+      });
     } catch (error) {
       console.error("Error booking appointment:", error);
       toast({
@@ -364,7 +368,7 @@ const Appointments = () => {
                       ))
                     ) : (
                       <div className="text-center py-8 text-medical-neutral-dark">
-                        <p>No doctors found in {selectedRegion || "this region"}.</p>
+                        <p>No doctors found in {selectedRegion === "all" ? "any region" : selectedRegion}.</p>
                         <Button 
                           variant="outline" 
                           className="mt-4"
