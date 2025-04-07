@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, MapPin, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { useUserAppointments, Appointment } from "@/services/userDataService";
+import { useUserProfile } from "@/services/userDataService";
 
 const formatDateForDisplay = (dateStr: string) => {
   try {
@@ -162,6 +163,7 @@ const Appointments = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addAppointment } = useUserAppointments();
+  const { profile, loading: profileLoading } = useUserProfile();
   
   const fromHealthCheck = location.state?.fromHealthCheck || false;
   const symptoms = location.state?.symptoms || [];
@@ -169,7 +171,7 @@ const Appointments = () => {
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedRegion, setSelectedRegion] = useState<string>("");
-  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>(mockDoctors);
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [reason, setReason] = useState<string>(
@@ -179,6 +181,16 @@ const Appointments = () => {
   );
   
   const [step, setStep] = useState(1);
+
+  // Set user's region as the default selected region when profile is loaded
+  useEffect(() => {
+    if (profile?.region) {
+      setSelectedRegion(profile.region);
+      filterDoctorsByRegion(profile.region);
+    } else {
+      setFilteredDoctors(mockDoctors);
+    }
+  }, [profile]);
   
   const filterDoctorsByRegion = (region: string) => {
     if (!region) {
@@ -283,7 +295,7 @@ const Appointments = () => {
                     <label className="block text-sm font-medium mb-2">Filter by region:</label>
                     <Select value={selectedRegion} onValueChange={handleRegionChange}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All regions" />
+                        <SelectValue placeholder={profileLoading ? "Loading your region..." : "Select region"} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">All regions</SelectItem>
@@ -294,58 +306,72 @@ const Appointments = () => {
                         <SelectItem value="Central">Central</SelectItem>
                       </SelectContent>
                     </Select>
+                    {profile?.region && (
+                      <p className="mt-1 text-sm text-medical-blue">Showing doctors in your region: {profile.region}</p>
+                    )}
                   </div>
                   
                   <div className="grid gap-4">
-                    {filteredDoctors.map((doctor) => (
-                      <Card key={doctor.id} className="overflow-hidden card-hover">
-                        <CardContent className="p-0">
-                          <div className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="font-semibold">{doctor.name}</h3>
-                                <p className="text-sm text-medical-neutral-dark">{doctor.specialization}</p>
+                    {profileLoading ? (
+                      <div className="text-center py-8">
+                        <p>Loading doctors in your region...</p>
+                      </div>
+                    ) : filteredDoctors.length > 0 ? (
+                      filteredDoctors.map((doctor) => (
+                        <Card key={doctor.id} className="overflow-hidden card-hover">
+                          <CardContent className="p-0">
+                            <div className="p-4">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="font-semibold">{doctor.name}</h3>
+                                  <p className="text-sm text-medical-neutral-dark">{doctor.specialization}</p>
+                                </div>
+                                <div className="flex items-center">
+                                  <Star className="h-4 w-4 text-yellow-400 mr-1" fill="currentColor" />
+                                  <span className="text-sm font-medium">{doctor.rating}</span>
+                                </div>
                               </div>
-                              <div className="flex items-center">
-                                <Star className="h-4 w-4 text-yellow-400 mr-1" fill="currentColor" />
-                                <span className="text-sm font-medium">{doctor.rating}</span>
+                              
+                              <div className="mt-3 flex items-center text-sm text-medical-neutral-dark">
+                                <MapPin className="h-4 w-4 mr-1" />
+                                <span>{doctor.hospital}, {doctor.region}</span>
+                              </div>
+                              
+                              <div className="mt-4 flex flex-wrap gap-1">
+                                {doctor.availability.slice(0, 3).map((day, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {day.day.slice(0, 3)}
+                                  </Badge>
+                                ))}
+                                {doctor.availability.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{doctor.availability.length - 3} more
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                             
-                            <div className="mt-3 flex items-center text-sm text-medical-neutral-dark">
-                              <MapPin className="h-4 w-4 mr-1" />
-                              <span>{doctor.hospital}, {doctor.region}</span>
+                            <div className="border-t p-3 bg-gray-50">
+                              <Button 
+                                onClick={() => handleDoctorSelect(doctor)}
+                                className="w-full"
+                              >
+                                Select
+                              </Button>
                             </div>
-                            
-                            <div className="mt-4 flex flex-wrap gap-1">
-                              {doctor.availability.slice(0, 3).map((day, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {day.day.slice(0, 3)}
-                                </Badge>
-                              ))}
-                              {doctor.availability.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{doctor.availability.length - 3} more
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="border-t p-3 bg-gray-50">
-                            <Button 
-                              onClick={() => handleDoctorSelect(doctor)}
-                              className="w-full"
-                            >
-                              Select
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                    
-                    {filteredDoctors.length === 0 && (
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
                       <div className="text-center py-8 text-medical-neutral-dark">
-                        <p>No doctors found in this region.</p>
+                        <p>No doctors found in {selectedRegion || "this region"}.</p>
+                        <Button 
+                          variant="outline" 
+                          className="mt-4"
+                          onClick={() => setSelectedRegion("")}
+                        >
+                          View All Doctors
+                        </Button>
                       </div>
                     )}
                   </div>
