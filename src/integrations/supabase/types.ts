@@ -190,36 +190,54 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          allergies: string | null
           created_at: string
           date_of_birth: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
           first_name: string | null
           gender: string | null
           id: string
           last_name: string | null
+          medical_history: string | null
+          medications: string | null
           phone: string | null
           region: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
+          allergies?: string | null
           created_at?: string
           date_of_birth?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           first_name?: string | null
           gender?: string | null
           id: string
           last_name?: string | null
+          medical_history?: string | null
+          medications?: string | null
           phone?: string | null
           region?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
+          allergies?: string | null
           created_at?: string
           date_of_birth?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           first_name?: string | null
           gender?: string | null
           id?: string
           last_name?: string | null
+          medical_history?: string | null
+          medications?: string | null
           phone?: string | null
           region?: string | null
           updated_at?: string

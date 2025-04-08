@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -121,6 +122,9 @@ export const useUserProfile = () => {
           return;
         }
 
+        // Ensure profile exists before fetching
+        await ensureProfileExists(user.id);
+
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -131,6 +135,7 @@ export const useUserProfile = () => {
           throw error;
         }
 
+        console.log("Fetched profile data:", data);
         setProfile(data);
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -156,10 +161,13 @@ export const useUserProfile = () => {
         throw new Error('User not authenticated');
       }
 
+      // Ensure profile exists before updating
+      await ensureProfileExists(user.id);
+
       // Prepare the profile data with timestamps
       const profileData = {
-        id: user.id, // Important: set the id to the user's id
         ...updatedProfile,
+        id: user.id, // Important: set the id to the user's id
         updated_at: new Date().toISOString()
       };
 
@@ -179,6 +187,7 @@ export const useUserProfile = () => {
         throw new Error(`Failed to update profile: ${error.message}`);
       }
       
+      console.log('Profile updated successfully:', data);
       setProfile(data);
       toast({
         title: "Success",

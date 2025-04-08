@@ -31,6 +31,10 @@ const Profile = () => {
     emergency_contact_phone: ""
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    password: "",
+    confirmPassword: ""
+  });
   
   useEffect(() => {
     if (profile) {
@@ -59,16 +63,35 @@ const Profile = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordForm(prev => ({ ...prev, [name]: value }));
+  };
   
   const handleSaveProfile = async () => {
     try {
       setIsSaving(true);
       console.log("Saving profile with data:", formData);
       await updateProfile(formData);
-      // Toast is now handled in the updateProfile function
+      
+      // Handle password change if provided
+      if (passwordForm.password && passwordForm.password === passwordForm.confirmPassword) {
+        // Password update logic would go here
+        // Not implementing actual password change as it requires additional Supabase auth
+        toast({
+          title: "Password Change Not Implemented",
+          description: "Password change functionality is not implemented in this demo"
+        });
+      } else if (passwordForm.password) {
+        toast({
+          title: "Password Mismatch",
+          description: "Passwords do not match",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error("Error saving profile:", error);
-      // Toast is now handled in the updateProfile function
     } finally {
       setIsSaving(false);
     }
@@ -184,16 +207,22 @@ const Profile = () => {
                 <Label htmlFor="password">Change Password</Label>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   placeholder="Enter new password"
+                  value={passwordForm.password}
+                  onChange={handlePasswordChange}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
                 <Input
-                  id="confirm-password"
+                  id="confirmPassword"
+                  name="confirmPassword"
                   type="password"
                   placeholder="Confirm new password"
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordChange}
                 />
               </div>
             </CardContent>
@@ -301,7 +330,7 @@ const Profile = () => {
               </div>
               
               <div className="mt-4 pt-4 border-t">
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" disabled>
                   + Add Another Emergency Contact
                 </Button>
               </div>
