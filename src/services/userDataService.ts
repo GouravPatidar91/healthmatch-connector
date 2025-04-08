@@ -65,16 +65,20 @@ export interface Profile {
 const ensureProfileExists = async (userId: string): Promise<void> => {
   try {
     // Check if profile exists
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile, error: checkError } = await supabase
       .from('profiles')
       .select('id')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
+    
+    if (checkError) {
+      console.error('Error checking if profile exists:', checkError);
+      throw checkError;
+    }
     
     // If profile doesn't exist, create it
     if (!existingProfile) {
-      // Create a basic profile with just the ID
-      await supabase
+      const { error: insertError } = await supabase
         .from('profiles')
         .insert({
           id: userId,
@@ -82,11 +86,16 @@ const ensureProfileExists = async (userId: string): Promise<void> => {
           created_at: new Date().toISOString()
         });
       
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+        throw insertError;
+      }
+      
       console.log('Created profile for user:', userId);
     }
   } catch (error) {
     console.error('Error checking/creating profile:', error);
-    // Don't throw here - we want to continue even if this fails
+    throw error; // Propagate the error so we know there was a problem
   }
 };
 
@@ -241,14 +250,19 @@ export const useUserAppointments = () => {
         throw new Error('User not authenticated');
       }
 
-      // Ensure the user has a profile before creating an appointment
+      // First ensure the user has a profile before creating an appointment
       await ensureProfileExists(user.id);
 
+      // Then create the appointment with the user_id reference
       const appointmentWithUserId = {
         ...newAppointment,
         user_id: user.id,
-        status: validateAppointmentStatus(newAppointment.status || 'pending')
+        status: validateAppointmentStatus(newAppointment.status || 'pending'),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
+
+      console.log('Creating appointment with data:', appointmentWithUserId);
 
       const { data, error } = await supabase
         .from('appointments')
@@ -257,6 +271,7 @@ export const useUserAppointments = () => {
         .single();
 
       if (error) {
+        console.error('Failed to insert appointment:', error);
         throw error;
       }
 
@@ -271,7 +286,7 @@ export const useUserAppointments = () => {
       console.error('Error adding appointment:', err);
       toast({
         title: "Error",
-        description: "Failed to book appointment",
+        description: "Failed to book appointment. Please try again.",
         variant: "destructive"
       });
       throw err;
