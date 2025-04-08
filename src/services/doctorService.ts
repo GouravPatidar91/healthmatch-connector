@@ -1,13 +1,14 @@
 
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor } from "@/types";
 
 export const useDoctors = () => {
-  const [doctors, setDoctors] = React.useState<Doctor[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const fetchDoctors = React.useCallback(async () => {
+  const fetchDoctors = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -24,14 +25,16 @@ export const useDoctors = () => {
         hospital: doctor.hospital,
         region: doctor.region,
         address: doctor.address,
-        availability: doctor.availability || [
+        // Add default availability since it's not in the database
+        availability: [
           { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
           { day: 'Tuesday', slots: ['13:00', '14:00', '15:00'] },
           { day: 'Wednesday', slots: ['09:00', '10:00', '11:00'] },
           { day: 'Thursday', slots: ['13:00', '14:00', '15:00'] },
           { day: 'Friday', slots: ['09:00', '10:00', '11:00'] }
         ],
-        rating: doctor.rating || 4.5
+        // Add default rating since it's not in the database
+        rating: 4.5
       }));
       
       setDoctors(formattedDoctors);
@@ -43,7 +46,7 @@ export const useDoctors = () => {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchDoctors();
   }, [fetchDoctors]);
 
