@@ -23,16 +23,14 @@ const Profile = () => {
     phone: "",
     address: "",
     region: "",
+    medical_history: "",
+    allergies: "",
+    medications: "",
+    emergency_contact_name: "",
+    emergency_contact_relationship: "",
+    emergency_contact_phone: ""
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [medicalHistory, setMedicalHistory] = useState("");
-  const [allergies, setAllergies] = useState("");
-  const [medications, setMedications] = useState("");
-  const [emergencyContact, setEmergencyContact] = useState({
-    name: "",
-    relationship: "",
-    phone: ""
-  });
   
   useEffect(() => {
     if (profile) {
@@ -45,6 +43,12 @@ const Profile = () => {
         phone: profile.phone || "",
         address: profile.address || "",
         region: profile.region || "",
+        medical_history: profile.medical_history || "",
+        allergies: profile.allergies || "",
+        medications: profile.medications || "",
+        emergency_contact_name: profile.emergency_contact_name || "",
+        emergency_contact_relationship: profile.emergency_contact_relationship || "",
+        emergency_contact_phone: profile.emergency_contact_phone || ""
       });
     } else {
       console.log("No profile data available");
@@ -54,14 +58,6 @@ const Profile = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleEmergencyContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setEmergencyContact(prev => ({
-      ...prev,
-      [name]: value
-    }));
   };
   
   const handleSaveProfile = async () => {
@@ -217,13 +213,13 @@ const Profile = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="medical-history">Medical History</Label>
+                <Label htmlFor="medical_history">Medical History</Label>
                 <Textarea
-                  id="medical-history"
-                  name="medicalHistory"
+                  id="medical_history"
+                  name="medical_history"
                   placeholder="List any past surgeries, hospitalizations, or chronic conditions..."
-                  value={medicalHistory}
-                  onChange={e => setMedicalHistory(e.target.value)}
+                  value={formData.medical_history}
+                  onChange={handleChange}
                   rows={4}
                 />
               </div>
@@ -234,8 +230,8 @@ const Profile = () => {
                   id="allergies"
                   name="allergies"
                   placeholder="List any allergies to medications, foods, or other substances..."
-                  value={allergies}
-                  onChange={e => setAllergies(e.target.value)}
+                  value={formData.allergies}
+                  onChange={handleChange}
                   rows={3}
                 />
               </div>
@@ -246,8 +242,8 @@ const Profile = () => {
                   id="medications"
                   name="medications"
                   placeholder="List any medications you're currently taking..."
-                  value={medications}
-                  onChange={e => setMedications(e.target.value)}
+                  value={formData.medications}
+                  onChange={handleChange}
                   rows={3}
                 />
               </div>
@@ -276,30 +272,30 @@ const Profile = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="emergency-name">Contact Name</Label>
+                  <Label htmlFor="emergency_contact_name">Contact Name</Label>
                   <Input
-                    id="emergency-name"
-                    name="name"
-                    value={emergencyContact.name}
-                    onChange={handleEmergencyContactChange}
+                    id="emergency_contact_name"
+                    name="emergency_contact_name"
+                    value={formData.emergency_contact_name}
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emergency-relationship">Relationship</Label>
+                  <Label htmlFor="emergency_contact_relationship">Relationship</Label>
                   <Input
-                    id="emergency-relationship"
-                    name="relationship"
-                    value={emergencyContact.relationship}
-                    onChange={handleEmergencyContactChange}
+                    id="emergency_contact_relationship"
+                    name="emergency_contact_relationship"
+                    value={formData.emergency_contact_relationship}
+                    onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emergency-phone">Phone Number</Label>
+                  <Label htmlFor="emergency_contact_phone">Phone Number</Label>
                   <Input
-                    id="emergency-phone"
-                    name="phone"
-                    value={emergencyContact.phone}
-                    onChange={handleEmergencyContactChange}
+                    id="emergency_contact_phone"
+                    name="emergency_contact_phone"
+                    value={formData.emergency_contact_phone}
+                    onChange={handleChange}
                   />
                 </div>
               </div>

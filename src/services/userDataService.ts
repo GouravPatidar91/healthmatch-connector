@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +56,12 @@ export interface Profile {
   phone?: string;
   address?: string;
   region?: string;
+  medical_history?: string;
+  allergies?: string;
+  medications?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relationship?: string;
+  emergency_contact_phone?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -158,9 +163,7 @@ export const useUserProfile = () => {
         updated_at: new Date().toISOString()
       };
 
-      // Instead of checking if profile exists, use upsert which will
-      // handle both insert and update cases
-      console.log('Upserting profile for user:', user.id);
+      console.log('Updating profile with data:', profileData);
       
       const { data, error } = await supabase
         .from('profiles')
