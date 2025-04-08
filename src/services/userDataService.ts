@@ -464,12 +464,13 @@ export const useUserStats = () => {
 
         if (appointmentsError) throw appointmentsError;
 
-        const today = new Date().toISOString().split('T')[0];
+        // Use the current date and time for more accurate filtering
+        const now = new Date().toISOString();
         const { count: upcomingCount, error: upcomingError } = await supabase
           .from('appointments')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .gte('date', today)
+          .gte('date', now.split('T')[0])  // Check date is greater than or equal to today
           .not('status', 'eq', 'cancelled');
 
         if (upcomingError) throw upcomingError;

@@ -34,13 +34,21 @@ const AppointmentsList = () => {
     return <div className="p-4 text-center">Loading your appointments...</div>;
   }
   
-  const upcomingAppointments = appointments.filter(
-    apt => new Date(`${apt.date}T${apt.time}`) >= new Date() && apt.status !== 'cancelled'
-  );
+  const now = new Date();
   
-  const pastAppointments = appointments.filter(
-    apt => new Date(`${apt.date}T${apt.time}`) < new Date() || apt.status === 'cancelled'
-  );
+  const upcomingAppointments = appointments.filter(apt => {
+    if (apt.status === 'cancelled') return false;
+    
+    const aptDateTime = new Date(`${apt.date}T${apt.time}`);
+    return aptDateTime >= now;
+  });
+  
+  const pastAppointments = appointments.filter(apt => {
+    if (apt.status === 'cancelled') return true;
+    
+    const aptDateTime = new Date(`${apt.date}T${apt.time}`);
+    return aptDateTime < now;
+  });
   
   return (
     <>

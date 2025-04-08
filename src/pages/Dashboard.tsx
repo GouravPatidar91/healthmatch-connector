@@ -18,12 +18,15 @@ const Dashboard = () => {
                    user?.email?.split('@')[0] || 
                    "User";
   
-  // Find the most recent upcoming appointment
+  // Find the most recent upcoming appointment using current date and time
+  const now = new Date();
+  
   const upcomingAppointment = !appointmentsLoading && appointments.length > 0
-    ? appointments.find(apt => 
-        new Date(`${apt.date}T${apt.time}`) >= new Date() && 
-        apt.status !== 'cancelled'
-      )
+    ? appointments.find(apt => {
+        if (apt.status === 'cancelled') return false;
+        const aptDateTime = new Date(`${apt.date}T${apt.time}`);
+        return aptDateTime >= now;
+      })
     : null;
 
   const recentAppointment = upcomingAppointment || {
