@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +60,35 @@ export interface Profile {
   created_at?: string;
   updated_at?: string;
 }
+
+// Helper function to ensure profile exists
+const ensureProfileExists = async (userId: string): Promise<void> => {
+  try {
+    // Check if profile exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
+    
+    // If profile doesn't exist, create it
+    if (!existingProfile) {
+      // Create a basic profile with just the ID
+      await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        });
+      
+      console.log('Created profile for user:', userId);
+    }
+  } catch (error) {
+    console.error('Error checking/creating profile:', error);
+    // Don't throw here - we want to continue even if this fails
+  }
+};
 
 // Custom hook to fetch user profile
 export const useUserProfile = () => {
@@ -210,6 +240,9 @@ export const useUserAppointments = () => {
       if (!user) {
         throw new Error('User not authenticated');
       }
+
+      // Ensure the user has a profile before creating an appointment
+      await ensureProfileExists(user.id);
 
       const appointmentWithUserId = {
         ...newAppointment,
