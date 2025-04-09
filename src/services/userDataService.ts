@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -67,9 +66,20 @@ export interface Profile {
   updated_at?: string;
 }
 
+// Helper function to log detailed error information
+const logError = (context: string, error: any) => {
+  console.error(`Error in ${context}:`, error);
+  if (error.message) console.error(`Message: ${error.message}`);
+  if (error.details) console.error(`Details: ${error.details}`);
+  if (error.hint) console.error(`Hint: ${error.hint}`);
+  if (error.code) console.error(`Code: ${error.code}`);
+};
+
 // Helper function to ensure profile exists
 const ensureProfileExists = async (userId: string): Promise<void> => {
   try {
+    console.log('Checking if profile exists for user ID:', userId);
+    
     // Check if profile exists
     const { data: existingProfile, error: checkError } = await supabase
       .from('profiles')
@@ -78,29 +88,33 @@ const ensureProfileExists = async (userId: string): Promise<void> => {
       .maybeSingle();
     
     if (checkError) {
-      console.error('Error checking if profile exists:', checkError);
+      logError('checking if profile exists', checkError);
       throw checkError;
     }
     
     // If profile doesn't exist, create it
     if (!existingProfile) {
+      console.log('Profile does not exist, creating new profile');
+      
       const { error: insertError } = await supabase
         .from('profiles')
-        .insert({
+        .insert([{
           id: userId,
           updated_at: new Date().toISOString(),
           created_at: new Date().toISOString()
-        });
+        }]);
       
       if (insertError) {
-        console.error('Error creating profile:', insertError);
+        logError('creating profile', insertError);
         throw insertError;
       }
       
       console.log('Created profile for user:', userId);
+    } else {
+      console.log('Profile already exists for user:', userId);
     }
   } catch (error) {
-    console.error('Error checking/creating profile:', error);
+    logError('checking/creating profile', error);
     throw error; // Propagate the error so we know there was a problem
   }
 };
@@ -115,12 +129,20 @@ export const useUserProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        console.log('Fetching user session...');
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          throw new Error(`Auth error: ${authError.message}`);
+        }
         
         if (!user) {
+          console.log('No authenticated user found');
           setLoading(false);
           return;
         }
+
+        console.log('User authenticated:', user.id);
 
         // Ensure profile exists before fetching
         await ensureProfileExists(user.id);
@@ -132,17 +154,18 @@ export const useUserProfile = () => {
           .maybeSingle();
 
         if (error) {
+          logError('fetching profile', error);
           throw error;
         }
 
         console.log("Fetched profile data:", data);
         setProfile(data);
       } catch (err) {
-        console.error('Error fetching profile:', err);
+        logError('fetching profile', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch profile'));
         toast({
           title: "Error",
-          description: "Failed to fetch your profile data",
+          description: "Failed to fetch your profile data. Please try again later.",
           variant: "destructive"
         });
       } finally {
@@ -155,11 +178,18 @@ export const useUserProfile = () => {
 
   const updateProfile = async (updatedProfile: Partial<Profile>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Getting authenticated user...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        throw new Error(`Auth error: ${authError.message}`);
+      }
       
       if (!user) {
         throw new Error('User not authenticated');
       }
+
+      console.log('User authenticated, updating profile for:', user.id);
 
       // Ensure profile exists before updating
       await ensureProfileExists(user.id);
@@ -175,15 +205,13 @@ export const useUserProfile = () => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .upsert(profileData, { 
-          onConflict: 'id',
-          ignoreDuplicates: false
-        })
+        .update(profileData)
+        .eq('id', user.id)
         .select()
         .single();
 
       if (error) {
-        console.error('Error upserting profile:', error);
+        logError('updating profile', error);
         throw new Error(`Failed to update profile: ${error.message}`);
       }
       
@@ -196,7 +224,7 @@ export const useUserProfile = () => {
       
       return data;
     } catch (err) {
-      console.error('Error updating profile:', err);
+      logError('updating profile', err);
       toast({
         title: "Error",
         description: err instanceof Error ? err.message : "Failed to update profile",
@@ -219,12 +247,20 @@ export const useUserAppointments = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        console.log('Fetching user session for appointments...');
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          throw new Error(`Auth error: ${authError.message}`);
+        }
         
         if (!user) {
+          console.log('No authenticated user found for appointments');
           setLoading(false);
           return;
         }
+
+        console.log('User authenticated, fetching appointments for:', user.id);
 
         const { data, error } = await supabase
           .from('appointments')
@@ -233,17 +269,19 @@ export const useUserAppointments = () => {
           .order('date', { ascending: true });
 
         if (error) {
+          logError('fetching appointments', error);
           throw error;
         }
 
+        console.log('Appointments data fetched:', data);
         const typedAppointments: Appointment[] = (data || []).map(mapDbRowToAppointment);
         setAppointments(typedAppointments);
       } catch (err) {
-        console.error('Error fetching appointments:', err);
+        logError('fetching appointments', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch appointments'));
         toast({
           title: "Error",
-          description: "Failed to fetch your appointments",
+          description: "Failed to fetch your appointments. Please try again later.",
           variant: "destructive"
         });
       } finally {
@@ -256,11 +294,18 @@ export const useUserAppointments = () => {
 
   const addAppointment = async (newAppointment: Omit<Appointment, 'user_id'>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Getting authenticated user for adding appointment...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        throw new Error(`Auth error: ${authError.message}`);
+      }
       
       if (!user) {
         throw new Error('User not authenticated');
       }
+
+      console.log('User authenticated, adding appointment for:', user.id);
 
       // First ensure the user has a profile before creating an appointment
       await ensureProfileExists(user.id);
@@ -283,10 +328,11 @@ export const useUserAppointments = () => {
         .single();
 
       if (error) {
-        console.error('Failed to insert appointment:', error);
+        logError('inserting appointment', error);
         throw error;
       }
 
+      console.log('Appointment created successfully:', data);
       setAppointments(prev => [...prev, mapDbRowToAppointment(data)]);
       toast({
         title: "Success",
@@ -295,7 +341,7 @@ export const useUserAppointments = () => {
       
       return mapDbRowToAppointment(data);
     } catch (err) {
-      console.error('Error adding appointment:', err);
+      logError('adding appointment', err);
       toast({
         title: "Error",
         description: "Failed to book appointment. Please try again.",
