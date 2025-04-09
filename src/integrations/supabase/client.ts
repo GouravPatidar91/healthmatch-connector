@@ -13,5 +13,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     persistSession: true, // Store the session in localStorage for persistence
     autoRefreshToken: true, // Automatically refresh the token when it's about to expire
+    detectSessionInUrl: true, // Detect if there's a session in the URL
+    storageKey: 'supabase-auth' // Key to store the session in localStorage
   }
 });

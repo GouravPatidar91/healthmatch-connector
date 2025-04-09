@@ -75,50 +75,6 @@ const logError = (context: string, error: any) => {
   if (error.code) console.error(`Code: ${error.code}`);
 };
 
-// Helper function to ensure profile exists
-const ensureProfileExists = async (userId: string): Promise<void> => {
-  try {
-    console.log('Checking if profile exists for user ID:', userId);
-    
-    // Check if profile exists
-    const { data: existingProfile, error: checkError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
-    
-    if (checkError) {
-      logError('checking if profile exists', checkError);
-      throw checkError;
-    }
-    
-    // If profile doesn't exist, create it
-    if (!existingProfile) {
-      console.log('Profile does not exist, creating new profile');
-      
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: userId,
-          updated_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        }]);
-      
-      if (insertError) {
-        logError('creating profile', insertError);
-        throw insertError;
-      }
-      
-      console.log('Created profile for user:', userId);
-    } else {
-      console.log('Profile already exists for user:', userId);
-    }
-  } catch (error) {
-    logError('checking/creating profile', error);
-    throw error; // Propagate the error so we know there was a problem
-  }
-};
-
 // Custom hook to fetch user profile
 export const useUserProfile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -143,9 +99,6 @@ export const useUserProfile = () => {
         }
 
         console.log('User authenticated:', user.id);
-
-        // Ensure profile exists before fetching
-        await ensureProfileExists(user.id);
 
         const { data, error } = await supabase
           .from('profiles')
@@ -191,38 +144,60 @@ export const useUserProfile = () => {
 
       console.log('User authenticated, updating profile for:', user.id);
 
-      // Ensure profile exists before updating
-      await ensureProfileExists(user.id);
+      // First, check if the profile already exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        logError('checking if profile exists', checkError);
+        throw checkError;
+      }
 
       // Prepare the profile data with timestamps
       const profileData = {
         ...updatedProfile,
-        id: user.id, // Important: set the id to the user's id
+        id: user.id,
         updated_at: new Date().toISOString()
       };
 
       console.log('Updating profile with data:', profileData);
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(profileData)
-        .eq('id', user.id)
-        .select()
-        .single();
+      let result;
+      
+      if (!existingProfile) {
+        // Create a new profile if it doesn't exist
+        profileData.created_at = new Date().toISOString();
+        result = await supabase
+          .from('profiles')
+          .insert([profileData])
+          .select()
+          .single();
+      } else {
+        // Update the existing profile
+        result = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('id', user.id)
+          .select()
+          .single();
+      }
 
-      if (error) {
-        logError('updating profile', error);
-        throw new Error(`Failed to update profile: ${error.message}`);
+      if (result.error) {
+        logError('updating profile', result.error);
+        throw new Error(`Failed to update profile: ${result.error.message}`);
       }
       
-      console.log('Profile updated successfully:', data);
-      setProfile(data);
+      console.log('Profile updated successfully:', result.data);
+      setProfile(result.data);
       toast({
         title: "Success",
         description: "Profile updated successfully"
       });
       
-      return data;
+      return result.data;
     } catch (err) {
       logError('updating profile', err);
       toast({
@@ -307,8 +282,33 @@ export const useUserAppointments = () => {
 
       console.log('User authenticated, adding appointment for:', user.id);
 
-      // First ensure the user has a profile before creating an appointment
-      await ensureProfileExists(user.id);
+      // First check if the profile already exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        logError('checking if profile exists', checkError);
+        throw checkError;
+      }
+
+      // If profile doesn't exist, create it
+      if (!existingProfile) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: user.id,
+            updated_at: new Date().toISOString(),
+            created_at: new Date().toISOString()
+          }]);
+
+        if (insertError) {
+          logError('creating profile', insertError);
+          throw insertError;
+        }
+      }
 
       // Then create the appointment with the user_id reference
       const appointmentWithUserId = {
