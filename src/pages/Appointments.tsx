@@ -14,7 +14,7 @@ import { Star, MapPin, Calendar as CalendarIcon, Clock, Compass } from "lucide-r
 import { useUserAppointments, Appointment } from "@/services/userDataService";
 import { useUserProfile } from "@/services/userDataService";
 import { useDoctors } from "@/services/doctorService";
-import { getUserRegion } from "@/utils/geolocation";
+import { getUserCity, getWorldCities } from "@/utils/geolocation";
 
 const formatDateForDisplay = (dateStr: string) => {
   try {
@@ -179,7 +179,7 @@ const Appointments = () => {
   const possibleConditions = location.state?.possibleConditions || [];
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const [selectedCity, setSelectedCity] = useState<string>("all");
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -190,13 +190,14 @@ const Appointments = () => {
   );
   const [locationPermissionAsked, setLocationPermissionAsked] = useState<boolean>(false);
   const [locationDetectionInProgress, setLocationDetectionInProgress] = useState<boolean>(false);
+  const [cities] = useState<string[]>(getWorldCities());
   
   const [step, setStep] = useState(1);
 
   useEffect(() => {
     if (profile?.region) {
-      setSelectedRegion(profile.region);
-      filterDoctorsByRegion(profile.region);
+      setSelectedCity(profile.region);
+      filterDoctorsByCity(profile.region);
     } else {
       if (!locationPermissionAsked && !locationDetectionInProgress) {
         detectUserLocation();
@@ -211,15 +212,15 @@ const Appointments = () => {
     setLocationPermissionAsked(true);
     
     try {
-      const userRegion = await getUserRegion();
+      const userCity = await getUserCity();
       
-      if (userRegion) {
-        setSelectedRegion(userRegion);
-        filterDoctorsByRegion(userRegion);
+      if (userCity) {
+        setSelectedCity(userCity);
+        filterDoctorsByCity(userCity);
         
         toast({
           title: "Location detected",
-          description: `We've found doctors near you in the ${userRegion} region.`,
+          description: `We've found doctors near you in ${userCity}.`,
         });
       } else {
         setFilteredDoctors(doctors);
@@ -228,7 +229,7 @@ const Appointments = () => {
       console.error("Error detecting location:", error);
       toast({
         title: "Location detection failed",
-        description: "We couldn't detect your location. You can select a region manually.",
+        description: "We couldn't detect your location. You can select a city manually.",
         variant: "destructive"
       });
       setFilteredDoctors(doctors);
@@ -237,17 +238,17 @@ const Appointments = () => {
     }
   };
   
-  const filterDoctorsByRegion = (region: string) => {
-    if (!region || region === "all") {
+  const filterDoctorsByCity = (city: string) => {
+    if (!city || city === "all") {
       setFilteredDoctors(doctors);
     } else {
-      setFilteredDoctors(doctors.filter(doctor => doctor.region === region));
+      setFilteredDoctors(doctors.filter(doctor => doctor.region === city));
     }
   };
   
-  const handleRegionChange = (region: string) => {
-    setSelectedRegion(region);
-    filterDoctorsByRegion(region);
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
+    filterDoctorsByCity(city);
   };
   
   const handleDoctorSelect = (doctor: Doctor) => {
@@ -330,7 +331,7 @@ const Appointments = () => {
       } else {
         toast({
           title: "Location detection failed",
-          description: "We couldn't access your location. Please allow location access or select a region manually.",
+          description: "We couldn't access your location. Please allow location access or select a city manually.",
           variant: "destructive"
         });
       }
@@ -370,22 +371,22 @@ const Appointments = () => {
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row gap-4 items-end">
                     <div className="flex-grow">
-                      <label className="block text-sm font-medium mb-2">Filter by region:</label>
-                      <Select value={selectedRegion} onValueChange={handleRegionChange}>
+                      <label className="block text-sm font-medium mb-2">Filter by city:</label>
+                      <Select value={selectedCity} onValueChange={handleCityChange}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder={profileLoading ? "Loading your region..." : "Select region"} />
+                          <SelectValue placeholder={profileLoading ? "Loading your city..." : "Select city"} />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All regions</SelectItem>
-                          <SelectItem value="North">North</SelectItem>
-                          <SelectItem value="South">South</SelectItem>
-                          <SelectItem value="East">East</SelectItem>
-                          <SelectItem value="West">West</SelectItem>
-                          <SelectItem value="Central">Central</SelectItem>
+                        <SelectContent className="max-h-80">
+                          <SelectItem value="all">All cities</SelectItem>
+                          {cities.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       {profile?.region && (
-                        <p className="mt-1 text-sm text-medical-blue">Your default region: {profile.region}</p>
+                        <p className="mt-1 text-sm text-medical-blue">Your default city: {profile.region}</p>
                       )}
                     </div>
                     
@@ -409,7 +410,7 @@ const Appointments = () => {
                   <div className="grid gap-4">
                     {doctorsLoading || profileLoading || locationDetectionInProgress ? (
                       <div className="text-center py-8">
-                        <p>Loading doctors in your region...</p>
+                        <p>Loading doctors in your city...</p>
                       </div>
                     ) : filteredDoctors.length > 0 ? (
                       filteredDoctors.map((doctor) => (
@@ -459,11 +460,11 @@ const Appointments = () => {
                       ))
                     ) : (
                       <div className="text-center py-8 text-medical-neutral-dark">
-                        <p>No doctors found in {selectedRegion === "all" ? "any region" : selectedRegion}.</p>
+                        <p>No doctors found in {selectedCity === "all" ? "any city" : selectedCity}.</p>
                         <Button 
                           variant="outline" 
                           className="mt-4"
-                          onClick={() => setSelectedRegion("all")}
+                          onClick={() => setSelectedCity("all")}
                         >
                           View All Doctors
                         </Button>

@@ -1,4 +1,3 @@
-
 /**
  * Get the current position of the user
  * Returns a promise that resolves to a GeolocationPosition object
@@ -45,36 +44,61 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
 };
 
 /**
- * Get nearby regions based on coordinates
- * This is a simple implementation that returns predefined regions
+ * Get nearby cities based on coordinates
+ * This is a simple implementation that returns predefined cities
  */
-export const getNearbyRegions = (latitude: number, longitude: number): string[] => {
+export const getNearbyCities = (latitude: number, longitude: number): string[] => {
   // This is a mock implementation
-  // In a real application, you might use a geospatial database or API
-  // to determine nearby regions based on coordinates
+  // In a real application, you would use a geospatial database or API
+  // to determine nearby cities based on coordinates
   
-  // For simplicity, we'll just return regions based on quadrants
-  if (latitude > 0 && longitude > 0) return ['North', 'East', 'Central'];
-  if (latitude > 0 && longitude < 0) return ['North', 'West', 'Central'];
-  if (latitude < 0 && longitude > 0) return ['South', 'East', 'Central'];
-  if (latitude < 0 && longitude < 0) return ['South', 'West', 'Central'];
+  // For simplicity, we'll just return cities based on quadrants
+  if (latitude > 0 && longitude > 0) return ['New York', 'Boston', 'Philadelphia'];
+  if (latitude > 0 && longitude < 0) return ['San Francisco', 'Los Angeles', 'Seattle'];
+  if (latitude < 0 && longitude > 0) return ['Sydney', 'Melbourne', 'Brisbane'];
+  if (latitude < 0 && longitude < 0) return ['Buenos Aires', 'Santiago', 'Lima'];
   
-  return ['Central', 'North', 'South', 'East', 'West'];
+  return ['London', 'Paris', 'Tokyo', 'Singapore', 'Dubai'];
 };
 
 /**
- * Find user's closest region
+ * Get world cities
+ * Returns a list of major world cities
  */
-export const getUserRegion = async (): Promise<string | null> => {
+export const getWorldCities = (): string[] => {
+  return [
+    'Abu Dhabi', 'Amsterdam', 'Athens', 'Auckland', 'Bangkok', 'Barcelona', 
+    'Beijing', 'Berlin', 'Boston', 'Brussels', 'Buenos Aires', 'Cairo', 'Cape Town', 
+    'Chicago', 'Copenhagen', 'Dallas', 'Delhi', 'Dubai', 'Dublin', 'Frankfurt', 
+    'Geneva', 'Hong Kong', 'Houston', 'Istanbul', 'Jakarta', 'Johannesburg', 
+    'Kuala Lumpur', 'Lagos', 'Las Vegas', 'Lisbon', 'London', 'Los Angeles', 
+    'Madrid', 'Manila', 'Melbourne', 'Mexico City', 'Miami', 'Milan', 'Moscow', 
+    'Mumbai', 'Munich', 'Nairobi', 'New York', 'Oslo', 'Paris', 'Prague', 
+    'Rio de Janeiro', 'Rome', 'San Francisco', 'Santiago', 'São Paulo', 'Seoul', 
+    'Shanghai', 'Singapore', 'Stockholm', 'Sydney', 'Taipei', 'Tel Aviv', 'Tokyo', 
+    'Toronto', 'Vancouver', 'Vienna', 'Warsaw', 'Washington D.C.', 'Zurich'
+  ];
+};
+
+/**
+ * Find user's closest city
+ */
+export const getUserCity = async (): Promise<string | null> => {
   try {
     const position = await getCurrentPosition();
     const { latitude, longitude } = position.coords;
-    const regions = getNearbyRegions(latitude, longitude);
+    const cities = getNearbyCities(latitude, longitude);
     
-    // Return the first region (closest)
-    return regions.length > 0 ? regions[0] : null;
+    // Return the first city (closest)
+    return cities.length > 0 ? cities[0] : null;
   } catch (error) {
-    console.error('Error getting user region:', error);
+    console.error('Error getting user city:', error);
     return null;
   }
 };
+
+// Keeping this for backward compatibility
+export const getNearbyRegions = getNearbyCities;
+
+// Keeping this for backward compatibility
+export const getUserRegion = getUserCity;

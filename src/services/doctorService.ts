@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor } from "@/types";
-import { getUserRegion, getNearbyRegions } from "@/utils/geolocation";
+import { getUserCity, getNearbyCities } from "@/utils/geolocation";
 import { useToast } from "@/hooks/use-toast";
 
 export const useDoctors = () => {
@@ -11,15 +11,15 @@ export const useDoctors = () => {
   const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
 
-  const fetchDoctors = useCallback(async (region?: string) => {
+  const fetchDoctors = useCallback(async (city?: string) => {
     try {
       setLoading(true);
       
       let query = supabase.from('doctors').select('*');
       
-      // Filter by region if provided
-      if (region && region !== 'all') {
-        query = query.eq('region', region);
+      // Filter by city if provided
+      if (city && city !== 'all') {
+        query = query.eq('region', city);
       }
       
       const { data, error: fetchError } = await query;
@@ -32,7 +32,7 @@ export const useDoctors = () => {
         name: doctor.name,
         specialization: doctor.specialization,
         hospital: doctor.hospital,
-        region: doctor.region,
+        region: doctor.region, // We'll keep using this field but interpret it as city
         address: doctor.address,
         // Add default availability since it's not in the database
         availability: [
@@ -72,11 +72,11 @@ export const useDoctors = () => {
     try {
       setLoading(true);
       
-      // Get user's region from geolocation
-      const userRegion = await getUserRegion();
+      // Get user's city from geolocation
+      const userCity = await getUserCity();
       
-      if (userRegion) {
-        await fetchDoctors(userRegion);
+      if (userCity) {
+        await fetchDoctors(userCity);
         return true;
       }
       
@@ -104,15 +104,15 @@ export const useDoctors = () => {
 export const findDoctorsNearLocation = async (latitude: number, longitude: number) => {
   try {
     // In a real implementation, we'd use the PostGIS extension and ST_Distance to find nearby doctors
-    // For this implementation, we'll use the regions
-    const regions = getNearbyRegions(latitude, longitude);
+    // For this implementation, we'll use the cities
+    const cities = getNearbyCities(latitude, longitude);
     
-    if (!regions.length) return [];
+    if (!cities.length) return [];
     
     const { data, error } = await supabase
       .from('doctors')
       .select('*')
-      .in('region', regions);
+      .in('region', cities);
       
     if (error) throw error;
     
