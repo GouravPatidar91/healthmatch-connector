@@ -56,6 +56,7 @@ export interface Profile {
   phone?: string;
   address?: string;
   region?: string;
+  city?: string;
   medical_history?: string;
   allergies?: string;
   medications?: string;

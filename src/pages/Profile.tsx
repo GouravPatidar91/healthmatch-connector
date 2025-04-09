@@ -9,8 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { regions } from "@/data/mockData";
 import { useUserProfile, Profile as ProfileType } from "@/services/userDataService";
+import { getWorldCities } from "@/utils/geolocation";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -22,7 +22,7 @@ const Profile = () => {
     gender: "",
     phone: "",
     address: "",
-    region: "",
+    city: "",
     medical_history: "",
     allergies: "",
     medications: "",
@@ -36,6 +36,9 @@ const Profile = () => {
     confirmPassword: ""
   });
   
+  // Get the list of world cities
+  const worldCities = getWorldCities();
+  
   useEffect(() => {
     if (profile) {
       console.log("Setting form data from profile:", profile);
@@ -46,7 +49,7 @@ const Profile = () => {
         gender: profile.gender || "",
         phone: profile.phone || "",
         address: profile.address || "",
-        region: profile.region || "",
+        city: profile.region || "", // Use region data as city initially
         medical_history: profile.medical_history || "",
         allergies: profile.allergies || "",
         medications: profile.medications || "",
@@ -73,7 +76,14 @@ const Profile = () => {
     try {
       setIsSaving(true);
       console.log("Saving profile with data:", formData);
-      await updateProfile(formData);
+      
+      // Map city back to region when saving to maintain compatibility with existing data structure
+      const dataToSave = {
+        ...formData,
+        region: formData.city
+      };
+      
+      await updateProfile(dataToSave);
       
       // Handle password change if provided
       if (passwordForm.password && passwordForm.password === passwordForm.confirmPassword) {
@@ -184,17 +194,17 @@ const Profile = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="region">Region</Label>
+                  <Label htmlFor="city">City</Label>
                   <Select 
-                    value={formData.region} 
-                    onValueChange={value => setFormData(prev => ({ ...prev, region: value }))}
+                    value={formData.city} 
+                    onValueChange={value => setFormData(prev => ({ ...prev, city: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a region" />
+                      <SelectValue placeholder="Select your city" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {regions.map(region => (
-                        <SelectItem key={region} value={region}>{region}</SelectItem>
+                    <SelectContent className="max-h-[300px]">
+                      {worldCities.map(city => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
