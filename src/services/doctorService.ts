@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor } from "@/types";
-import { getUserRegion } from "@/utils/geolocation";
+import { getUserRegion, getNearbyRegions } from "@/utils/geolocation";
 import { useToast } from "@/hooks/use-toast";
 
 export const useDoctors = () => {
