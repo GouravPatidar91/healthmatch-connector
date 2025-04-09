@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, MapPin, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { Star, MapPin, Calendar as CalendarIcon, Clock, Compass } from "lucide-react";
 import { useUserAppointments, Appointment } from "@/services/userDataService";
 import { useUserProfile } from "@/services/userDataService";
 import { useDoctors } from "@/services/doctorService";
+import { getUserRegion } from "@/utils/geolocation";
 
 const formatDateForDisplay = (dateStr: string) => {
   try {
@@ -171,7 +172,7 @@ const Appointments = () => {
   const navigate = useNavigate();
   const { addAppointment } = useUserAppointments();
   const { profile, loading: profileLoading } = useUserProfile();
-  const { doctors, loading: doctorsLoading } = useDoctors();
+  const { doctors, loading: doctorsLoading, findNearbyDoctors } = useDoctors();
   
   const fromHealthCheck = location.state?.fromHealthCheck || false;
   const symptoms = location.state?.symptoms || [];
@@ -187,6 +188,8 @@ const Appointments = () => {
       ? `Consultation regarding possible ${possibleConditions[0].name} based on symptoms: ${symptoms.join(", ")}`
       : ""
   );
+  const [locationPermissionAsked, setLocationPermissionAsked] = useState<boolean>(false);
+  const [locationDetectionInProgress, setLocationDetectionInProgress] = useState<boolean>(false);
   
   const [step, setStep] = useState(1);
 
@@ -195,9 +198,44 @@ const Appointments = () => {
       setSelectedRegion(profile.region);
       filterDoctorsByRegion(profile.region);
     } else {
-      setFilteredDoctors(doctors);
+      if (!locationPermissionAsked && !locationDetectionInProgress) {
+        detectUserLocation();
+      } else {
+        setFilteredDoctors(doctors);
+      }
     }
   }, [profile, doctors]);
+  
+  const detectUserLocation = async () => {
+    setLocationDetectionInProgress(true);
+    setLocationPermissionAsked(true);
+    
+    try {
+      const userRegion = await getUserRegion();
+      
+      if (userRegion) {
+        setSelectedRegion(userRegion);
+        filterDoctorsByRegion(userRegion);
+        
+        toast({
+          title: "Location detected",
+          description: `We've found doctors near you in the ${userRegion} region.`,
+        });
+      } else {
+        setFilteredDoctors(doctors);
+      }
+    } catch (error) {
+      console.error("Error detecting location:", error);
+      toast({
+        title: "Location detection failed",
+        description: "We couldn't detect your location. You can select a region manually.",
+        variant: "destructive"
+      });
+      setFilteredDoctors(doctors);
+    } finally {
+      setLocationDetectionInProgress(false);
+    }
+  };
   
   const filterDoctorsByRegion = (region: string) => {
     if (!region || region === "all") {
@@ -278,6 +316,36 @@ const Appointments = () => {
     }
   };
   
+  const findNearbyDoctorsHandler = async () => {
+    setLocationDetectionInProgress(true);
+    
+    try {
+      const success = await findNearbyDoctors();
+      
+      if (success) {
+        toast({
+          title: "Location detected",
+          description: "We've found doctors near your current location."
+        });
+      } else {
+        toast({
+          title: "Location detection failed",
+          description: "We couldn't access your location. Please allow location access or select a region manually.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error finding nearby doctors:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem finding nearby doctors.",
+        variant: "destructive"
+      });
+    } finally {
+      setLocationDetectionInProgress(false);
+    }
+  };
+  
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Book an Appointment</h1>
@@ -300,28 +368,46 @@ const Appointments = () => {
             <CardContent>
               {step === 1 && (
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Filter by region:</label>
-                    <Select value={selectedRegion} onValueChange={handleRegionChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={profileLoading ? "Loading your region..." : "Select region"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All regions</SelectItem>
-                        <SelectItem value="North">North</SelectItem>
-                        <SelectItem value="South">South</SelectItem>
-                        <SelectItem value="East">East</SelectItem>
-                        <SelectItem value="West">West</SelectItem>
-                        <SelectItem value="Central">Central</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {profile?.region && (
-                      <p className="mt-1 text-sm text-medical-blue">Showing doctors in your region: {profile.region}</p>
-                    )}
+                  <div className="flex flex-col md:flex-row gap-4 items-end">
+                    <div className="flex-grow">
+                      <label className="block text-sm font-medium mb-2">Filter by region:</label>
+                      <Select value={selectedRegion} onValueChange={handleRegionChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={profileLoading ? "Loading your region..." : "Select region"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All regions</SelectItem>
+                          <SelectItem value="North">North</SelectItem>
+                          <SelectItem value="South">South</SelectItem>
+                          <SelectItem value="East">East</SelectItem>
+                          <SelectItem value="West">West</SelectItem>
+                          <SelectItem value="Central">Central</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {profile?.region && (
+                        <p className="mt-1 text-sm text-medical-blue">Your default region: {profile.region}</p>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={findNearbyDoctorsHandler}
+                      disabled={locationDetectionInProgress}
+                      className="mb-0.5 whitespace-nowrap"
+                    >
+                      {locationDetectionInProgress ? (
+                        "Detecting location..."
+                      ) : (
+                        <>
+                          <Compass className="w-4 h-4 mr-2" />
+                          Find nearby doctors
+                        </>
+                      )}
+                    </Button>
                   </div>
                   
                   <div className="grid gap-4">
-                    {doctorsLoading || profileLoading ? (
+                    {doctorsLoading || profileLoading || locationDetectionInProgress ? (
                       <div className="text-center py-8">
                         <p>Loading doctors in your region...</p>
                       </div>

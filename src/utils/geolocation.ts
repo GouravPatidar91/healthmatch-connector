@@ -43,3 +43,38 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
     throw new Error('Failed to geocode address');
   }
 };
+
+/**
+ * Get nearby regions based on coordinates
+ * This is a simple implementation that returns predefined regions
+ */
+export const getNearbyRegions = (latitude: number, longitude: number): string[] => {
+  // This is a mock implementation
+  // In a real application, you might use a geospatial database or API
+  // to determine nearby regions based on coordinates
+  
+  // For simplicity, we'll just return regions based on quadrants
+  if (latitude > 0 && longitude > 0) return ['North', 'East', 'Central'];
+  if (latitude > 0 && longitude < 0) return ['North', 'West', 'Central'];
+  if (latitude < 0 && longitude > 0) return ['South', 'East', 'Central'];
+  if (latitude < 0 && longitude < 0) return ['South', 'West', 'Central'];
+  
+  return ['Central', 'North', 'South', 'East', 'West'];
+};
+
+/**
+ * Find user's closest region
+ */
+export const getUserRegion = async (): Promise<string | null> => {
+  try {
+    const position = await getCurrentPosition();
+    const { latitude, longitude } = position.coords;
+    const regions = getNearbyRegions(latitude, longitude);
+    
+    // Return the first region (closest)
+    return regions.length > 0 ? regions[0] : null;
+  } catch (error) {
+    console.error('Error getting user region:', error);
+    return null;
+  }
+};

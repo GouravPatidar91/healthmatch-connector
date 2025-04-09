@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { EmergencyCallData, createEmergencyCall, findNearbyDoctors, assignDoctorToEmergencyCall } from '@/services/emergencyService';
-import { geocodeAddress } from '@/utils/geolocation';
+import { geocodeAddress, getCurrentPosition } from '@/utils/geolocation';
 
 export function useEmergencyService() {
   const { user } = useAuth();
@@ -76,11 +76,43 @@ export function useEmergencyService() {
       setLoading(false);
     }
   };
+
+  /**
+   * Get user's current location and find nearby doctors
+   */
+  const findDoctorsNearCurrentLocation = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get current position
+      const position = await getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+      
+      // Find nearby doctors
+      const doctors = await findNearbyDoctors(latitude, longitude);
+      return doctors;
+      
+    } catch (err) {
+      console.error("Error finding doctors near current location:", err);
+      const errorMessage = err instanceof Error ? err.message : 'Could not access your location';
+      setError(errorMessage);
+      toast({
+        title: "Location error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
   
   return {
     loading,
     error,
     submitEmergencyCall,
     findDoctors,
+    findDoctorsNearCurrentLocation,
   };
 }

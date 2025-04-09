@@ -2,20 +2,29 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor } from "@/types";
+import { getUserRegion } from "@/utils/geolocation";
+import { useToast } from "@/hooks/use-toast";
 
 export const useDoctors = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { toast } = useToast();
 
-  const fetchDoctors = useCallback(async () => {
+  const fetchDoctors = useCallback(async (region?: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('doctors')
-        .select('*');
       
-      if (error) throw error;
+      let query = supabase.from('doctors').select('*');
+      
+      // Filter by region if provided
+      if (region && region !== 'all') {
+        query = query.eq('region', region);
+      }
+      
+      const { data, error: fetchError } = await query;
+      
+      if (fetchError) throw fetchError;
       
       // Transform the data to match our Doctor type
       const formattedDoctors: Doctor[] = data.map(doctor => ({
@@ -41,14 +50,75 @@ export const useDoctors = () => {
     } catch (err) {
       console.error('Error fetching doctors:', err);
       setError(err as Error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch doctors. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
+  // Initial fetch
   useEffect(() => {
     fetchDoctors();
   }, [fetchDoctors]);
 
-  return { doctors, loading, error, refetch: fetchDoctors };
+  /**
+   * Find nearby doctors based on user's geolocation
+   */
+  const findNearbyDoctors = async () => {
+    try {
+      setLoading(true);
+      
+      // Get user's region from geolocation
+      const userRegion = await getUserRegion();
+      
+      if (userRegion) {
+        await fetchDoctors(userRegion);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error finding nearby doctors:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { 
+    doctors, 
+    loading, 
+    error, 
+    refetch: fetchDoctors,
+    findNearbyDoctors 
+  };
+};
+
+/**
+ * Find doctors near a specific location
+ */
+export const findDoctorsNearLocation = async (latitude: number, longitude: number) => {
+  try {
+    // In a real implementation, we'd use the PostGIS extension and ST_Distance to find nearby doctors
+    // For this implementation, we'll use the regions
+    const regions = getNearbyRegions(latitude, longitude);
+    
+    if (!regions.length) return [];
+    
+    const { data, error } = await supabase
+      .from('doctors')
+      .select('*')
+      .in('region', regions);
+      
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error('Error finding doctors near location:', error);
+    return [];
+  }
 };
