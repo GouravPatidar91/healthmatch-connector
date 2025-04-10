@@ -179,7 +179,7 @@ export const useDoctorAppointments = () => {
       // Transform the data to match our Appointment interface
       const formattedAppointments: Appointment[] = (appointmentsData || []).map(appointment => ({
         id: appointment.id,
-        doctorId: appointment.doctor_id || "",
+        doctorId: doctorData.id,
         doctorName: appointment.doctor_name || "",
         patientName: "Patient Name", // This would come from a join with the users table in a real app
         date: appointment.date,
@@ -298,42 +298,29 @@ export const useDoctorSlots = () => {
         throw new Error('Doctor not found');
       }
       
-      // For now, return mock data since the table doesn't exist yet
-      // This will be replaced with actual database calls once the table is created
-      const mockSlots: AppointmentSlot[] = [
-        {
-          id: "1",
-          doctorId: doctorData.id,
-          date: "2025-04-15",
-          startTime: "09:00",
-          endTime: "09:30",
-          duration: 30,
-          maxPatients: 1,
-          status: 'available'
-        },
-        {
-          id: "2",
-          doctorId: doctorData.id,
-          date: "2025-04-15",
-          startTime: "10:00",
-          endTime: "10:30",
-          duration: 30,
-          maxPatients: 1,
-          status: 'booked'
-        },
-        {
-          id: "3",
-          doctorId: doctorData.id,
-          date: "2025-04-16",
-          startTime: "14:00",
-          endTime: "14:30",
-          duration: 30,
-          maxPatients: 1,
-          status: 'available'
-        }
-      ];
+      // Fetch appointment slots from the new table
+      const { data, error } = await supabase
+        .from('appointment_slots')
+        .select('*')
+        .eq('doctor_id', doctorData.id)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
       
-      setSlots(mockSlots);
+      if (error) throw error;
+      
+      // Transform the data to match our AppointmentSlot interface
+      const formattedSlots: AppointmentSlot[] = (data || []).map(slot => ({
+        id: slot.id,
+        doctorId: slot.doctor_id,
+        date: slot.date,
+        startTime: slot.start_time,
+        endTime: slot.end_time,
+        duration: slot.duration,
+        maxPatients: slot.max_patients,
+        status: slot.status as 'available' | 'booked' | 'cancelled'
+      }));
+      
+      setSlots(formattedSlots);
     } catch (err) {
       console.error('Error fetching doctor slots:', err);
       setError(err as Error);
@@ -368,16 +355,36 @@ export const useDoctorSlots = () => {
       if (doctorError) throw doctorError;
       if (!doctorData) throw new Error('Doctor not found');
       
-      // For now, just generate a mock ID and add to local state
-      // This will be replaced with actual database calls once the table is created
-      const newId = Math.random().toString(36).substring(2, 15);
+      // Insert the new slot into the database
+      const { data, error } = await supabase
+        .from('appointment_slots')
+        .insert({
+          doctor_id: doctorData.id,
+          date: slotData.date,
+          start_time: slotData.startTime,
+          end_time: slotData.endTime,
+          duration: slotData.duration,
+          max_patients: slotData.maxPatients,
+          status: slotData.status
+        })
+        .select()
+        .single();
       
+      if (error) throw error;
+      
+      // Transform the returned data to match our AppointmentSlot interface
       const newSlot: AppointmentSlot = {
-        id: newId,
-        doctorId: doctorData.id,
-        ...slotData
+        id: data.id,
+        doctorId: data.doctor_id,
+        date: data.date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        duration: data.duration,
+        maxPatients: data.max_patients,
+        status: data.status as 'available' | 'booked' | 'cancelled'
       };
       
+      // Update local state
       setSlots(prev => [...prev, newSlot]);
       
       return newSlot;
@@ -389,8 +396,14 @@ export const useDoctorSlots = () => {
   
   const deleteSlot = async (slotId: string) => {
     try {
-      // For now, just remove from local state
-      // This will be replaced with actual database calls once the table is created
+      const { error } = await supabase
+        .from('appointment_slots')
+        .delete()
+        .eq('id', slotId);
+      
+      if (error) throw error;
+      
+      // Update local state
       setSlots(prev => prev.filter(slot => slot.id !== slotId));
       
       return true;

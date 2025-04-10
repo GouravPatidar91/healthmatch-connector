@@ -16,7 +16,11 @@ const DoctorDashboard = () => {
 
   // Redirect if not logged in
   if (!user) {
-    navigate('/');
+    // We need to return JSX, not a Response object
+    // So instead of navigate('/'), we'll return null and use useEffect
+    React.useEffect(() => {
+      navigate('/');
+    }, [navigate]);
     return null;
   }
   

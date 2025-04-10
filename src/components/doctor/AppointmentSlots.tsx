@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -53,14 +52,13 @@ const AppointmentSlots = () => {
     startTime: '09:00',
     duration: 30,
     maxPatients: 1,
-    status: 'available' as 'available' | 'booked' | 'cancelled',
+    status: 'available' as const,
   });
   
   const { slots, loading, error, createSlot, deleteSlot } = useDoctorSlots();
   
   const handleCreateSlot = async () => {
     try {
-      // Calculate the end time based on start time and duration
       const [hours, minutes] = newSlot.startTime.split(':').map(Number);
       const startDateTime = new Date(selectedDate);
       startDateTime.setHours(hours, minutes, 0);
@@ -109,7 +107,6 @@ const AppointmentSlots = () => {
     }
   };
   
-  // Group slots by date for display
   const slotsByDate = slots?.reduce((acc, slot) => {
     if (!acc[slot.date]) {
       acc[slot.date] = [];
@@ -278,7 +275,6 @@ const AppointmentSlots = () => {
                                 <Select
                                   value={slot.status}
                                   onValueChange={(value: 'available' | 'booked' | 'cancelled') => {
-                                    // Handle status change
                                     console.log("Status changed:", value);
                                   }}
                                 >
