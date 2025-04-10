@@ -7,21 +7,58 @@ import AppointmentCalendar from '@/components/doctor/AppointmentCalendar';
 import AppointmentSlots from '@/components/doctor/AppointmentSlots';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { checkDoctorAccess } from '@/services/doctorService';
 
 const DoctorDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("calendar");
+  const [hasAccess, setHasAccess] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Redirect if not logged in
+  // Check if user has doctor access
   useEffect(() => {
-    if (!user) {
-      navigate('/');
-    }
-  }, [user, navigate]);
+    const checkAccess = async () => {
+      if (user) {
+        try {
+          const hasDocAccess = await checkDoctorAccess(user.id);
+          setHasAccess(hasDocAccess);
+          
+          if (!hasDocAccess) {
+            toast({
+              title: "Access Denied",
+              description: "You don't have permission to access the doctor dashboard.",
+              variant: "destructive"
+            });
+            navigate('/dashboard');
+          }
+        } catch (error) {
+          console.error("Error checking doctor access:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+        navigate('/');
+      }
+    };
+    
+    checkAccess();
+  }, [user, navigate, toast]);
   
-  if (!user) {
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user || !hasAccess) {
     return null;
   }
   

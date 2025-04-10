@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard } from "lucide-react";
+import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,30 +10,34 @@ import { supabase } from "@/integrations/supabase/client";
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDoctor, setIsDoctor] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
   
-  // Check if user is a registered doctor
+  // Check user roles
   useEffect(() => {
     if (user) {
-      // Check supabase for doctor status
-      const checkDoctorStatus = async () => {
+      // Check user roles
+      const checkUserRoles = async () => {
         const { data, error } = await supabase
-          .from('doctors')
-          .select('id')
-          .eq('user_id', user.id);
+          .from('profiles')
+          .select('is_doctor, is_admin')
+          .eq('id', user.id)
+          .single();
           
-        if (!error && data && data.length > 0) {
-          setIsDoctor(true);
+        if (!error && data) {
+          setIsDoctor(!!data.is_doctor);
+          setIsAdmin(!!data.is_admin);
         } else {
           setIsDoctor(false);
+          setIsAdmin(false);
         }
       };
       
-      checkDoctorStatus();
+      checkUserRoles();
     }
   }, [user]);
   
@@ -45,11 +50,16 @@ const MainLayout = () => {
     { name: "Settings", path: "/settings", icon: Settings },
   ];
   
-  // Add doctor-specific navigation items
+  // Add role-specific navigation items
   if (isDoctor) {
     navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
   } else {
     navigationItems.push({ name: "Doctor Registration", path: "/doctor-registration", icon: UserPlus });
+  }
+  
+  // Add admin dashboard for admins
+  if (isAdmin) {
+    navigationItems.push({ name: "Admin Dashboard", path: "/admin-dashboard", icon: Shield });
   }
   
   const handleLogout = async () => {

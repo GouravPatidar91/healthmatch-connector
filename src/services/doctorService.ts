@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor, AppointmentSlot } from "@/types";
@@ -16,6 +17,58 @@ export interface Appointment {
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   notes?: string;
 }
+
+// Check if a user has doctor access
+export const checkDoctorAccess = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('is_doctor')
+      .eq('id', userId)
+      .single();
+      
+    if (error) throw error;
+    
+    return !!data?.is_doctor;
+  } catch (error) {
+    console.error('Error checking doctor access:', error);
+    return false;
+  }
+};
+
+// Grant doctor access to a user (admin only)
+export const grantDoctorAccess = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_doctor: true })
+      .eq('id', userId);
+      
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error granting doctor access:', error);
+    return false;
+  }
+};
+
+// Revoke doctor access from a user (admin only)
+export const revokeDoctorAccess = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_doctor: false })
+      .eq('id', userId);
+      
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error revoking doctor access:', error);
+    return false;
+  }
+};
 
 export const useDoctors = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -272,6 +325,7 @@ export const useDoctorSlots = () => {
     try {
       setLoading(true);
       
+      // Sample data for demonstration
       const sampleSlots: AppointmentSlot[] = [
         {
           id: '1',
