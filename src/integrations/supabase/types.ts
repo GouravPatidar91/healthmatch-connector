@@ -247,6 +247,8 @@ export type Database = {
           first_name: string | null
           gender: string | null
           id: string
+          is_admin: boolean | null
+          is_doctor: boolean | null
           last_name: string | null
           medical_history: string | null
           medications: string | null
@@ -266,6 +268,8 @@ export type Database = {
           first_name?: string | null
           gender?: string | null
           id: string
+          is_admin?: boolean | null
+          is_doctor?: boolean | null
           last_name?: string | null
           medical_history?: string | null
           medications?: string | null
@@ -285,6 +289,8 @@ export type Database = {
           first_name?: string | null
           gender?: string | null
           id?: string
+          is_admin?: boolean | null
+          is_doctor?: boolean | null
           last_name?: string | null
           medical_history?: string | null
           medications?: string | null

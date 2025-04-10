@@ -22,16 +22,22 @@ const MainLayout = () => {
     if (user) {
       // Check user roles
       const checkUserRoles = async () => {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('is_doctor, is_admin')
-          .eq('id', user.id)
-          .single();
-          
-        if (!error && data) {
-          setIsDoctor(!!data.is_doctor);
-          setIsAdmin(!!data.is_admin);
-        } else {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('is_doctor, is_admin')
+            .eq('id', user.id)
+            .single();
+            
+          if (!error && data) {
+            setIsDoctor(!!data.is_doctor);
+            setIsAdmin(!!data.is_admin);
+          } else {
+            setIsDoctor(false);
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error("Error checking user roles:", error);
           setIsDoctor(false);
           setIsAdmin(false);
         }
