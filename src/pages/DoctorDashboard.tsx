@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,12 +15,13 @@ const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState("calendar");
 
   // Redirect if not logged in
-  if (!user) {
-    // We need to return JSX, not a Response object
-    // So instead of navigate('/'), we'll return null and use useEffect
-    React.useEffect(() => {
+  useEffect(() => {
+    if (!user) {
       navigate('/');
-    }, [navigate]);
+    }
+  }, [user, navigate]);
+  
+  if (!user) {
     return null;
   }
   
