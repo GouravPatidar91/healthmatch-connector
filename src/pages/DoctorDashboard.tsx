@@ -6,16 +6,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppointmentCalendar from '@/components/doctor/AppointmentCalendar';
 import AppointmentSlots from '@/components/doctor/AppointmentSlots';
 import { useToast } from '@/hooks/use-toast';
-import { redirect } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const DoctorDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("calendar");
 
   // Redirect if not logged in
   if (!user) {
-    return redirect('/');
+    navigate('/');
+    return null;
   }
   
   return (

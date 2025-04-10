@@ -46,11 +46,24 @@ export interface Appointment {
   id: string;
   userId: string;
   doctorId: string;
+  doctorName: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   reason: string;
-  createdAt: Date;
+  notes?: string;
+  createdAt?: Date;
+}
+
+export interface AppointmentSlot {
+  id: string;
+  doctorId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  maxPatients: number;
+  status: 'available' | 'booked' | 'cancelled';
 }
 
 export type SymptomCategory = {

@@ -53,7 +53,7 @@ const AppointmentSlots = () => {
     startTime: '09:00',
     duration: 30,
     maxPatients: 1,
-    status: 'available',
+    status: 'available' as 'available' | 'booked' | 'cancelled',
   });
   
   const { slots, loading, error, createSlot, deleteSlot } = useDoctorSlots();
@@ -277,7 +277,7 @@ const AppointmentSlots = () => {
                               <div className="flex items-center">
                                 <Select
                                   value={slot.status}
-                                  onValueChange={(value) => {
+                                  onValueChange={(value: 'available' | 'booked' | 'cancelled') => {
                                     // Handle status change
                                     console.log("Status changed:", value);
                                   }}
