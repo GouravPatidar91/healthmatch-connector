@@ -1,9 +1,32 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor } from "@/types";
-import { getUserCity, getNearbyCities } from "@/utils/geolocation";
+import { getUserCity, getNearbyCities, getWorldCities } from "@/utils/geolocation";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+
+export interface Appointment {
+  id: string;
+  patientName?: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  time: string;
+  reason?: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  notes?: string;
+}
+
+export interface AppointmentSlot {
+  id: string;
+  doctorId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  maxPatients: number;
+  status: 'available' | 'booked' | 'cancelled';
+}
 
 export const useDoctors = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -121,4 +144,279 @@ export const findDoctorsNearLocation = async (latitude: number, longitude: numbe
     console.error('Error finding doctors near location:', error);
     return [];
   }
+};
+
+export const useDoctorAppointments = () => {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const fetchDoctorAppointments = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Look up the doctor ID using the user's auth ID
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (doctorError) {
+        throw doctorError;
+      }
+      
+      if (!doctorData) {
+        throw new Error('Doctor not found');
+      }
+      
+      // Fetch appointments for this doctor
+      const { data: appointmentsData, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('doctor_id', doctorData.id)
+        .order('date', { ascending: true })
+        .order('time', { ascending: true });
+        
+      if (appointmentsError) {
+        throw appointmentsError;
+      }
+      
+      setAppointments(appointmentsData || []);
+    } catch (err) {
+      console.error('Error fetching doctor appointments:', err);
+      setError(err as Error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch appointments. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (user) {
+      fetchDoctorAppointments();
+    }
+  }, [fetchDoctorAppointments, user]);
+  
+  const markAppointmentAsCompleted = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'completed' })
+        .eq('id', appointmentId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setAppointments(prev => 
+        prev.map(appointment => 
+          appointment.id === appointmentId 
+            ? { ...appointment, status: 'completed' as const }
+            : appointment
+        )
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error marking appointment as completed:', error);
+      throw error;
+    }
+  };
+  
+  const cancelAppointment = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', appointmentId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setAppointments(prev => 
+        prev.map(appointment => 
+          appointment.id === appointmentId 
+            ? { ...appointment, status: 'cancelled' as const }
+            : appointment
+        )
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      throw error;
+    }
+  };
+
+  return {
+    appointments,
+    loading,
+    error,
+    refetch: fetchDoctorAppointments,
+    markAppointmentAsCompleted,
+    cancelAppointment
+  };
+};
+
+export const useDoctorSlots = () => {
+  const [slots, setSlots] = useState<AppointmentSlot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const fetchDoctorSlots = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Look up the doctor ID using the user's auth ID
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (doctorError) {
+        throw doctorError;
+      }
+      
+      if (!doctorData) {
+        throw new Error('Doctor not found');
+      }
+      
+      // Fetch appointments slots for this doctor
+      const { data: slotsData, error: slotsError } = await supabase
+        .from('appointment_slots')
+        .select('*')
+        .eq('doctor_id', doctorData.id)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+        
+      if (slotsError) {
+        throw slotsError;
+      }
+      
+      // Transform the data to match our AppointmentSlot interface
+      const formattedSlots: AppointmentSlot[] = (slotsData || []).map(slot => ({
+        id: slot.id,
+        doctorId: slot.doctor_id,
+        date: slot.date,
+        startTime: slot.start_time,
+        endTime: slot.end_time,
+        duration: slot.duration,
+        maxPatients: slot.max_patients,
+        status: slot.status
+      }));
+      
+      setSlots(formattedSlots);
+    } catch (err) {
+      console.error('Error fetching doctor slots:', err);
+      setError(err as Error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch appointment slots. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (user) {
+      fetchDoctorSlots();
+    }
+  }, [fetchDoctorSlots, user]);
+  
+  const createSlot = async (slotData: Omit<AppointmentSlot, 'id' | 'doctorId'>) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      // Look up the doctor ID using the user's auth ID
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (doctorError) throw doctorError;
+      if (!doctorData) throw new Error('Doctor not found');
+      
+      // Insert the new slot
+      const { data, error } = await supabase
+        .from('appointment_slots')
+        .insert({
+          doctor_id: doctorData.id,
+          date: slotData.date,
+          start_time: slotData.startTime,
+          end_time: slotData.endTime,
+          duration: slotData.duration,
+          max_patients: slotData.maxPatients,
+          status: slotData.status
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      // Add the new slot to the local state
+      const newSlot: AppointmentSlot = {
+        id: data.id,
+        doctorId: data.doctor_id,
+        date: data.date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        duration: data.duration,
+        maxPatients: data.max_patients,
+        status: data.status
+      };
+      
+      setSlots(prev => [...prev, newSlot]);
+      
+      return newSlot;
+    } catch (error) {
+      console.error('Error creating appointment slot:', error);
+      throw error;
+    }
+  };
+  
+  const deleteSlot = async (slotId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointment_slots')
+        .delete()
+        .eq('id', slotId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setSlots(prev => prev.filter(slot => slot.id !== slotId));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting appointment slot:', error);
+      throw error;
+    }
+  };
+
+  return {
+    slots,
+    loading,
+    error,
+    refetch: fetchDoctorSlots,
+    createSlot,
+    deleteSlot
+  };
 };

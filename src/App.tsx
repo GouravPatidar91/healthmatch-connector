@@ -13,6 +13,7 @@ import Settings from "./pages/Settings";
 import Emergency from "./pages/Emergency";
 import NotFound from "./pages/NotFound";
 import DoctorRegistration from "./pages/DoctorRegistration";
+import DoctorDashboard from "./pages/DoctorDashboard";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import RequireAuth from "./components/auth/RequireAuth";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/doctor-registration" element={<DoctorRegistration />} />
+              <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
             </Route>
             
             {/* Catch-all route */}

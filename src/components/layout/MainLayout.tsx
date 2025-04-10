@@ -1,18 +1,40 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus } from "lucide-react";
+import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDoctor, setIsDoctor] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
+  
+  // Check if user is a registered doctor
+  useEffect(() => {
+    if (user) {
+      // Check supabase for doctor status
+      const checkDoctorStatus = async () => {
+        const { data, error } = await supabase
+          .from('doctors')
+          .select('id')
+          .eq('user_id', user.id);
+          
+        if (!error && data && data.length > 0) {
+          setIsDoctor(true);
+        } else {
+          setIsDoctor(false);
+        }
+      };
+      
+      checkDoctorStatus();
+    }
+  }, [user]);
   
   const navigationItems = [
     { name: "Dashboard", path: "/dashboard", icon: BarChart },
@@ -21,8 +43,14 @@ const MainLayout = () => {
     { name: "Emergency", path: "/emergency", icon: PhoneCall },
     { name: "Profile", path: "/profile", icon: User },
     { name: "Settings", path: "/settings", icon: Settings },
-    { name: "Doctor Registration", path: "/doctor-registration", icon: UserPlus },
   ];
+  
+  // Add doctor-specific navigation items
+  if (isDoctor) {
+    navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
+  } else {
+    navigationItems.push({ name: "Doctor Registration", path: "/doctor-registration", icon: UserPlus });
+  }
   
   const handleLogout = async () => {
     await signOut();
