@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor, AppointmentSlot } from "@/types";
@@ -30,7 +29,6 @@ export const useDoctors = () => {
       
       let query = supabase.from('doctors').select('*');
       
-      // Filter by city if provided
       if (city && city !== 'all') {
         query = query.eq('region', city);
       }
@@ -39,15 +37,13 @@ export const useDoctors = () => {
       
       if (fetchError) throw fetchError;
       
-      // Transform the data to match our Doctor type
       const formattedDoctors: Doctor[] = data.map(doctor => ({
         id: doctor.id,
         name: doctor.name,
         specialization: doctor.specialization,
         hospital: doctor.hospital,
-        region: doctor.region, // We'll keep using this field but interpret it as city
+        region: doctor.region,
         address: doctor.address,
-        // Add default availability since it's not in the database
         availability: [
           { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
           { day: 'Tuesday', slots: ['13:00', '14:00', '15:00'] },
@@ -55,7 +51,6 @@ export const useDoctors = () => {
           { day: 'Thursday', slots: ['13:00', '14:00', '15:00'] },
           { day: 'Friday', slots: ['09:00', '10:00', '11:00'] }
         ],
-        // Add default rating since it's not in the database
         rating: 4.5
       }));
       
@@ -73,19 +68,14 @@ export const useDoctors = () => {
     }
   }, [toast]);
 
-  // Initial fetch
   useEffect(() => {
     fetchDoctors();
   }, [fetchDoctors]);
 
-  /**
-   * Find nearby doctors based on user's geolocation
-   */
   const findNearbyDoctors = async () => {
     try {
       setLoading(true);
       
-      // Get user's city from geolocation
       const userCity = await getUserCity();
       
       if (userCity) {
@@ -111,13 +101,8 @@ export const useDoctors = () => {
   };
 };
 
-/**
- * Find doctors near a specific location
- */
 export const findDoctorsNearLocation = async (latitude: number, longitude: number) => {
   try {
-    // In a real implementation, we'd use the PostGIS extension and ST_Distance to find nearby doctors
-    // For this implementation, we'll use the cities
     const cities = getNearbyCities(latitude, longitude);
     
     if (!cities.length) return [];
@@ -149,7 +134,6 @@ export const useDoctorAppointments = () => {
     try {
       setLoading(true);
       
-      // Look up the doctor ID using the user's auth ID
       const { data: doctorData, error: doctorError } = await supabase
         .from('doctors')
         .select('id')
@@ -164,7 +148,6 @@ export const useDoctorAppointments = () => {
         throw new Error('Doctor not found');
       }
       
-      // Fetch appointments for this doctor
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('appointments')
         .select('*')
@@ -176,7 +159,6 @@ export const useDoctorAppointments = () => {
         throw appointmentsError;
       }
       
-      // For now, use sample data until we update the schema
       const sampleAppointments: Appointment[] = [
         {
           id: '1',
@@ -227,7 +209,6 @@ export const useDoctorAppointments = () => {
     }
   }, [user, toast]);
 
-  // Initial fetch
   useEffect(() => {
     if (user) {
       fetchDoctorAppointments();
@@ -236,7 +217,6 @@ export const useDoctorAppointments = () => {
   
   const markAppointmentAsCompleted = async (appointmentId: string) => {
     try {
-      // Update local state since we're using mock data for now
       setAppointments(prev => 
         prev.map(appointment => 
           appointment.id === appointmentId 
@@ -254,7 +234,6 @@ export const useDoctorAppointments = () => {
   
   const cancelAppointment = async (appointmentId: string) => {
     try {
-      // Update local state since we're using mock data for now
       setAppointments(prev => 
         prev.map(appointment => 
           appointment.id === appointmentId 
@@ -293,7 +272,6 @@ export const useDoctorSlots = () => {
     try {
       setLoading(true);
       
-      // For now, use sample data until we update the Supabase types
       const sampleSlots: AppointmentSlot[] = [
         {
           id: '1',
@@ -328,7 +306,7 @@ export const useDoctorSlots = () => {
       ];
       
       setSlots(sampleSlots);
-      setLoading(false);
+      
     } catch (err) {
       console.error('Error fetching doctor slots:', err);
       setError(err as Error);
@@ -337,11 +315,11 @@ export const useDoctorSlots = () => {
         description: "Failed to fetch appointment slots. Please try again.",
         variant: "destructive"
       });
+    } finally {
       setLoading(false);
     }
   }, [user, toast]);
 
-  // Initial fetch
   useEffect(() => {
     if (user) {
       fetchDoctorSlots();
@@ -352,17 +330,14 @@ export const useDoctorSlots = () => {
     if (!user) throw new Error('User not authenticated');
     
     try {
-      // Generate a new ID for the slot
       const newId = Math.random().toString(36).substring(2, 15);
       
-      // Create a new slot object
       const newSlot: AppointmentSlot = {
         id: newId,
-        doctorId: '123', // Placeholder doctor ID
+        doctorId: '123',
         ...slotData
       };
       
-      // Update local state
       setSlots(prev => [...prev, newSlot]);
       
       return newSlot;
@@ -374,7 +349,6 @@ export const useDoctorSlots = () => {
   
   const deleteSlot = async (slotId: string) => {
     try {
-      // Update local state
       setSlots(prev => prev.filter(slot => slot.id !== slotId));
       
       return true;
