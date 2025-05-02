@@ -36,7 +36,11 @@ const AdminDashboard = () => {
             .eq('id', user.id)
             .single();
           
-          if (error) throw error;
+          if (error) {
+            console.error("Error checking admin status:", error);
+            navigate('/dashboard');
+            return;
+          }
           
           const hasAdminAccess = !!data?.is_admin;
           setIsAdmin(hasAdminAccess);
@@ -51,6 +55,7 @@ const AdminDashboard = () => {
           }
         } catch (error) {
           console.error("Error checking admin status:", error);
+          navigate('/dashboard');
         }
       } else {
         navigate('/');
@@ -69,25 +74,31 @@ const AdminDashboard = () => {
         setLoading(true);
         
         // Get all profiles with is_doctor field
-        const { data: profiles, error: profilesError } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('id, first_name, last_name, is_doctor');
         
-        if (profilesError) throw profilesError;
-        
-        if (!profiles) {
+        if (error) {
+          console.error("Error fetching profiles:", error);
           setUsers([]);
+          setLoading(false);
+          return;
+        }
+        
+        if (!data || data.length === 0) {
+          setUsers([]);
+          setLoading(false);
           return;
         }
 
         // Get user emails from auth.users (simulated here)
         // In a real app, this would require an admin API or edge function
-        const combinedUsers: UserProfile[] = profiles.map(profile => {
+        const combinedUsers: UserProfile[] = data.map(profile => {
           return {
             id: profile.id,
             email: `user-${profile.id.substring(0, 8)}@example.com`, // Simulated email
-            first_name: profile.first_name,
-            last_name: profile.last_name,
+            first_name: profile.first_name || undefined,
+            last_name: profile.last_name || undefined,
             is_doctor: !!profile.is_doctor
           };
         });

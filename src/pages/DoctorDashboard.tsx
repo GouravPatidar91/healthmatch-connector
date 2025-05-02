@@ -35,6 +35,7 @@ const DoctorDashboard = () => {
           }
         } catch (error) {
           console.error("Error checking doctor access:", error);
+          navigate('/dashboard');
         } finally {
           setLoading(false);
         }

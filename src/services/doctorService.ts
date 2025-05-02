@@ -26,7 +26,10 @@ export const checkDoctorAccess = async (userId: string): Promise<boolean> => {
       .eq('id', userId)
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error checking doctor access:', error);
+      return false;
+    }
     
     return !!data?.is_doctor;
   } catch (error) {
@@ -43,7 +46,10 @@ export const grantDoctorAccess = async (userId: string): Promise<boolean> => {
       .update({ is_doctor: true })
       .eq('id', userId);
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error granting doctor access:', error);
+      return false;
+    }
     
     return true;
   } catch (error) {
@@ -60,7 +66,10 @@ export const revokeDoctorAccess = async (userId: string): Promise<boolean> => {
       .update({ is_doctor: false })
       .eq('id', userId);
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error revoking doctor access:', error);
+      return false;
+    }
     
     return true;
   } catch (error) {

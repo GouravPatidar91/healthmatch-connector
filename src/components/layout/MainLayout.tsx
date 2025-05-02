@@ -29,13 +29,15 @@ const MainLayout = () => {
             .eq('id', user.id)
             .single();
             
-          if (!error && data) {
-            setIsDoctor(!!data.is_doctor);
-            setIsAdmin(!!data.is_admin);
-          } else {
+          if (error) {
+            console.error("Error fetching user roles:", error);
             setIsDoctor(false);
             setIsAdmin(false);
+            return;
           }
+          
+          setIsDoctor(!!data?.is_doctor);
+          setIsAdmin(!!data?.is_admin);
         } catch (error) {
           console.error("Error checking user roles:", error);
           setIsDoctor(false);
