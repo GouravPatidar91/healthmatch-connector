@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, MapPin, Calendar as CalendarIcon, Clock, Compass } from "lucide-react";
+import { Star, MapPin, Calendar as CalendarIcon, Clock, Compass, Award, Briefcase, GraduationCap } from "lucide-react";
 import { useUserAppointments, Appointment } from "@/services/userDataService";
 import { useUserProfile } from "@/services/userDataService";
 import { useDoctors } from "@/services/doctorService";
 import { getUserCity, getWorldCities } from "@/utils/geolocation";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 const formatDateForDisplay = (dateStr: string) => {
   try {
@@ -425,6 +427,28 @@ const Appointments = () => {
                                 <div className="flex items-center">
                                   <Star className="h-4 w-4 text-yellow-400 mr-1" fill="currentColor" />
                                   <span className="text-sm font-medium">{doctor.rating}</span>
+                                </div>
+                              </div>
+
+                              {/* Added qualification and experience section */}
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <div className="flex items-center text-sm text-medical-blue-dark cursor-pointer">
+                                      <GraduationCap className="h-4 w-4 mr-1" />
+                                      <span className="truncate max-w-[150px]">{doctor.degrees || 'Qualifications'}</span>
+                                    </div>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-80 p-2">
+                                    <p className="text-sm">
+                                      <span className="font-semibold">Qualifications:</span> {doctor.degrees || 'Not available'}
+                                    </p>
+                                  </HoverCardContent>
+                                </HoverCard>
+
+                                <div className="flex items-center text-sm text-medical-blue-dark">
+                                  <Briefcase className="h-4 w-4 mr-1" />
+                                  <span>{doctor.experience || 0} yrs exp</span>
                                 </div>
                               </div>
                               

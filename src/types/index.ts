@@ -40,6 +40,9 @@ export interface Doctor {
     slots: string[];
   }[];
   rating: number;
+  // Added new fields to match the database schema
+  degrees?: string;
+  experience?: number;
 }
 
 export interface Appointment {

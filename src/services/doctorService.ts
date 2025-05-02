@@ -113,7 +113,10 @@ export const useDoctors = () => {
           { day: 'Thursday', slots: ['13:00', '14:00', '15:00'] },
           { day: 'Friday', slots: ['09:00', '10:00', '11:00'] }
         ],
-        rating: 4.5
+        rating: 4.5,
+        // Add degrees and experience to the formatted doctor
+        degrees: doctor.degrees,
+        experience: doctor.experience
       }));
       
       setDoctors(formattedDoctors);
