@@ -111,6 +111,7 @@ export type Database = {
           address: string
           available: boolean
           created_at: string
+          degree_verification_photo: string | null
           degrees: string
           experience: number
           hospital: string
@@ -126,6 +127,7 @@ export type Database = {
           address: string
           available?: boolean
           created_at?: string
+          degree_verification_photo?: string | null
           degrees: string
           experience: number
           hospital: string
@@ -141,6 +143,7 @@ export type Database = {
           address?: string
           available?: boolean
           created_at?: string
+          degree_verification_photo?: string | null
           degrees?: string
           experience?: number
           hospital?: string

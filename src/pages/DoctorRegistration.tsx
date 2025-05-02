@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Form,
   FormControl,
@@ -18,6 +18,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { UploadCloud, X } from "lucide-react";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
 
 const doctorFormSchema = z.object({
   name: z.string().min(2, {
@@ -44,6 +48,16 @@ const doctorFormSchema = z.object({
   registration_number: z.string().min(3, {
     message: "Registration number must be at least 3 characters.",
   }),
+  degree_verification_photo: z.instanceof(FileList).refine(
+    (files) => files.length > 0, 
+    "Degree verification photo is required."
+  ).refine(
+    (files) => files[0]?.size <= MAX_FILE_SIZE,
+    `Max file size is 5MB.`
+  ).refine(
+    (files) => ACCEPTED_IMAGE_TYPES.includes(files[0]?.type),
+    "Only .jpg, .jpeg, .png, .webp and .pdf formats are supported."
+  ).transform(files => files[0]),
 });
 
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
@@ -52,6 +66,8 @@ const DoctorRegistration = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   
   const form = useForm<DoctorFormValues>({
     resolver: zodResolver(doctorFormSchema),
@@ -79,7 +95,29 @@ const DoctorRegistration = () => {
     }
 
     try {
-      // Insert doctor information
+      setUploading(true);
+      
+      // Upload the degree verification photo
+      const file = data.degree_verification_photo;
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from('degree_verification')
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        throw new Error(`Error uploading file: ${uploadError.message}`);
+      }
+      
+      // Get the public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from('degree_verification')
+        .getPublicUrl(filePath);
+      
+      const publicUrl = publicUrlData.publicUrl;
+      
+      // Insert doctor information with the file URL
       const { error: doctorError } = await supabase
         .from('doctors')
         .insert({
@@ -92,6 +130,7 @@ const DoctorRegistration = () => {
           experience: data.experience,
           registration_number: data.registration_number,
           available: true,
+          degree_verification_photo: publicUrl,
         });
       
       if (doctorError) throw doctorError;
@@ -119,7 +158,33 @@ const DoctorRegistration = () => {
         description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setUploading(false);
     }
+  };
+
+  // Preview the selected image
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check if the file type is PDF
+    if (file.type === "application/pdf") {
+      setUploadedImage("/placeholder.svg"); // Use a placeholder image for PDFs
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUploadedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearSelectedImage = () => {
+    setUploadedImage(null);
+    form.setValue("degree_verification_photo", undefined as any);
+    form.clearErrors("degree_verification_photo");
   };
 
   return (
@@ -212,6 +277,59 @@ const DoctorRegistration = () => {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="degree_verification_photo"
+                render={({ field: { onChange, value, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel>Degree Verification Photo/Document</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-col items-center">
+                        {uploadedImage ? (
+                          <div className="relative w-full mb-4">
+                            <img 
+                              src={uploadedImage} 
+                              alt="Degree Preview" 
+                              className="w-full h-48 object-cover rounded-md border" 
+                            />
+                            <Button 
+                              variant="destructive" 
+                              size="icon" 
+                              className="absolute top-2 right-2" 
+                              onClick={clearSelectedImage}
+                              type="button"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 rounded-md p-8 w-full flex flex-col items-center justify-center mb-4">
+                            <UploadCloud className="h-10 w-10 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-500 text-center mb-2">
+                              Upload your degree certificate or license
+                            </p>
+                            <p className="text-xs text-gray-400 text-center">
+                              JPG, PNG, PDF up to 5MB
+                            </p>
+                          </div>
+                        )}
+                        <Input 
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.webp,.pdf"
+                          className={uploadedImage ? "hidden" : ""}
+                          onChange={(e) => {
+                            onChange(e.target.files);
+                            handleImageChange(e);
+                          }}
+                          {...fieldProps}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 control={form.control}
@@ -257,8 +375,8 @@ const DoctorRegistration = () => {
                 />
               </div>
               
-              <Button type="submit" className="w-full">
-                Register as Doctor
+              <Button type="submit" className="w-full" disabled={uploading}>
+                {uploading ? "Uploading..." : "Register as Doctor"}
               </Button>
             </form>
           </Form>
