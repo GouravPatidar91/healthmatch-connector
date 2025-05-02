@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor, AppointmentSlot } from "@/types";
@@ -195,35 +196,11 @@ export const useDoctorAppointments = () => {
     try {
       setLoading(true);
       
-      const { data: doctorData, error: doctorError } = await supabase
-        .from('doctors')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-        
-      if (doctorError) {
-        throw doctorError;
-      }
-      
-      if (!doctorData) {
-        throw new Error('Doctor not found');
-      }
-      
-      const { data: appointmentsData, error: appointmentsError } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('doctor_id', doctorData.id)
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
-        
-      if (appointmentsError) {
-        throw appointmentsError;
-      }
-      
+      // Sample data for demonstration
       const sampleAppointments: Appointment[] = [
         {
           id: '1',
-          doctorId: doctorData.id,
+          doctorId: '123',
           doctorName: 'Dr. Smith',
           patientName: 'John Doe',
           date: '2024-04-15',
@@ -234,7 +211,7 @@ export const useDoctorAppointments = () => {
         },
         {
           id: '2',
-          doctorId: doctorData.id,
+          doctorId: '123',
           doctorName: 'Dr. Smith',
           patientName: 'Jane Smith',
           date: '2024-04-15',
@@ -245,7 +222,7 @@ export const useDoctorAppointments = () => {
         },
         {
           id: '3',
-          doctorId: doctorData.id,
+          doctorId: '123',
           doctorName: 'Dr. Smith',
           patientName: 'Bob Johnson',
           date: '2024-04-16',

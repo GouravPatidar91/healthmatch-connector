@@ -111,36 +111,45 @@ export type Database = {
           address: string
           available: boolean
           created_at: string
+          degrees: string
+          experience: number
           hospital: string
           id: string
           latitude: number | null
           longitude: number | null
           name: string
           region: string
+          registration_number: string
           specialization: string
         }
         Insert: {
           address: string
           available?: boolean
           created_at?: string
+          degrees: string
+          experience: number
           hospital: string
           id?: string
           latitude?: number | null
           longitude?: number | null
           name: string
           region: string
+          registration_number: string
           specialization: string
         }
         Update: {
           address?: string
           available?: boolean
           created_at?: string
+          degrees?: string
+          experience?: number
           hospital?: string
           id?: string
           latitude?: number | null
           longitude?: number | null
           name?: string
           region?: string
+          registration_number?: string
           specialization?: string
         }
         Relationships: []

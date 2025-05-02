@@ -17,6 +17,7 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const doctorFormSchema = z.object({
   name: z.string().min(2, {
@@ -34,6 +35,15 @@ const doctorFormSchema = z.object({
   region: z.string().min(2, {
     message: "Region must be at least 2 characters.",
   }),
+  degrees: z.string().min(2, {
+    message: "Degrees must be at least 2 characters.",
+  }),
+  experience: z.coerce.number().int().min(1, {
+    message: "Experience must be at least 1 year.",
+  }),
+  registration_number: z.string().min(3, {
+    message: "Registration number must be at least 3 characters.",
+  }),
 });
 
 type DoctorFormValues = z.infer<typeof doctorFormSchema>;
@@ -41,6 +51,7 @@ type DoctorFormValues = z.infer<typeof doctorFormSchema>;
 const DoctorRegistration = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const form = useForm<DoctorFormValues>({
     resolver: zodResolver(doctorFormSchema),
@@ -50,12 +61,26 @@ const DoctorRegistration = () => {
       hospital: "",
       address: "",
       region: "",
+      degrees: "",
+      experience: undefined,
+      registration_number: "",
     },
   });
 
   const onSubmit = async (data: DoctorFormValues) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to register as a doctor.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      // Insert doctor information
+      const { error: doctorError } = await supabase
         .from('doctors')
         .insert({
           name: data.name,
@@ -63,14 +88,27 @@ const DoctorRegistration = () => {
           hospital: data.hospital,
           address: data.address,
           region: data.region,
+          degrees: data.degrees,
+          experience: data.experience,
+          registration_number: data.registration_number,
           available: true,
         });
       
-      if (error) throw error;
+      if (doctorError) throw doctorError;
+      
+      // Update user profile to mark as doctor (request for approval)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ is_doctor: false }) // Initially set to false, pending admin approval
+        .eq('id', user.id);
+      
+      if (profileError) {
+        console.error("Failed to update user profile:", profileError);
+      }
       
       toast({
-        title: "Registration successful",
-        description: "You have been registered as a doctor in HealthMatch.",
+        title: "Registration submitted",
+        description: "Your doctor registration has been submitted for review. You will be notified once approved.",
       });
       
       navigate("/dashboard");
@@ -126,6 +164,55 @@ const DoctorRegistration = () => {
                 )}
               />
               
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="degrees"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Degrees/Qualifications</FormLabel>
+                      <FormControl>
+                        <Input placeholder="MBBS, MD, etc." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="experience"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Years of Experience</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="1"
+                          placeholder="5" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="registration_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Medical Registration Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123456" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
               <FormField
                 control={form.control}
                 name="hospital"
@@ -140,33 +227,35 @@ const DoctorRegistration = () => {
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="123 Medical Drive" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="region"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Region/City</FormLabel>
-                    <FormControl>
-                      <Input placeholder="New York" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Medical Drive" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="region"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Region/City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="New York" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               <Button type="submit" className="w-full">
                 Register as Doctor
