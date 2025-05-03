@@ -1,54 +1,5 @@
 
 project_id = "bpflebtklgnivcanhlbp"
 
-[api]
-enabled = true
-port = 54321
-schemas = ["public", "storage"]
-
-[db]
-port = 54322
-shadow_port = 54320
-
-[db.pooler]
-port = 54329
-pool_mode = "transaction"
-default_pool_size = 15
-max_client_conn = 100
-
-[realtime]
-enabled = true
-
-[studio]
-enabled = true
-port = 54323
-
-[inbucket]
-enabled = true
-port = 54324
-
-[storage]
-enabled = true
-
-[auth]
-enabled = true
-site_url = "http://localhost:5173"
-
-[analytics]
-enabled = false
-
-[experimental.functions]
-[experimental.functions.call-status-webhook]
-verify_jwt = false
-
-[experimental.functions.collect-severity]
-verify_jwt = false
-
-[experimental.functions.collect-location]
-verify_jwt = false
-
-[experimental.functions.collect-symptoms]
-verify_jwt = false
-
-[experimental.functions.call-twiml]
+[functions.analyze-symptoms]
 verify_jwt = false

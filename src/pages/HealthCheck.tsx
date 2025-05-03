@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { symptomCategories, mockDiseases } from "@/data/mockData";
+import { symptomCategories } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { useUserHealthChecks } from "@/services/userDataService";
+import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const HealthCheck = () => {
   const { toast } = useToast();
@@ -23,6 +24,8 @@ const HealthCheck = () => {
   const [duration, setDuration] = useState<string>("");
   const [additionalInfo, setAdditionalInfo] = useState<string>("");
   const [possibleConditions, setPossibleConditions] = useState<any[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   
   const handleSymptomToggle = (symptom: string) => {
     setSelectedSymptoms((prev) => 
@@ -32,7 +35,51 @@ const HealthCheck = () => {
     );
   };
   
-  const analyzeSymptoms = () => {
+  const analyzeSymptoms = async () => {
+    try {
+      setIsAnalyzing(true);
+      setAnalysisError(null);
+      
+      // Call the Edge Function to analyze symptoms using AI
+      const { data: analysisResult, error } = await supabase.functions.invoke("analyze-symptoms", {
+        body: {
+          symptoms: selectedSymptoms,
+          severity: severity,
+          duration: duration
+        }
+      });
+
+      if (error) {
+        console.error("Error analyzing symptoms:", error);
+        setAnalysisError("Failed to analyze symptoms. Please try again.");
+        toast({
+          title: "Analysis Error",
+          description: "There was a problem analyzing your symptoms.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Process and set the AI analysis results
+      if (analysisResult && analysisResult.conditions && analysisResult.conditions.length > 0) {
+        setPossibleConditions(analysisResult.conditions);
+      } else {
+        // Fallback to basic matching if AI doesn't return proper format
+        setAnalysisError("Could not get accurate analysis. Showing basic results instead.");
+        fallbackSymptomAnalysis();
+      }
+    } catch (error) {
+      console.error("Error in symptom analysis:", error);
+      setAnalysisError("Failed to analyze symptoms. Using basic analysis instead.");
+      fallbackSymptomAnalysis();
+    } finally {
+      setIsAnalyzing(false);
+      setStep(3);
+    }
+  };
+  
+  // Fallback to the original symptom matching algorithm if AI analysis fails
+  const fallbackSymptomAnalysis = () => {
     const matchedDiseases = mockDiseases
       .map(disease => {
         const matchedSymptoms = disease.relatedSymptoms.filter(symptom => 
@@ -52,8 +99,6 @@ const HealthCheck = () => {
       .slice(0, 3);
     
     setPossibleConditions(matchedDiseases);
-    
-    setStep(3);
   };
   
   const handleNext = () => {
@@ -203,77 +248,96 @@ const HealthCheck = () => {
           
           {step === 3 && (
             <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold mb-3">Based on your symptoms, you may be experiencing:</h3>
-                
-                {possibleConditions.length > 0 ? (
-                  <div className="space-y-4">
-                    {possibleConditions.map((condition, index) => (
-                      <Card key={index}>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">{condition.name}</CardTitle>
-                          <CardDescription>
-                            Match confidence: {Math.round(condition.matchScore * 100)}%
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm mb-2">{condition.description}</p>
-                          <div className="text-sm">
-                            <span className="font-medium">Matched symptoms:</span>{" "}
-                            {condition.matchedSymptoms.join(", ")}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+              {isAnalyzing ? (
+                <div className="flex flex-col items-center justify-center py-10">
+                  <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+                  <p className="text-lg">Analyzing your symptoms...</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <h3 className="font-semibold mb-3">Based on your symptoms, you may be experiencing:</h3>
                     
-                    <div className="bg-medical-blue/10 rounded-lg p-4">
-                      <h4 className="font-medium mb-2">Important Notice</h4>
-                      <p className="text-sm text-medical-neutral-dark">
-                        This is not a medical diagnosis. These suggestions are based on your reported symptoms and
-                        should not replace professional medical advice. Please consult with a healthcare professional
-                        for proper diagnosis and treatment.
-                      </p>
-                    </div>
+                    {analysisError && (
+                      <div className="bg-amber-100 border border-amber-300 rounded-lg p-3 mb-4">
+                        <p className="text-amber-800 text-sm">{analysisError}</p>
+                      </div>
+                    )}
+                    
+                    {possibleConditions.length > 0 ? (
+                      <div className="space-y-4">
+                        {possibleConditions.map((condition, index) => (
+                          <Card key={index}>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-lg">{condition.name}</CardTitle>
+                              <CardDescription>
+                                Match confidence: {typeof condition.matchScore === 'number' ? 
+                                  `${Math.round(condition.matchScore)}%` : 
+                                  condition.matchScore}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-sm mb-2">{condition.description}</p>
+                              <div className="text-sm">
+                                <span className="font-medium">Matched symptoms:</span>{" "}
+                                {Array.isArray(condition.matchedSymptoms) ? 
+                                  condition.matchedSymptoms.join(", ") : 
+                                  condition.matchSymptoms || "Unknown"}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                        
+                        <div className="bg-medical-blue/10 rounded-lg p-4">
+                          <h4 className="font-medium mb-2">Important Notice</h4>
+                          <p className="text-sm text-medical-neutral-dark">
+                            This is not a medical diagnosis. These suggestions are based on your reported symptoms and
+                            should not replace professional medical advice. Please consult with a healthcare professional
+                            for proper diagnosis and treatment.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-medical-neutral-light rounded-lg p-4 text-center">
+                        <p>No specific conditions matched your symptoms.</p>
+                        <p className="text-sm mt-2">
+                          This doesn't mean you're not experiencing a health issue. If you're concerned,
+                          we recommend speaking with a healthcare professional.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="bg-medical-neutral-light rounded-lg p-4 text-center">
-                    <p>No specific conditions matched your symptoms.</p>
-                    <p className="text-sm mt-2">
-                      This doesn't mean you're not experiencing a health issue. If you're concerned,
-                      we recommend speaking with a healthcare professional.
-                    </p>
+                  
+                  <div>
+                    <h3 className="font-semibold mb-3">Recommended actions:</h3>
+                    <ul className="space-y-2">
+                      {possibleConditions.length > 0 && possibleConditions[0].recommendedActions ? (
+                        possibleConditions[0].recommendedActions.map((action: string, index: number) => (
+                          <li key={index} className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-medical-blue" />
+                            <span>{action}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <>
+                          <li className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-medical-blue" />
+                            <span>Rest and stay hydrated</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-medical-blue" />
+                            <span>Monitor your symptoms</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-medical-blue" />
+                            <span>Consult with a healthcare professional if symptoms persist</span>
+                          </li>
+                        </>
+                      )}
+                    </ul>
                   </div>
-                )}
-              </div>
-              
-              <div>
-                <h3 className="font-semibold mb-3">Recommended actions:</h3>
-                <ul className="space-y-2">
-                  {possibleConditions.length > 0 ? (
-                    possibleConditions[0].recommendedActions.map((action: string, index: number) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-medical-blue" />
-                        <span>{action}</span>
-                      </li>
-                    ))
-                  ) : (
-                    <>
-                      <li className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-medical-blue" />
-                        <span>Rest and stay hydrated</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-medical-blue" />
-                        <span>Monitor your symptoms</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-medical-blue" />
-                        <span>Consult with a healthcare professional if symptoms persist</span>
-                      </li>
-                    </>
-                  )}
-                </ul>
-              </div>
+                </>
+              )}
             </div>
           )}
         </CardContent>
@@ -283,6 +347,7 @@ const HealthCheck = () => {
             <Button 
               variant="outline" 
               onClick={() => setStep((prev) => prev - 1)}
+              disabled={isAnalyzing}
             >
               Back
             </Button>
@@ -300,11 +365,13 @@ const HealthCheck = () => {
               <Button 
                 variant="outline"
                 onClick={handleSaveHealthCheck}
+                disabled={isAnalyzing}
               >
                 Save Results
               </Button>
               <Button 
                 onClick={handleBookAppointment}
+                disabled={isAnalyzing}
               >
                 Book Appointment
               </Button>
