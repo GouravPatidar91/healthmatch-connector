@@ -43,6 +43,7 @@ export interface Doctor {
   // Added new fields to match the database schema
   degrees?: string;
   experience?: number;
+  verified?: boolean;
 }
 
 export interface Appointment {

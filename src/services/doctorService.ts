@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor, AppointmentSlot } from "@/types";
@@ -89,17 +88,33 @@ export const useDoctors = () => {
     try {
       setLoading(true);
       
-      let query = supabase.from('doctors').select('*');
+      // Use the get_verified_doctors function to get only verified doctors
+      let { data: verifiedDoctors, error: funcError } = await supabase
+        .rpc('get_verified_doctors');
       
-      if (city && city !== 'all') {
-        query = query.eq('region', city);
+      if (funcError) {
+        console.error('Error fetching verified doctors using RPC:', funcError);
+        
+        // Fallback to direct query with verified filter if RPC fails
+        const { data, error: queryError } = await supabase
+          .from('doctors')
+          .select('*')
+          .eq('verified', true);
+          
+        if (queryError) {
+          throw queryError;
+        }
+        
+        verifiedDoctors = data;
       }
       
-      const { data, error: fetchError } = await query;
+      // Filter by city if provided
+      let filteredDoctors = verifiedDoctors || [];
+      if (city && city !== 'all') {
+        filteredDoctors = filteredDoctors.filter(doc => doc.region === city);
+      }
       
-      if (fetchError) throw fetchError;
-      
-      const formattedDoctors: Doctor[] = data.map(doctor => ({
+      const formattedDoctors: Doctor[] = filteredDoctors.map(doctor => ({
         id: doctor.id,
         name: doctor.name,
         specialization: doctor.specialization,

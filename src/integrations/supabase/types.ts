@@ -122,6 +122,7 @@ export type Database = {
           region: string
           registration_number: string
           specialization: string
+          verified: boolean | null
         }
         Insert: {
           address: string
@@ -138,6 +139,7 @@ export type Database = {
           region: string
           registration_number: string
           specialization: string
+          verified?: boolean | null
         }
         Update: {
           address?: string
@@ -154,6 +156,7 @@ export type Database = {
           region?: string
           registration_number?: string
           specialization?: string
+          verified?: boolean | null
         }
         Relationships: []
       }
@@ -326,6 +329,26 @@ export type Database = {
           hospital: string
           address: string
           distance: number
+        }[]
+      }
+      get_verified_doctors: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          address: string
+          available: boolean
+          created_at: string
+          degree_verification_photo: string | null
+          degrees: string
+          experience: number
+          hospital: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          region: string
+          registration_number: string
+          specialization: string
+          verified: boolean | null
         }[]
       }
     }

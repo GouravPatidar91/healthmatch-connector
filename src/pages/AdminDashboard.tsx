@@ -131,7 +131,7 @@ const AdminDashboard = () => {
         if (success) {
           toast({
             title: "Access Revoked",
-            description: "Doctor access has been revoked from this user."
+            description: "Doctor access has been revoked from this user. They will no longer appear in the appointments section."
           });
         }
       } else {
@@ -140,7 +140,7 @@ const AdminDashboard = () => {
         if (success) {
           toast({
             title: "Access Granted",
-            description: "Doctor access has been granted to this user."
+            description: "Doctor access has been granted to this user. They will now appear in the appointments section."
           });
         }
       }
@@ -190,6 +190,10 @@ const AdminDashboard = () => {
             <CardDescription>Grant or revoke doctor dashboard access</CardDescription>
           </CardHeader>
           <CardContent>
+            <p className="mb-4 text-sm text-slate-600">
+              <strong>Note:</strong> When you grant doctor access to a user, they will appear in the appointments section for patients to book with them.
+              Only doctors with verified accounts will be visible in the appointment booking system.
+            </p>
             <Table>
               <TableHeader>
                 <TableRow>
