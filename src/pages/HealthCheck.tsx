@@ -13,6 +13,28 @@ import { useUserHealthChecks } from "@/services/userDataService";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Define a fallback mock disease structure for use if AI analysis fails
+const fallbackDiseases = [
+  {
+    name: "Common Cold",
+    description: "A viral infection of the nose and throat",
+    relatedSymptoms: ["Runny nose", "Sore throat", "Cough", "Congestion", "Sneezing", "Headache"],
+    recommendedActions: ["Rest", "Stay hydrated", "Take over-the-counter cold medications"]
+  },
+  {
+    name: "Influenza",
+    description: "A viral infection that attacks your respiratory system",
+    relatedSymptoms: ["Fever", "Chills", "Muscle aches", "Cough", "Headache", "Fatigue"],
+    recommendedActions: ["Rest", "Stay hydrated", "Take fever reducers", "Consult a doctor if symptoms worsen"]
+  },
+  {
+    name: "Seasonal Allergies",
+    description: "An immune system response to an allergen like pollen",
+    relatedSymptoms: ["Sneezing", "Runny nose", "Itchy eyes", "Congestion", "Postnasal drip"],
+    recommendedActions: ["Avoid allergens", "Take antihistamines", "Use nasal sprays if recommended by a doctor"]
+  }
+];
+
 const HealthCheck = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -80,18 +102,20 @@ const HealthCheck = () => {
   
   // Fallback to the original symptom matching algorithm if AI analysis fails
   const fallbackSymptomAnalysis = () => {
-    const matchedDiseases = mockDiseases
+    const matchedDiseases = fallbackDiseases
       .map(disease => {
         const matchedSymptoms = disease.relatedSymptoms.filter(symptom => 
           selectedSymptoms.includes(symptom)
         );
         
-        const matchScore = matchedSymptoms.length / disease.relatedSymptoms.length;
+        const matchScore = matchedSymptoms.length / disease.relatedSymptoms.length * 100;
         
         return {
-          ...disease,
-          matchScore,
-          matchedSymptoms
+          name: disease.name,
+          description: disease.description,
+          matchedSymptoms,
+          matchScore: Math.round(matchScore),
+          recommendedActions: disease.recommendedActions
         };
       })
       .filter(disease => disease.matchScore > 0)
