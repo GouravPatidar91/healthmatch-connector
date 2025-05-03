@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,18 +74,23 @@ const HealthCheck = () => {
 
       if (error) {
         console.error("Error analyzing symptoms:", error);
-        setAnalysisError("Failed to analyze symptoms. Please try again.");
+        setAnalysisError("Failed to analyze symptoms. Using fallback analysis instead.");
         toast({
           title: "Analysis Error",
-          description: "There was a problem analyzing your symptoms.",
+          description: "There was a problem analyzing your symptoms with AI. Using basic analysis instead.",
           variant: "destructive"
         });
+        fallbackSymptomAnalysis();
         return;
       }
       
       // Process and set the AI analysis results
       if (analysisResult && analysisResult.conditions && analysisResult.conditions.length > 0) {
+        console.log("AI analysis result:", analysisResult);
         setPossibleConditions(analysisResult.conditions);
+      } else if (analysisResult && analysisResult.fallback) {
+        setAnalysisError("AI analysis failed. Using basic analysis instead.");
+        fallbackSymptomAnalysis();
       } else {
         // Fallback to basic matching if AI doesn't return proper format
         setAnalysisError("Could not get accurate analysis. Showing basic results instead.");
