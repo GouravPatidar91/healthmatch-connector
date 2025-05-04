@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || "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";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,7 +25,7 @@ serve(async (req) => {
       );
     }
 
-    if (!OPENAI_API_KEY) {
+    if (!GROQ_API_KEY) {
       return new Response(
         JSON.stringify({ error: "API key not configured" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -68,17 +68,17 @@ serve(async (req) => {
       The JSON should be properly formatted without any non-JSON content before or after.
     `;
 
-    console.log("Sending request to OpenAI with symptoms:", symptomsText);
+    console.log("Sending request to Groq API with symptoms:", symptomsText);
 
-    // Call OpenAI API with a structured output format
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call Groq API with a structured output format
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'llama3-8b-8192',
         messages: [
           { 
             role: 'system', 
@@ -93,16 +93,16 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorDetails = await response.text();
-      console.error("OpenAI API error:", errorDetails);
-      throw new Error(`OpenAI API returned error status: ${response.status}`);
+      console.error("Groq API error:", errorDetails);
+      throw new Error(`Groq API returned error status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("Received response from OpenAI:", JSON.stringify(data));
+    console.log("Received response from Groq:", JSON.stringify(data));
     
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error("Unexpected response structure:", JSON.stringify(data));
-      throw new Error("Invalid response structure from OpenAI");
+      throw new Error("Invalid response structure from Groq");
     }
 
     const aiResponse = data.choices[0].message.content;
