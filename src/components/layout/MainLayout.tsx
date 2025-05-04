@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -52,7 +51,7 @@ const MainLayout = () => {
   const navigationItems = [
     { name: "Dashboard", path: "/dashboard", icon: BarChart },
     { name: "Health Check", path: "/health-check", icon: Heart },
-    { name: "Health History", path: "/health-check-history", icon: FileText },
+    // Removing Health History from navigation
     { name: "Appointments", path: "/appointments", icon: Calendar },
     { name: "Emergency", path: "/emergency", icon: PhoneCall },
     { name: "Profile", path: "/profile", icon: User },

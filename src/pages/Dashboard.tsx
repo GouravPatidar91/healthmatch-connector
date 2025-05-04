@@ -90,7 +90,7 @@ const Dashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{statsLoading ? "..." : stats.healthChecksCount}</div>
             <p className="text-xs text-medical-neutral-dark mt-1">
-              {stats.healthChecksCount > 0 ? "Click to view history" : "Start tracking your health"}
+              {stats.healthChecksCount > 0 ? "View your health check history" : "Start tracking your health"}
             </p>
           </CardContent>
         </Card>
