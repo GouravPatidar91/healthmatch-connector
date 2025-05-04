@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useUserHealthChecks } from "@/services/userDataService";
+import { useUserHealthChecks, AnalysisCondition } from "@/services/userDataService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -127,37 +127,50 @@ const HealthCheckHistory = () => {
                 <AccordionItem value="details">
                   <AccordionTrigger>View Analysis Results</AccordionTrigger>
                   <AccordionContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Possible Condition</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Confidence</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {/* This is just a placeholder - actual data would need to be stored in the health_checks table */}
-                        <TableRow>
-                          <TableCell className="font-medium">Analysis not available</TableCell>
-                          <TableCell>Detailed analysis results are not stored in your health check history.</TableCell>
-                          <TableCell>-</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
+                    {check.analysis_results && check.analysis_results.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Possible Condition</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Confidence</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {check.analysis_results.map((condition: AnalysisCondition, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{condition.name}</TableCell>
+                              <TableCell>{condition.description}</TableCell>
+                              <TableCell>{typeof condition.matchScore === 'number' ? 
+                                `${Math.round(condition.matchScore)}%` : 
+                                condition.matchScore}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-medical-neutral-dark">Detailed analysis not available for this health check.</p>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
 
                 <AccordionItem value="recommendations">
                   <AccordionTrigger>Recommendations</AccordionTrigger>
                   <AccordionContent>
-                    <ul className="list-disc pl-6 space-y-2">
-                      <li>Consult with a healthcare professional for a proper diagnosis.</li>
-                      <li>Keep track of any changes in your symptoms.</li>
-                      <li>Stay hydrated and get adequate rest.</li>
-                      <li>
-                        If symptoms worsen, seek immediate medical attention.
-                      </li>
-                    </ul>
+                    {check.analysis_results && check.analysis_results[0]?.recommendedActions ? (
+                      <ul className="list-disc pl-6 space-y-2">
+                        {check.analysis_results[0].recommendedActions.map((action, index) => (
+                          <li key={index}>{action}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <ul className="list-disc pl-6 space-y-2">
+                        <li>Consult with a healthcare professional for a proper diagnosis.</li>
+                        <li>Keep track of any changes in your symptoms.</li>
+                        <li>Stay hydrated and get adequate rest.</li>
+                        <li>If symptoms worsen, seek immediate medical attention.</li>
+                      </ul>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

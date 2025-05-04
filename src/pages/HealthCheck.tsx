@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { symptomCategories } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
-import { useUserHealthChecks } from "@/services/userDataService";
+import { useUserHealthChecks, AnalysisCondition } from "@/services/userDataService";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,19 +18,22 @@ const fallbackDiseases = [
   {
     name: "Common Cold",
     description: "A viral infection of the nose and throat",
-    relatedSymptoms: ["Runny nose", "Sore throat", "Cough", "Congestion", "Sneezing", "Headache"],
+    matchedSymptoms: ["Runny nose", "Sore throat", "Cough", "Congestion", "Sneezing", "Headache"],
+    matchScore: 80,
     recommendedActions: ["Rest", "Stay hydrated", "Take over-the-counter cold medications"]
   },
   {
     name: "Influenza",
     description: "A viral infection that attacks your respiratory system",
-    relatedSymptoms: ["Fever", "Chills", "Muscle aches", "Cough", "Headache", "Fatigue"],
+    matchedSymptoms: ["Fever", "Chills", "Muscle aches", "Cough", "Headache", "Fatigue"],
+    matchScore: 75,
     recommendedActions: ["Rest", "Stay hydrated", "Take fever reducers", "Consult a doctor if symptoms worsen"]
   },
   {
     name: "Seasonal Allergies",
     description: "An immune system response to an allergen like pollen",
-    relatedSymptoms: ["Sneezing", "Runny nose", "Itchy eyes", "Congestion", "Postnasal drip"],
+    matchedSymptoms: ["Sneezing", "Runny nose", "Itchy eyes", "Congestion", "Postnasal drip"],
+    matchScore: 70,
     recommendedActions: ["Avoid allergens", "Take antihistamines", "Use nasal sprays if recommended by a doctor"]
   }
 ];
@@ -46,7 +48,7 @@ const HealthCheck = () => {
   const [severity, setSeverity] = useState<string>("mild");
   const [duration, setDuration] = useState<string>("");
   const [additionalInfo, setAdditionalInfo] = useState<string>("");
-  const [possibleConditions, setPossibleConditions] = useState<any[]>([]);
+  const [possibleConditions, setPossibleConditions] = useState<AnalysisCondition[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   
@@ -149,13 +151,14 @@ const HealthCheck = () => {
   
   const handleSaveHealthCheck = async () => {
     try {
-      // Save health check data to Supabase
+      // Save health check data to Supabase with analysis results
       await saveHealthCheck({
         symptoms: selectedSymptoms,
         severity,
         duration,
         notes: additionalInfo,
-        previous_conditions: possibleConditions.map(c => c.name)
+        previous_conditions: possibleConditions.map(c => c.name),
+        analysis_results: possibleConditions // Store the detailed analysis results
       });
       
       toast({

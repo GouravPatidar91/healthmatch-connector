@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,15 @@ const mapDbRowToAppointment = (row: any): Appointment => {
   };
 };
 
+// Condition type for analysis results
+export interface AnalysisCondition {
+  name: string;
+  description: string;
+  matchedSymptoms: string[];
+  matchScore: number;
+  recommendedActions: string[];
+}
+
 // Health check type definition
 export interface HealthCheck {
   id?: string;
@@ -44,6 +54,7 @@ export interface HealthCheck {
   medications?: string[];
   notes?: string;
   created_at?: string;
+  analysis_results?: AnalysisCondition[]; // New field to store detailed analysis
 }
 
 // Profile type definition
@@ -458,6 +469,8 @@ export const useUserHealthChecks = () => {
         ...healthCheckData,
         user_id: user.id
       };
+
+      console.log('Saving health check with data:', healthCheckWithUserId);
 
       const { data, error } = await supabase
         .from('health_checks')
