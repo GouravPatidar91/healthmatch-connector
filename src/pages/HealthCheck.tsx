@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,11 +113,11 @@ const HealthCheck = () => {
   const fallbackSymptomAnalysis = () => {
     const matchedDiseases = fallbackDiseases
       .map(disease => {
-        const matchedSymptoms = disease.relatedSymptoms.filter(symptom => 
+        const matchedSymptoms = disease.matchedSymptoms.filter(symptom => 
           selectedSymptoms.includes(symptom)
         );
         
-        const matchScore = matchedSymptoms.length / disease.relatedSymptoms.length * 100;
+        const matchScore = matchedSymptoms.length / disease.matchedSymptoms.length * 100;
         
         return {
           name: disease.name,
@@ -315,7 +316,7 @@ const HealthCheck = () => {
                                 <span className="font-medium">Matched symptoms:</span>{" "}
                                 {Array.isArray(condition.matchedSymptoms) ? 
                                   condition.matchedSymptoms.join(", ") : 
-                                  condition.matchSymptoms || "Unknown"}
+                                  "Unknown"}
                               </div>
                             </CardContent>
                           </Card>
