@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import HealthCheck from "./pages/HealthCheck";
+import HealthCheckHistory from "./pages/HealthCheckHistory";
 import Appointments from "./pages/Appointments";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -35,6 +36,7 @@ const App = () => (
             <Route element={<RequireAuth><MainLayout /></RequireAuth>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/health-check" element={<HealthCheck />} />
+              <Route path="/health-check-history" element={<HealthCheckHistory />} />
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/emergency" element={<Emergency />} />
               <Route path="/profile" element={<Profile />} />

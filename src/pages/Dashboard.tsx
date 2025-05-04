@@ -79,7 +79,10 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="card-hover">
+        <Card 
+          className="card-hover cursor-pointer" 
+          onClick={() => navigate('/health-check-history')}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-medical-neutral-dark">Health Checks</CardTitle>
             <Users className="h-4 w-4 text-medical-blue" />
@@ -87,7 +90,7 @@ const Dashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{statsLoading ? "..." : stats.healthChecksCount}</div>
             <p className="text-xs text-medical-neutral-dark mt-1">
-              {stats.healthChecksCount > 0 ? "Track your health history" : "Start tracking your health"}
+              {stats.healthChecksCount > 0 ? "Click to view history" : "Start tracking your health"}
             </p>
           </CardContent>
         </Card>
@@ -129,9 +132,9 @@ const Dashboard = () => {
             <Button 
               variant="outline" 
               className="flex justify-between items-center"
-              onClick={() => navigate('/profile')}
+              onClick={() => navigate('/health-check-history')}
             >
-              <span>Update Medical History</span>
+              <span>View Health History</span>
               <ArrowRight className="h-4 w-4" />
             </Button>
             <Button 
