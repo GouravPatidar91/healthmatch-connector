@@ -207,6 +207,7 @@ export type Database = {
       }
       health_checks: {
         Row: {
+          analysis_results: Json | null
           created_at: string
           duration: string | null
           id: string
@@ -218,6 +219,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          analysis_results?: Json | null
           created_at?: string
           duration?: string | null
           id?: string
@@ -229,6 +231,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          analysis_results?: Json | null
           created_at?: string
           duration?: string | null
           id?: string

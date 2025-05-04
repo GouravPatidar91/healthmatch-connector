@@ -54,7 +54,7 @@ export interface HealthCheck {
   medications?: string[];
   notes?: string;
   created_at?: string;
-  analysis_results?: AnalysisCondition[]; // New field to store detailed analysis
+  analysis_results?: AnalysisCondition[]; // For detailed analysis results
 }
 
 // Profile type definition
@@ -440,6 +440,7 @@ export const useUserHealthChecks = () => {
           throw error;
         }
 
+        console.log("Fetched health checks data:", data);
         setHealthChecks(data || []);
       } catch (err) {
         console.error('Error fetching health checks:', err);
