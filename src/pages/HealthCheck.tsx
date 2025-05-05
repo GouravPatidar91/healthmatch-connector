@@ -484,23 +484,6 @@ const HealthCheck = () => {
           </Card>
         )}
         
-        {selectedSymptoms.length > 0 && (
-          <Button
-            type="button"
-            onClick={analyzeSymptoms}
-            className="w-full"
-            disabled={analyzing}
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...
-              </>
-            ) : (
-              'Analyze Symptoms'
-            )}
-          </Button>
-        )}
-        
         {analysisResults.length > 0 && (
           <Card>
             <CardHeader>
@@ -611,15 +594,32 @@ const HealthCheck = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                </>
-              ) : (
-                'Save and Continue'
-              )}
-            </Button>
+            {!analysisResults.length ? (
+              <Button 
+                type="button" 
+                className="w-full" 
+                onClick={analyzeSymptoms} 
+                disabled={analyzing || selectedSymptoms.length === 0}
+              >
+                {analyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...
+                  </>
+                ) : (
+                  'Analyze Symptoms'
+                )}
+              </Button>
+            ) : (
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  'Save and Continue'
+                )}
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </form>
