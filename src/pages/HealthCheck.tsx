@@ -142,7 +142,7 @@ const HealthCheck = () => {
         previous_conditions: previousConditionsArray,
         medications: medicationsArray,
         notes,
-        analysis_results: analysisResults // Save the analysis results
+        analysis_results: analysisResults // Make sure this matches the expected type
       });
       
       toast({

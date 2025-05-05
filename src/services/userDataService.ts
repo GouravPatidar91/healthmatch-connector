@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Json } from "@/integrations/supabase/types";
 
 // Appointment type definition
 export interface Appointment {
@@ -56,6 +57,49 @@ export interface HealthCheck {
   created_at?: string;
   analysis_results?: AnalysisCondition[]; // For detailed analysis results
 }
+
+// Helper function to parse analysis_results from JSON to proper type
+const parseAnalysisResults = (data: any): HealthCheck => {
+  if (!data) return {} as HealthCheck;
+  
+  // Convert JSON analysis_results to AnalysisCondition[]
+  let parsedResults: AnalysisCondition[] | undefined = undefined;
+  
+  if (data.analysis_results) {
+    try {
+      // If it's already an array, check if it needs conversion
+      if (Array.isArray(data.analysis_results)) {
+        parsedResults = data.analysis_results.map((item: any) => ({
+          name: String(item.name || ''),
+          description: String(item.description || ''),
+          matchedSymptoms: Array.isArray(item.matchedSymptoms) ? item.matchedSymptoms : [],
+          matchScore: Number(item.matchScore || 0),
+          recommendedActions: Array.isArray(item.recommendedActions) ? item.recommendedActions : []
+        }));
+      } 
+      // If it's a string, parse it
+      else if (typeof data.analysis_results === 'string') {
+        const parsed = JSON.parse(data.analysis_results);
+        if (Array.isArray(parsed)) {
+          parsedResults = parsed.map((item: any) => ({
+            name: String(item.name || ''),
+            description: String(item.description || ''),
+            matchedSymptoms: Array.isArray(item.matchedSymptoms) ? item.matchedSymptoms : [],
+            matchScore: Number(item.matchScore || 0),
+            recommendedActions: Array.isArray(item.recommendedActions) ? item.recommendedActions : []
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing analysis_results:", error);
+    }
+  }
+  
+  return {
+    ...data,
+    analysis_results: parsedResults
+  } as HealthCheck;
+};
 
 // Profile type definition
 export interface Profile {
@@ -441,7 +485,9 @@ export const useUserHealthChecks = () => {
         }
 
         console.log("Fetched health checks data:", data);
-        setHealthChecks(data || []);
+        // Parse all health checks to ensure proper typing
+        const parsedHealthChecks = (data || []).map(parseAnalysisResults);
+        setHealthChecks(parsedHealthChecks);
       } catch (err) {
         console.error('Error fetching health checks:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch health checks'));
@@ -466,9 +512,14 @@ export const useUserHealthChecks = () => {
         throw new Error('User not authenticated');
       }
 
+      // Prepare health check data with proper serialization of analysis_results
       const healthCheckWithUserId = {
         ...healthCheckData,
-        user_id: user.id
+        user_id: user.id,
+        // Convert analysis_results to JSON for Supabase
+        ...(healthCheckData.analysis_results && {
+          analysis_results: healthCheckData.analysis_results as unknown as Json
+        })
       };
 
       console.log('Saving health check with data:', healthCheckWithUserId);
@@ -483,13 +534,16 @@ export const useUserHealthChecks = () => {
         throw error;
       }
 
-      setHealthChecks(prev => [data, ...prev]);
+      // Parse the returned data to ensure proper typing
+      const parsedResult = parseAnalysisResults(data);
+      setHealthChecks(prev => [parsedResult, ...prev]);
+      
       toast({
         title: "Success",
         description: "Health check saved successfully"
       });
       
-      return data;
+      return parsedResult;
     } catch (err) {
       console.error('Error saving health check:', err);
       toast({
