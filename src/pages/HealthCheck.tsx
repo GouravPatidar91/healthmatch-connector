@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserHealthChecks, AnalysisCondition } from '@/services/userDataService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,7 +24,8 @@ const symptomCategories = [
   },
   {
     category: "Eyes",
-    symptoms: ["Blurry vision", "Eye redness", "Eye pain", "Dry eyes", "Watery eyes", "Eye discharge", "Light sensitivity", "Double vision", "Eye strain"]
+    symptoms: ["Blurry vision", "Eye redness", "Eye pain", "Dry eyes", "Watery eyes", "Eye discharge", "Light sensitivity", "Double vision", "Eye strain"],
+    requiresPhoto: true
   },
   {
     category: "Chest",
@@ -40,7 +41,8 @@ const symptomCategories = [
   },
   {
     category: "Skin",
-    symptoms: ["Rash", "Itching", "Bruising", "Dryness", "Sores", "Changes in mole"]
+    symptoms: ["Rash", "Itching", "Bruising", "Dryness", "Sores", "Changes in mole"],
+    requiresPhoto: true
   },
   {
     category: "Mental Health",
@@ -55,6 +57,7 @@ const HealthCheck = () => {
   const navigate = useNavigate();
   const { saveHealthCheck } = useUserHealthChecks();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [severity, setSeverity] = useState<string>("");
@@ -65,13 +68,68 @@ const HealthCheck = () => {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisCondition[]>([]);
+  const [symptomPhotos, setSymptomPhotos] = useState<{[symptom: string]: string}>({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [currentSymptomForPhoto, setCurrentSymptomForPhoto] = useState<string>("");
 
-  const handleSymptomToggle = (symptom: string) => {
-    setSelectedSymptoms((current) =>
-      current.includes(symptom)
+  const handleSymptomToggle = (symptom: string, category: string) => {
+    const isExternalSymptom = symptomCategories.find(c => c.category === category)?.requiresPhoto;
+    
+    setSelectedSymptoms((current) => {
+      const newSelection = current.includes(symptom)
         ? current.filter((s) => s !== symptom)
-        : [...current, symptom]
-    );
+        : [...current, symptom];
+        
+      // If this is an external symptom that was just selected, prompt for photo
+      if (isExternalSymptom && !current.includes(symptom) && newSelection.includes(symptom)) {
+        setCurrentSymptomForPhoto(symptom);
+        setTimeout(() => {
+          if (fileInputRef.current) {
+            fileInputRef.current.click();
+          }
+        }, 100);
+      }
+      
+      return newSelection;
+    });
+  };
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    
+    setUploadingPhoto(true);
+    
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string' && currentSymptomForPhoto) {
+        setSymptomPhotos(prev => ({
+          ...prev,
+          [currentSymptomForPhoto]: reader.result as string
+        }));
+        
+        toast({
+          title: "Photo added",
+          description: `Photo added for ${currentSymptomForPhoto}`
+        });
+        
+        setUploadingPhoto(false);
+      }
+    };
+    
+    reader.onerror = () => {
+      toast({
+        title: "Error",
+        description: "Failed to read the image file",
+        variant: "destructive"
+      });
+      setUploadingPhoto(false);
+    };
+    
+    reader.readAsDataURL(file);
   };
 
   const analyzeSymptoms = async () => {
@@ -87,8 +145,16 @@ const HealthCheck = () => {
     setAnalyzing(true);
 
     try {
+      const symptomsWithPhotos = selectedSymptoms.map(symptom => ({
+        name: symptom,
+        photo: symptomPhotos[symptom] || null
+      }));
+      
       const response = await supabase.functions.invoke('analyze-symptoms', {
-        body: { symptoms: selectedSymptoms }
+        body: { 
+          symptoms: selectedSymptoms,
+          symptomDetails: symptomsWithPhotos
+        }
       });
 
       console.log("Analysis response:", response);
@@ -112,6 +178,19 @@ const HealthCheck = () => {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const removePhoto = (symptom: string) => {
+    setSymptomPhotos(prev => {
+      const updated = { ...prev };
+      delete updated[symptom];
+      return updated;
+    });
+    
+    toast({
+      title: "Photo removed",
+      description: `Photo for ${symptom} removed`
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,7 +225,8 @@ const HealthCheck = () => {
         previous_conditions: previousConditionsArray,
         medications: medicationsArray,
         notes,
-        analysis_results: analysisResults // Make sure this matches the expected type
+        analysis_results: analysisResults,
+        symptom_photos: symptomPhotos
       });
       
       toast({
@@ -167,6 +247,22 @@ const HealthCheck = () => {
       setLoading(false);
     }
   };
+
+  // Check if any selected symptoms require photos
+  const hasExternalSymptoms = selectedSymptoms.some(symptom => {
+    const category = symptomCategories.find(cat => 
+      cat.symptoms.includes(symptom) && cat.requiresPhoto
+    );
+    return category !== undefined;
+  });
+
+  // Get all selected symptoms that require photos
+  const selectedExternalSymptoms = selectedSymptoms.filter(symptom => {
+    const category = symptomCategories.find(cat => 
+      cat.symptoms.includes(symptom) && cat.requiresPhoto
+    );
+    return category !== undefined;
+  });
 
   return (
     <div className="space-y-6">
@@ -189,14 +285,21 @@ const HealthCheck = () => {
           <CardContent className="space-y-6">
             {symptomCategories.map((category) => (
               <div key={category.category} className="space-y-3">
-                <h3 className="font-semibold">{category.category}</h3>
+                <h3 className="font-semibold">
+                  {category.category}
+                  {category.requiresPhoto && (
+                    <span className="ml-2 text-sm text-blue-600 font-normal">
+                      (Photo requested for symptoms in this category)
+                    </span>
+                  )}
+                </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {category.symptoms.map((symptom) => (
                     <div key={symptom} className="flex items-center space-x-2">
                       <Checkbox 
                         id={symptom}
                         checked={selectedSymptoms.includes(symptom)}
-                        onCheckedChange={() => handleSymptomToggle(symptom)}
+                        onCheckedChange={() => handleSymptomToggle(symptom, category.category)}
                       />
                       <Label htmlFor={symptom} className="cursor-pointer">{symptom}</Label>
                     </div>
@@ -206,6 +309,85 @@ const HealthCheck = () => {
             ))}
           </CardContent>
         </Card>
+        
+        {/* Hidden file input for photo uploading */}
+        <input 
+          type="file" 
+          ref={fileInputRef}
+          onChange={handlePhotoUpload}
+          accept="image/png, image/jpeg"
+          className="hidden"
+        />
+        
+        {/* Display area for uploaded symptom photos */}
+        {hasExternalSymptoms && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Symptom Photos</CardTitle>
+              <CardDescription>
+                Photos help provide more accurate analysis for external symptoms
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {selectedExternalSymptoms.map(symptom => (
+                  <div key={`photo-${symptom}`} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium">{symptom}</h4>
+                      {!symptomPhotos[symptom] ? (
+                        <Button
+                          type="button" 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setCurrentSymptomForPhoto(symptom);
+                            if (fileInputRef.current) fileInputRef.current.click();
+                          }}
+                          disabled={uploadingPhoto}
+                        >
+                          <Upload className="h-4 w-4 mr-1" />
+                          Upload Photo
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removePhoto(symptom)}
+                        >
+                          Remove Photo
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {symptomPhotos[symptom] && (
+                      <div className="relative w-full aspect-video bg-gray-100 rounded-md overflow-hidden">
+                        <img 
+                          src={symptomPhotos[symptom]} 
+                          alt={`Photo of ${symptom}`} 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    )}
+                    
+                    {!symptomPhotos[symptom] && (
+                      <div 
+                        className="w-full aspect-video bg-gray-100 rounded-md flex flex-col items-center justify-center cursor-pointer"
+                        onClick={() => {
+                          setCurrentSymptomForPhoto(symptom);
+                          if (fileInputRef.current) fileInputRef.current.click();
+                        }}
+                      >
+                        <Image className="h-12 w-12 text-gray-400" />
+                        <p className="text-sm text-gray-500 mt-2">Click to add a photo</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         {selectedSymptoms.length > 0 && (
           <Button

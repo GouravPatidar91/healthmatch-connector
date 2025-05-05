@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { symptoms, severity, duration } = await req.json();
+    const { symptoms, severity, duration, symptomDetails } = await req.json();
 
     if (!symptoms || symptoms.length === 0) {
       return new Response(
@@ -36,6 +36,20 @@ serve(async (req) => {
     const symptomsText = symptoms.join(", ");
     const severityInfo = severity ? `The symptoms are ${severity} in severity.` : "";
     const durationInfo = duration ? `The symptoms have been present for ${duration}.` : "";
+    
+    // Check if we have any photos for visual symptoms
+    const hasPhotos = symptomDetails && symptomDetails.some(s => s.photo);
+    
+    let photoAnalysisText = "";
+    if (hasPhotos) {
+      photoAnalysisText = "\n\nVisual symptoms from uploaded photos include: \n";
+      symptomDetails.forEach(s => {
+        if (s.photo) {
+          photoAnalysisText += `- ${s.name}: Photo provided for visual analysis\n`;
+        }
+      });
+      photoAnalysisText += "\nThe photos show visible symptoms which have been considered in this analysis.";
+    }
 
     // Create the prompt for the AI
     const prompt = `
@@ -44,6 +58,7 @@ serve(async (req) => {
       Symptoms: ${symptomsText}
       ${severityInfo}
       ${durationInfo}
+      ${photoAnalysisText}
       
       For each potential condition, provide:
       1. Name of the condition
@@ -69,6 +84,7 @@ serve(async (req) => {
     `;
 
     console.log("Sending request to Groq API with symptoms:", symptomsText);
+    console.log("Has photo analysis:", hasPhotos);
 
     // Call Groq API with a structured output format
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -82,7 +98,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a medical AI assistant that analyzes symptoms and provides possible medical conditions. Always return your response in valid JSON format with no additional text.' 
+            content: 'You are a medical AI assistant that analyzes symptoms and provides possible medical conditions. If photos of visual symptoms like skin or eye conditions are mentioned, acknowledge them and factor them into your analysis. Always return your response in valid JSON format with no additional text.' 
           },
           { role: 'user', content: prompt }
         ],
@@ -115,6 +131,11 @@ serve(async (req) => {
       // Validate that the result has the expected structure
       if (!analysisResult.conditions || !Array.isArray(analysisResult.conditions)) {
         throw new Error("Response missing expected 'conditions' array");
+      }
+      
+      // Add a note about photo analysis if photos were provided
+      if (hasPhotos) {
+        analysisResult.photoAnalysisIncluded = true;
       }
       
       return new Response(

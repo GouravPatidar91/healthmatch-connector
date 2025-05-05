@@ -56,6 +56,7 @@ export interface HealthCheck {
   notes?: string;
   created_at?: string;
   analysis_results?: AnalysisCondition[]; // For detailed analysis results
+  symptom_photos?: {[symptom: string]: string}; // For photos of external symptoms
 }
 
 // Helper function to parse analysis_results from JSON to proper type
@@ -95,9 +96,23 @@ const parseAnalysisResults = (data: any): HealthCheck => {
     }
   }
   
+  // Handle symptom photos if present
+  let symptomPhotos = data.symptom_photos || undefined;
+  
+  // If symptom_photos is a string, try to parse it
+  if (symptomPhotos && typeof symptomPhotos === 'string') {
+    try {
+      symptomPhotos = JSON.parse(symptomPhotos);
+    } catch (error) {
+      console.error("Error parsing symptom_photos:", error);
+      symptomPhotos = undefined;
+    }
+  }
+  
   return {
     ...data,
-    analysis_results: parsedResults
+    analysis_results: parsedResults,
+    symptom_photos: symptomPhotos
   } as HealthCheck;
 };
 
@@ -512,13 +527,17 @@ export const useUserHealthChecks = () => {
         throw new Error('User not authenticated');
       }
 
-      // Prepare health check data with proper serialization of analysis_results
+      // Prepare health check data with proper serialization of analysis_results and symptom_photos
       const healthCheckWithUserId = {
         ...healthCheckData,
         user_id: user.id,
         // Convert analysis_results to JSON for Supabase
         ...(healthCheckData.analysis_results && {
           analysis_results: healthCheckData.analysis_results as unknown as Json
+        }),
+        // Convert symptom_photos to JSON for Supabase
+        ...(healthCheckData.symptom_photos && {
+          symptom_photos: healthCheckData.symptom_photos as unknown as Json
         })
       };
 
