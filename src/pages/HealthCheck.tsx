@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useUserHealthChecks, AnalysisCondition } from '@/services/userDataService';
-import { Loader2, Upload, Image } from 'lucide-react';
+import { useUserHealthChecks, AnalysisCondition, SymptomDetail } from '@/services/userDataService';
+import { Loader2, Upload, Image, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -53,6 +52,11 @@ const symptomCategories = [
 const severityOptions = ["Mild", "Moderate", "Severe"];
 const durationOptions = ["Less than a day", "1-3 days", "4-7 days", "1-2 weeks", "More than 2 weeks"];
 
+// Maximum image size in bytes (5MB)
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+// Maximum dimensions for image resizing
+const MAX_IMAGE_DIMENSION = 1024;
+
 const HealthCheck = () => {
   const navigate = useNavigate();
   const { saveHealthCheck } = useUserHealthChecks();
@@ -90,46 +94,121 @@ const HealthCheck = () => {
         }, 100);
       }
       
+      // If symptom is being removed, also remove any associated photo
+      if (current.includes(symptom) && !newSelection.includes(symptom)) {
+        setSymptomPhotos(prev => {
+          const updated = { ...prev };
+          delete updated[symptom];
+          return updated;
+        });
+      }
+      
       return newSelection;
     });
   };
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle image compression before upload
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        
+        img.onload = () => {
+          // Calculate new dimensions while maintaining aspect ratio
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+            if (width > height) {
+              height = Math.round((height * MAX_IMAGE_DIMENSION) / width);
+              width = MAX_IMAGE_DIMENSION;
+            } else {
+              width = Math.round((width * MAX_IMAGE_DIMENSION) / height);
+              height = MAX_IMAGE_DIMENSION;
+            }
+          }
+          
+          // Create a canvas for resizing
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not get canvas context'));
+            return;
+          }
+          
+          // Draw image at new dimensions
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Get compressed base64 string (quality 0.8 for JPG)
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+          resolve(compressedBase64);
+        };
+        
+        img.onerror = () => {
+          reject(new Error('Error loading image'));
+        };
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('Error reading file'));
+      };
+    });
+  };
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) {
       return;
     }
 
     const file = event.target.files[0];
-    const reader = new FileReader();
+    
+    // Check file size
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast({
+        title: "File too large",
+        description: "Image must be less than 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setUploadingPhoto(true);
     
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string' && currentSymptomForPhoto) {
+    try {
+      // Compress the image before storing
+      const compressedBase64 = await compressImage(file);
+      
+      if (currentSymptomForPhoto) {
         setSymptomPhotos(prev => ({
           ...prev,
-          [currentSymptomForPhoto]: reader.result as string
+          [currentSymptomForPhoto]: compressedBase64
         }));
         
         toast({
           title: "Photo added",
           description: `Photo added for ${currentSymptomForPhoto}`
         });
-        
-        setUploadingPhoto(false);
       }
-    };
-    
-    reader.onerror = () => {
+    } catch (error) {
+      console.error("Error processing photo:", error);
       toast({
         title: "Error",
-        description: "Failed to read the image file",
+        description: "Failed to process the image",
         variant: "destructive"
       });
+    } finally {
       setUploadingPhoto(false);
-    };
-    
-    reader.readAsDataURL(file);
+      if (event.target) {
+        event.target.value = '';  // Reset file input
+      }
+    }
   };
 
   const analyzeSymptoms = async () => {
@@ -145,6 +224,7 @@ const HealthCheck = () => {
     setAnalyzing(true);
 
     try {
+      // Prepare symptom details with photos
       const symptomsWithPhotos = selectedSymptoms.map(symptom => ({
         name: symptom,
         photo: symptomPhotos[symptom] || null
@@ -153,6 +233,8 @@ const HealthCheck = () => {
       const response = await supabase.functions.invoke('analyze-symptoms', {
         body: { 
           symptoms: selectedSymptoms,
+          severity,
+          duration,
           symptomDetails: symptomsWithPhotos
         }
       });
@@ -345,7 +427,11 @@ const HealthCheck = () => {
                           }}
                           disabled={uploadingPhoto}
                         >
-                          <Upload className="h-4 w-4 mr-1" />
+                          {uploadingPhoto && currentSymptomForPhoto === symptom ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4 mr-1" />
+                          )}
                           Upload Photo
                         </Button>
                       ) : (
@@ -384,6 +470,15 @@ const HealthCheck = () => {
                     )}
                   </div>
                 ))}
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start">
+                <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-sm text-blue-700">
+                  <p className="font-medium">About symptom photos</p>
+                  <p className="mt-1">Photos are stored securely in the database and used only for symptom analysis. 
+                  They help provide more accurate assessments for visual conditions like skin and eye issues.</p>
+                </div>
               </div>
             </CardContent>
           </Card>

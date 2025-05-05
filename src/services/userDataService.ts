@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +41,12 @@ export interface AnalysisCondition {
   matchedSymptoms: string[];
   matchScore: number;
   recommendedActions: string[];
+}
+
+// Symptom detail with photo
+export interface SymptomDetail {
+  name: string;
+  photo?: string | null;
 }
 
 // Health check type definition
@@ -519,6 +524,18 @@ export const useUserHealthChecks = () => {
     fetchHealthChecks();
   }, [toast]);
 
+  // Process photo for storage
+  const processPhotoForStorage = (photoBase64: string): string => {
+    // If it's already a URL (from storage), return as is
+    if (photoBase64.startsWith('http')) {
+      return photoBase64;
+    }
+    
+    // Keep the base64 string as is for storage in the database
+    // We'll serialize this as JSON when saving to the symptom_photos column
+    return photoBase64;
+  };
+
   const saveHealthCheck = async (healthCheckData: Omit<HealthCheck, 'user_id'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -526,6 +543,16 @@ export const useUserHealthChecks = () => {
       if (!user) {
         throw new Error('User not authenticated');
       }
+
+      // Process photos for storage if they exist
+      const processedPhotos = healthCheckData.symptom_photos
+        ? Object.entries(healthCheckData.symptom_photos).reduce((acc, [symptom, photo]) => {
+            if (photo) {
+              acc[symptom] = processPhotoForStorage(photo);
+            }
+            return acc;
+          }, {} as Record<string, string>)
+        : undefined;
 
       // Prepare health check data with proper serialization of analysis_results and symptom_photos
       const healthCheckWithUserId = {
@@ -535,9 +562,9 @@ export const useUserHealthChecks = () => {
         ...(healthCheckData.analysis_results && {
           analysis_results: healthCheckData.analysis_results as unknown as Json
         }),
-        // Convert symptom_photos to JSON for Supabase
-        ...(healthCheckData.symptom_photos && {
-          symptom_photos: healthCheckData.symptom_photos as unknown as Json
+        // Convert processed symptom_photos to JSON for Supabase
+        ...(processedPhotos && {
+          symptom_photos: processedPhotos as unknown as Json
         })
       };
 

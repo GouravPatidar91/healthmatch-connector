@@ -45,6 +45,7 @@ serve(async (req) => {
       photoAnalysisText = "\n\nVisual symptoms from uploaded photos include: \n";
       symptomDetails.forEach(s => {
         if (s.photo) {
+          // We don't send the actual base64 string to the AI to save tokens
           photoAnalysisText += `- ${s.name}: Photo provided for visual analysis\n`;
         }
       });
