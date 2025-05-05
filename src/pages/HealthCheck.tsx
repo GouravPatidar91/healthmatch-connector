@@ -23,6 +23,10 @@ const symptomCategories = [
     symptoms: ["Headache", "Migraine", "Vision problems", "Hearing problems", "Ear pain", "Sore throat", "Runny nose"]
   },
   {
+    category: "Eyes",
+    symptoms: ["Blurry vision", "Eye redness", "Eye pain", "Dry eyes", "Watery eyes", "Eye discharge", "Light sensitivity", "Double vision", "Eye strain"]
+  },
+  {
     category: "Chest",
     symptoms: ["Chest pain", "Shortness of breath", "Palpitations", "Cough", "Wheezing"]
   },
