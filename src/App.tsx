@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +8,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import HealthCheck from "./pages/HealthCheck";
 import HealthCheckHistory from "./pages/HealthCheckHistory";
+import HealthCheckResults from "./pages/HealthCheckResults";
 import Appointments from "./pages/Appointments";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -35,7 +37,7 @@ const App = () => (
             <Route element={<RequireAuth><MainLayout /></RequireAuth>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/health-check" element={<HealthCheck />} />
-              {/* Keep the health-check-history route accessible */}
+              <Route path="/health-check-results" element={<HealthCheckResults />} />
               <Route path="/health-check-history" element={<HealthCheckHistory />} />
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/emergency" element={<Emergency />} />

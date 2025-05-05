@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserHealthChecks, AnalysisCondition, SymptomDetail } from '@/services/userDataService';
-import { Loader2, Upload, Image, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -107,14 +108,14 @@ const HealthCheck = () => {
     });
   };
 
-  // Handle image compression before upload
+  // Handle image compression before upload - fixed the error by removing 'new' keyword
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       
       reader.onload = (event) => {
-        const img = new Image();
+        const img = document.createElement('img');
         img.src = event.target?.result as string;
         
         img.onload = () => {
@@ -247,6 +248,23 @@ const HealthCheck = () => {
           title: "Analysis complete",
           description: `Found ${response.data.conditions.length} potential conditions based on your symptoms.`
         });
+
+        // After successful analysis, navigate to the results page with the necessary data
+        const healthCheckData = {
+          symptoms: selectedSymptoms,
+          severity,
+          duration,
+          previous_conditions: previousConditions ? previousConditions.split(',').map(item => item.trim()) : [],
+          medications: medications ? medications.split(',').map(item => item.trim()) : [],
+          notes,
+          analysis_results: response.data.conditions,
+          symptom_photos: symptomPhotos
+        };
+        
+        // Navigate to the results page with the state
+        navigate('/health-check-results', { 
+          state: { healthCheckData }
+        });
       } else {
         throw new Error("Invalid response format");
       }
@@ -257,7 +275,6 @@ const HealthCheck = () => {
         description: "Unable to analyze symptoms at this time. Please try again later.",
         variant: "destructive"
       });
-    } finally {
       setAnalyzing(false);
     }
   };
@@ -273,61 +290,6 @@ const HealthCheck = () => {
       title: "Photo removed",
       description: `Photo for ${symptom} removed`
     });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (selectedSymptoms.length === 0) {
-      toast({
-        title: "No symptoms selected",
-        description: "Please select at least one symptom",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      // Parse conditions and medications to arrays
-      const previousConditionsArray = previousConditions
-        ? previousConditions.split(',').map(item => item.trim())
-        : [];
-        
-      const medicationsArray = medications
-        ? medications.split(',').map(item => item.trim())
-        : [];
-      
-      // Save the health check with analysis results
-      await saveHealthCheck({
-        symptoms: selectedSymptoms,
-        severity,
-        duration,
-        previous_conditions: previousConditionsArray,
-        medications: medicationsArray,
-        notes,
-        analysis_results: analysisResults,
-        symptom_photos: symptomPhotos
-      });
-      
-      toast({
-        title: "Health check saved",
-        description: "Your health information has been saved successfully"
-      });
-      
-      // Navigate to the health check history page
-      navigate('/health-check-history');
-    } catch (error) {
-      console.error("Error saving health check:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save your health check information",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Check if any selected symptoms require photos
@@ -358,7 +320,7 @@ const HealthCheck = () => {
         </Button>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form className="space-y-8">
         <Card>
           <CardHeader>
             <CardTitle>Symptoms</CardTitle>
@@ -464,7 +426,7 @@ const HealthCheck = () => {
                           if (fileInputRef.current) fileInputRef.current.click();
                         }}
                       >
-                        <Image className="h-12 w-12 text-gray-400" />
+                        <ImageIcon className="h-12 w-12 text-gray-400" />
                         <p className="text-sm text-gray-500 mt-2">Click to add a photo</p>
                       </div>
                     )}
@@ -480,47 +442,6 @@ const HealthCheck = () => {
                   They help provide more accurate assessments for visual conditions like skin and eye issues.</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-        
-        {analysisResults.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Analysis Results</CardTitle>
-              <CardDescription>
-                Possible conditions based on your symptoms
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {analysisResults.map((condition, index) => (
-                <div 
-                  key={index} 
-                  className="border p-4 rounded-lg space-y-2"
-                >
-                  <div className="flex justify-between">
-                    <h3 className="font-semibold">{condition.name}</h3>
-                    <span className="text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                      Match: {condition.matchScore}%
-                    </span>
-                  </div>
-                  <p className="text-gray-600 text-sm">{condition.description}</p>
-                  <div className="text-sm">
-                    <h4 className="font-medium text-gray-700">Matched symptoms:</h4>
-                    <p className="text-gray-600">
-                      {condition.matchedSymptoms.join(", ")}
-                    </p>
-                  </div>
-                  <div className="text-sm">
-                    <h4 className="font-medium text-gray-700">Recommendations:</h4>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {condition.recommendedActions.map((action, i) => (
-                        <li key={i} className="text-gray-600">{action}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))}
             </CardContent>
           </Card>
         )}
@@ -594,32 +515,20 @@ const HealthCheck = () => {
             </div>
           </CardContent>
           <CardFooter>
-            {!analysisResults.length ? (
-              <Button 
-                type="button" 
-                className="w-full" 
-                onClick={analyzeSymptoms} 
-                disabled={analyzing || selectedSymptoms.length === 0}
-              >
-                {analyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...
-                  </>
-                ) : (
-                  'Analyze Symptoms'
-                )}
-              </Button>
-            ) : (
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                  </>
-                ) : (
-                  'Save and Continue'
-                )}
-              </Button>
-            )}
+            <Button 
+              type="button" 
+              className="w-full" 
+              onClick={analyzeSymptoms} 
+              disabled={analyzing || selectedSymptoms.length === 0}
+            >
+              {analyzing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...
+                </>
+              ) : (
+                'Analyze Symptoms'
+              )}
+            </Button>
           </CardFooter>
         </Card>
       </form>
