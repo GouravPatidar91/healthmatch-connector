@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from '@/hooks/use-toast';
 import { useUserHealthChecks, AnalysisCondition } from '@/services/userDataService';
@@ -13,6 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Image } from "@/components/ui/image";
 
 interface HealthCheckData {
   symptoms: string[];
@@ -44,7 +45,16 @@ const HealthCheckResults = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await saveHealthCheck(healthCheckData);
+      // Ensure we're passing the analysis_results properly for database storage
+      const dataToSave = {
+        ...healthCheckData,
+        // Make sure the analysis results are properly formatted
+        analysis_results: healthCheckData.analysis_results
+      };
+      
+      console.log("Saving health check with data:", dataToSave);
+      
+      await saveHealthCheck(dataToSave);
       toast({
         title: "Health check saved",
         description: "Your health information has been saved successfully"
@@ -108,6 +118,28 @@ const HealthCheckResults = () => {
               </div>
             </div>
           </div>
+
+          {/* Display symptom photos if any */}
+          {healthCheckData.symptom_photos && Object.keys(healthCheckData.symptom_photos).length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Symptom Photos</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(healthCheckData.symptom_photos).map(([symptom, photoSrc]) => (
+                  photoSrc && (
+                    <div key={symptom} className="border rounded-md p-2">
+                      <p className="text-xs text-gray-500 mb-1">{symptom}</p>
+                      <img 
+                        src={photoSrc} 
+                        alt={`${symptom} photo`} 
+                        className="w-full h-auto object-cover rounded"
+                        style={{ maxHeight: '150px' }}
+                      />
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
