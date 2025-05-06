@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from 'lucide-react';
+import { Loader2, Camera } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from '@/hooks/use-toast';
 import { useUserHealthChecks, AnalysisCondition } from '@/services/userDataService';
@@ -41,6 +41,31 @@ const HealthCheckResults = () => {
     navigate('/health-check');
     return null;
   }
+
+  // Helper functions to categorize symptoms
+  const isEyeSymptom = (symptom: string): boolean => {
+    const eyeSymptoms = [
+      "Blurry vision", "Eye redness", "Eye pain", "Dry eyes", 
+      "Watery eyes", "Eye discharge", "Light sensitivity", 
+      "Double vision", "Eye strain"
+    ];
+    return eyeSymptoms.includes(symptom);
+  };
+
+  const isSkinSymptom = (symptom: string): boolean => {
+    const skinSymptoms = [
+      "Rash", "Itching", "Bruising", "Dryness", 
+      "Sores", "Changes in mole"
+    ];
+    return skinSymptoms.includes(symptom);
+  };
+
+  // Count how many visual symptoms (eye or skin) have photos
+  const visualPhotosCount = healthCheckData.symptom_photos 
+    ? Object.keys(healthCheckData.symptom_photos).filter(symptom => 
+        isEyeSymptom(symptom) || isSkinSymptom(symptom)
+      ).length 
+    : 0;
 
   const handleSave = async () => {
     setSaving(true);
@@ -102,7 +127,12 @@ const HealthCheckResults = () => {
               <h3 className="text-sm font-medium text-gray-500">Reported Symptoms</h3>
               <div className="mt-2 flex flex-wrap gap-2">
                 {healthCheckData.symptoms.map((symptom, index) => (
-                  <Badge key={index} variant="outline">{symptom}</Badge>
+                  <Badge key={index} variant="outline" className="flex items-center gap-1">
+                    {symptom}
+                    {healthCheckData.symptom_photos && healthCheckData.symptom_photos[symptom] && (
+                      <Camera className="h-3 w-3 ml-1" />
+                    )}
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -122,12 +152,23 @@ const HealthCheckResults = () => {
           {/* Display symptom photos if any */}
           {healthCheckData.symptom_photos && Object.keys(healthCheckData.symptom_photos).length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Symptom Photos</h3>
+              <h3 className="text-sm font-medium text-gray-500 mb-2">
+                Symptom Photos {visualPhotosCount > 0 && 
+                  <span className="text-blue-600 font-normal">(Used for visual analysis)</span>
+                }
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 {Object.entries(healthCheckData.symptom_photos).map(([symptom, photoSrc]) => (
                   photoSrc && (
-                    <div key={symptom} className="border rounded-md p-2">
-                      <p className="text-xs text-gray-500 mb-1">{symptom}</p>
+                    <div key={symptom} className={`border rounded-md p-2 ${isEyeSymptom(symptom) || isSkinSymptom(symptom) ? 'border-blue-200 bg-blue-50' : ''}`}>
+                      <div className="flex items-center mb-1">
+                        <p className="text-xs text-gray-500">{symptom}</p>
+                        {(isEyeSymptom(symptom) || isSkinSymptom(symptom)) && (
+                          <span className="ml-2 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                            Analyzed
+                          </span>
+                        )}
+                      </div>
                       <Image 
                         src={photoSrc} 
                         alt={`${symptom} photo`} 
@@ -135,6 +176,13 @@ const HealthCheckResults = () => {
                         style={{ maxHeight: '150px' }}
                         fallback="/placeholder.svg"
                       />
+                      {(isEyeSymptom(symptom) || isSkinSymptom(symptom)) && (
+                        <p className="mt-1 text-xs text-blue-700">
+                          {isEyeSymptom(symptom) 
+                            ? "AI analyzed this image for eye conditions" 
+                            : "AI analyzed this image for skin conditions"}
+                        </p>
+                      )}
                     </div>
                   )
                 ))}
@@ -148,7 +196,11 @@ const HealthCheckResults = () => {
       <Card>
         <CardHeader>
           <CardTitle>Analysis Results</CardTitle>
-          <CardDescription>Possible conditions based on your symptoms</CardDescription>
+          <CardDescription>
+            {visualPhotosCount > 0 
+              ? `Conditions based on your symptoms and photo analysis` 
+              : `Possible conditions based on your symptoms`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
@@ -158,7 +210,11 @@ const HealthCheckResults = () => {
                   <div className="flex flex-col items-start">
                     <div className="flex items-center gap-2">
                       <span>{condition.name}</span>
-                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                      <Badge className={`${condition.matchScore > 80 
+                        ? 'bg-red-100 text-red-800 hover:bg-red-100' 
+                        : condition.matchScore > 60 
+                          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' 
+                          : 'bg-blue-100 text-blue-800 hover:bg-blue-100'}`}>
                         {condition.matchScore}% match
                       </Badge>
                     </div>
@@ -172,7 +228,12 @@ const HealthCheckResults = () => {
                       <h4 className="font-medium text-sm text-gray-500">Matched Symptoms:</h4>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {condition.matchedSymptoms.map((symptom, i) => (
-                          <Badge key={i} variant="outline">{symptom}</Badge>
+                          <Badge key={i} variant="outline" className="flex items-center gap-1">
+                            {symptom}
+                            {healthCheckData.symptom_photos && healthCheckData.symptom_photos[symptom] && (
+                              <Camera className="h-3 w-3 ml-1" />
+                            )}
+                          </Badge>
                         ))}
                       </div>
                     </div>
@@ -185,6 +246,13 @@ const HealthCheckResults = () => {
                         ))}
                       </ul>
                     </div>
+                    
+                    {condition.seekMedicalAttention && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                        <h4 className="font-medium text-sm text-red-700">When to seek medical attention:</h4>
+                        <p className="text-sm text-red-700 mt-1">{condition.seekMedicalAttention}</p>
+                      </div>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>

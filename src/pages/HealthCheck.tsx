@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserHealthChecks, AnalysisCondition, SymptomDetail } from '@/services/userDataService';
-import { Loader2, Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,7 +25,8 @@ const symptomCategories = [
   {
     category: "Eyes",
     symptoms: ["Blurry vision", "Eye redness", "Eye pain", "Dry eyes", "Watery eyes", "Eye discharge", "Light sensitivity", "Double vision", "Eye strain"],
-    requiresPhoto: true
+    requiresPhoto: true,
+    photoImportance: "critical"
   },
   {
     category: "Chest",
@@ -42,7 +43,8 @@ const symptomCategories = [
   {
     category: "Skin",
     symptoms: ["Rash", "Itching", "Bruising", "Dryness", "Sores", "Changes in mole"],
-    requiresPhoto: true
+    requiresPhoto: true,
+    photoImportance: "critical"
   },
   {
     category: "Mental Health",
@@ -76,9 +78,11 @@ const HealthCheck = () => {
   const [symptomPhotos, setSymptomPhotos] = useState<{[symptom: string]: string}>({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [currentSymptomForPhoto, setCurrentSymptomForPhoto] = useState<string>("");
+  const [missingCriticalPhotos, setMissingCriticalPhotos] = useState<string[]>([]);
 
   const handleSymptomToggle = (symptom: string, category: string) => {
-    const isExternalSymptom = symptomCategories.find(c => c.category === category)?.requiresPhoto;
+    const categoryObj = symptomCategories.find(c => c.category === category);
+    const isExternalSymptom = categoryObj?.requiresPhoto;
     
     setSelectedSymptoms((current) => {
       const newSelection = current.includes(symptom)
@@ -102,13 +106,18 @@ const HealthCheck = () => {
           delete updated[symptom];
           return updated;
         });
+        
+        // Remove from missing critical photos if it was there
+        setMissingCriticalPhotos(prev => 
+          prev.filter(s => s !== symptom)
+        );
       }
       
       return newSelection;
     });
   };
 
-  // Handle image compression before upload - fixed the error by removing 'new' keyword
+  // Handle image compression before upload
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -192,6 +201,11 @@ const HealthCheck = () => {
           [currentSymptomForPhoto]: compressedBase64
         }));
         
+        // Remove from missing critical photos if it was there
+        setMissingCriticalPhotos(prev => 
+          prev.filter(s => s !== currentSymptomForPhoto)
+        );
+        
         toast({
           title: "Photo added",
           description: `Photo added for ${currentSymptomForPhoto}`
@@ -212,12 +226,43 @@ const HealthCheck = () => {
     }
   };
 
+  const checkForMissingCriticalPhotos = (): string[] => {
+    // Find all selected symptoms that require photos but don't have them
+    const missing: string[] = [];
+    
+    selectedSymptoms.forEach(symptom => {
+      // Find which category this symptom belongs to
+      const category = symptomCategories.find(cat => 
+        cat.symptoms.includes(symptom) && cat.requiresPhoto && cat.photoImportance === "critical"
+      );
+      
+      // If it's a critical photo symptom but doesn't have a photo
+      if (category && !symptomPhotos[symptom]) {
+        missing.push(symptom);
+      }
+    });
+    
+    return missing;
+  };
+
   const analyzeSymptoms = async () => {
     if (selectedSymptoms.length === 0) {
       toast({
         title: "No symptoms selected",
         description: "Please select at least one symptom for analysis",
         variant: "destructive"
+      });
+      return;
+    }
+
+    // Check for missing critical photos
+    const missing = checkForMissingCriticalPhotos();
+    if (missing.length > 0) {
+      setMissingCriticalPhotos(missing);
+      toast({
+        title: "Missing important photos",
+        description: `Please add photos for these symptoms for better analysis: ${missing.join(", ")}`,
+        variant: "warning"
       });
       return;
     }
@@ -244,10 +289,19 @@ const HealthCheck = () => {
 
       if (response.data && response.data.conditions) {
         setAnalysisResults(response.data.conditions);
-        toast({
-          title: "Analysis complete",
-          description: `Found ${response.data.conditions.length} potential conditions based on your symptoms.`
-        });
+        
+        // Show different toast based on whether visual analysis was included
+        if (response.data.visualAnalysisIncluded) {
+          toast({
+            title: "Visual analysis complete",
+            description: `Found ${response.data.conditions.length} potential conditions based on your symptoms and photos.`,
+          });
+        } else {
+          toast({
+            title: "Analysis complete",
+            description: `Found ${response.data.conditions.length} potential conditions based on your symptoms.`
+          });
+        }
 
         // After successful analysis, navigate to the results page with the necessary data
         const healthCheckData = {
@@ -286,6 +340,15 @@ const HealthCheck = () => {
       return updated;
     });
     
+    // If this symptom requires a critical photo, add it to missing list
+    const category = symptomCategories.find(cat => 
+      cat.symptoms.includes(symptom) && cat.requiresPhoto && cat.photoImportance === "critical"
+    );
+    
+    if (category) {
+      setMissingCriticalPhotos(prev => [...prev, symptom]);
+    }
+    
     toast({
       title: "Photo removed",
       description: `Photo for ${symptom} removed`
@@ -307,6 +370,11 @@ const HealthCheck = () => {
     );
     return category !== undefined;
   });
+
+  // Check if a symptom is missing a critical photo
+  const isMissingCriticalPhoto = (symptom: string): boolean => {
+    return missingCriticalPhotos.includes(symptom);
+  };
 
   return (
     <div className="space-y-6">
@@ -332,8 +400,10 @@ const HealthCheck = () => {
                 <h3 className="font-semibold">
                   {category.category}
                   {category.requiresPhoto && (
-                    <span className="ml-2 text-sm text-blue-600 font-normal">
-                      (Photo requested for symptoms in this category)
+                    <span className={`ml-2 text-sm ${category.photoImportance === 'critical' ? 'text-red-600 font-semibold' : 'text-blue-600 font-normal'}`}>
+                      {category.photoImportance === 'critical' 
+                        ? "(Photo required for analysis)" 
+                        : "(Photo requested for symptoms in this category)"}
                     </span>
                   )}
                 </h3>
@@ -345,7 +415,15 @@ const HealthCheck = () => {
                         checked={selectedSymptoms.includes(symptom)}
                         onCheckedChange={() => handleSymptomToggle(symptom, category.category)}
                       />
-                      <Label htmlFor={symptom} className="cursor-pointer">{symptom}</Label>
+                      <div className="flex items-center">
+                        <Label htmlFor={symptom} className="cursor-pointer">{symptom}</Label>
+                        {selectedSymptoms.includes(symptom) && category.requiresPhoto && !symptomPhotos[symptom] && (
+                          <Camera className={`h-4 w-4 ml-1 ${category.photoImportance === 'critical' ? 'text-red-500' : 'text-blue-500'}`} />
+                        )}
+                        {selectedSymptoms.includes(symptom) && symptomPhotos[symptom] && (
+                          <div className="h-2 w-2 ml-1 bg-green-500 rounded-full" />
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -369,77 +447,115 @@ const HealthCheck = () => {
             <CardHeader>
               <CardTitle>Symptom Photos</CardTitle>
               <CardDescription>
-                Photos help provide more accurate analysis for external symptoms
+                Photos help provide more accurate analysis for visual symptoms
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {selectedExternalSymptoms.map(symptom => (
-                  <div key={`photo-${symptom}`} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-medium">{symptom}</h4>
-                      {!symptomPhotos[symptom] ? (
-                        <Button
-                          type="button" 
-                          size="sm"
-                          variant="outline"
+                {selectedExternalSymptoms.map(symptom => {
+                  // Get the category info for this symptom
+                  const categoryInfo = symptomCategories.find(cat => 
+                    cat.symptoms.includes(symptom) && cat.requiresPhoto
+                  );
+                  const isCritical = categoryInfo?.photoImportance === 'critical';
+                  const photoMissing = isMissingCriticalPhoto(symptom);
+                  
+                  return (
+                    <div 
+                      key={`photo-${symptom}`} 
+                      className={`border rounded-lg p-4 space-y-3 ${photoMissing ? 'border-red-300 bg-red-50' : ''}`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <h4 className="font-medium">{symptom}</h4>
+                          {isCritical && (
+                            <span className="ml-2 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
+                              Required
+                            </span>
+                          )}
+                        </div>
+                        {!symptomPhotos[symptom] ? (
+                          <Button
+                            type="button" 
+                            size="sm"
+                            variant={photoMissing ? "default" : "outline"}
+                            className={photoMissing ? "bg-red-500 hover:bg-red-600" : ""}
+                            onClick={() => {
+                              setCurrentSymptomForPhoto(symptom);
+                              if (fileInputRef.current) fileInputRef.current.click();
+                            }}
+                            disabled={uploadingPhoto}
+                          >
+                            {uploadingPhoto && currentSymptomForPhoto === symptom ? (
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4 mr-1" />
+                            )}
+                            Upload Photo
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removePhoto(symptom)}
+                          >
+                            Remove Photo
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {symptomPhotos[symptom] && (
+                        <div className="relative w-full aspect-video bg-gray-100 rounded-md overflow-hidden">
+                          <img 
+                            src={symptomPhotos[symptom]} 
+                            alt={`Photo of ${symptom}`} 
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      )}
+                      
+                      {!symptomPhotos[symptom] && (
+                        <div 
+                          className={`w-full aspect-video ${photoMissing ? 'bg-red-100' : 'bg-gray-100'} rounded-md flex flex-col items-center justify-center cursor-pointer`}
                           onClick={() => {
                             setCurrentSymptomForPhoto(symptom);
                             if (fileInputRef.current) fileInputRef.current.click();
                           }}
-                          disabled={uploadingPhoto}
                         >
-                          {uploadingPhoto && currentSymptomForPhoto === symptom ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <Upload className="h-4 w-4 mr-1" />
-                          )}
-                          Upload Photo
-                        </Button>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removePhoto(symptom)}
-                        >
-                          Remove Photo
-                        </Button>
+                          <ImageIcon className={`h-12 w-12 ${photoMissing ? 'text-red-400' : 'text-gray-400'}`} />
+                          <p className={`text-sm ${photoMissing ? 'text-red-600 font-medium' : 'text-gray-500'} mt-2`}>
+                            {isCritical 
+                              ? "Photo required for accurate diagnosis" 
+                              : "Click to add a photo"}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {symptomPhotos[symptom] && (isCritical || isEyeSymptom(symptom) || isSkinSymptom(symptom)) && (
+                        <div className="p-2 bg-blue-50 border border-blue-100 rounded">
+                          <p className="text-sm text-blue-700">
+                            {isEyeSymptom(symptom) 
+                              ? "Eye photo will be analyzed for conditions like conjunctivitis, dry eye, or irritation" 
+                              : isSkinSymptom(symptom) 
+                                ? "Skin photo will be analyzed for rash patterns, discoloration, and other visual characteristics" 
+                                : "This photo will help with accurate diagnosis"}
+                          </p>
+                        </div>
                       )}
                     </div>
-                    
-                    {symptomPhotos[symptom] && (
-                      <div className="relative w-full aspect-video bg-gray-100 rounded-md overflow-hidden">
-                        <img 
-                          src={symptomPhotos[symptom]} 
-                          alt={`Photo of ${symptom}`} 
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    )}
-                    
-                    {!symptomPhotos[symptom] && (
-                      <div 
-                        className="w-full aspect-video bg-gray-100 rounded-md flex flex-col items-center justify-center cursor-pointer"
-                        onClick={() => {
-                          setCurrentSymptomForPhoto(symptom);
-                          if (fileInputRef.current) fileInputRef.current.click();
-                        }}
-                      >
-                        <ImageIcon className="h-12 w-12 text-gray-400" />
-                        <p className="text-sm text-gray-500 mt-2">Click to add a photo</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start">
                 <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
                 <div className="text-sm text-blue-700">
                   <p className="font-medium">About symptom photos</p>
-                  <p className="mt-1">Photos are stored securely in the database and used only for symptom analysis. 
-                  They help provide more accurate assessments for visual conditions like skin and eye issues.</p>
+                  <p className="mt-1">Photos are stored securely in the database and used for symptom analysis. 
+                  They help provide much more accurate assessments for visual conditions like skin and eye issues.</p>
+                  <p className="mt-1 font-semibold">Our AI can analyze photos to identify specific eye and skin conditions by 
+                  examining visual characteristics that are critical for proper diagnosis.</p>
                 </div>
               </div>
             </CardContent>
@@ -535,5 +651,23 @@ const HealthCheck = () => {
     </div>
   );
 };
+
+// Helper functions to check symptom types
+function isEyeSymptom(symptom: string): boolean {
+  const eyeSymptoms = [
+    "Blurry vision", "Eye redness", "Eye pain", "Dry eyes", 
+    "Watery eyes", "Eye discharge", "Light sensitivity", 
+    "Double vision", "Eye strain"
+  ];
+  return eyeSymptoms.includes(symptom);
+}
+
+function isSkinSymptom(symptom: string): boolean {
+  const skinSymptoms = [
+    "Rash", "Itching", "Bruising", "Dryness", 
+    "Sores", "Changes in mole"
+  ];
+  return skinSymptoms.includes(symptom);
+}
 
 export default HealthCheck;

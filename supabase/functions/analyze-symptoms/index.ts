@@ -37,46 +37,78 @@ serve(async (req) => {
     const severityInfo = severity ? `The symptoms are ${severity} in severity.` : "";
     const durationInfo = duration ? `The symptoms have been present for ${duration}.` : "";
     
-    // Check if we have any photos for visual symptoms
-    const hasPhotos = symptomDetails && symptomDetails.some(s => s.photo);
-    
+    // Enhanced photo analysis section
     let photoAnalysisText = "";
-    if (hasPhotos) {
+    let hasDetailedVisualAnalysis = false;
+    
+    if (symptomDetails && symptomDetails.some(s => s.photo)) {
       photoAnalysisText = "\n\nVisual symptoms from uploaded photos include: \n";
-      symptomDetails.forEach(s => {
-        if (s.photo) {
-          // We don't send the actual base64 string to the AI to save tokens
-          photoAnalysisText += `- ${s.name}: Photo provided for visual analysis\n`;
-        }
-      });
-      photoAnalysisText += "\nThe photos show visible symptoms which have been considered in this analysis.";
+      
+      // Map photos to their corresponding symptoms for better context
+      const eyeSymptoms = symptomDetails.filter(s => s.photo && isEyeSymptom(s.name));
+      const skinSymptoms = symptomDetails.filter(s => s.photo && isSkinSymptom(s.name));
+      
+      // Detailed analysis for eye symptoms
+      if (eyeSymptoms.length > 0) {
+        hasDetailedVisualAnalysis = true;
+        photoAnalysisText += "\nEYE SYMPTOMS WITH PHOTOS:\n";
+        eyeSymptoms.forEach(s => {
+          photoAnalysisText += `- ${s.name}: Photo provided shows possible eye condition\n`;
+        });
+        photoAnalysisText += "\nFor eye symptoms, carefully analyze for possible conditions like conjunctivitis, dry eye syndrome, allergic reactions, subconjunctival hemorrhage, or more serious conditions.";
+      }
+      
+      // Detailed analysis for skin symptoms
+      if (skinSymptoms.length > 0) {
+        hasDetailedVisualAnalysis = true;
+        photoAnalysisText += "\n\nSKIN SYMPTOMS WITH PHOTOS:\n";
+        skinSymptoms.forEach(s => {
+          photoAnalysisText += `- ${s.name}: Photo provided shows skin condition\n`;
+        });
+        photoAnalysisText += "\nFor skin symptoms, carefully analyze for possible conditions like dermatitis, eczema, psoriasis, fungal infections, or potential allergic reactions.";
+      }
+      
+      // Add info for other symptoms with photos
+      const otherSymptoms = symptomDetails.filter(s => s.photo && !isEyeSymptom(s.name) && !isSkinSymptom(s.name));
+      if (otherSymptoms.length > 0) {
+        photoAnalysisText += "\n\nOTHER SYMPTOMS WITH PHOTOS:\n";
+        otherSymptoms.forEach(s => {
+          photoAnalysisText += `- ${s.name}: Photo provided for symptom analysis\n`;
+        });
+      }
+      
+      photoAnalysisText += "\n\nThe photos show visible symptoms which have been considered in this analysis.";
     }
 
     // Create the prompt for the AI
     const prompt = `
-      As a medical AI assistant, analyze the following symptoms and provide possible conditions:
+      As a medical AI assistant specializing in visual diagnosis, analyze the following symptoms and provide possible conditions:
       
       Symptoms: ${symptomsText}
       ${severityInfo}
       ${durationInfo}
       ${photoAnalysisText}
       
+      ${hasDetailedVisualAnalysis ? "Pay special attention to the visual symptoms where photos were provided. For eye conditions, examine for redness, discharge, swelling, or abnormal appearance. For skin conditions, look for patterns, coloration, texture, and distribution of the affected areas." : ""}
+      
       For each potential condition, provide:
       1. Name of the condition
-      2. A brief description
+      2. A detailed description including visual characteristics
       3. Which symptoms match this condition
       4. A confidence score (percentage)
-      5. Recommended actions
+      5. Recommended actions or treatments
+      6. When to seek immediate medical attention
       
       Return the top 3 most likely conditions in JSON format like this:
       {
         "conditions": [
           {
             "name": "Condition Name",
-            "description": "Brief description of the condition",
+            "description": "Detailed description including visual characteristics and symptoms",
             "matchedSymptoms": ["symptom1", "symptom2"],
             "matchScore": 85,
-            "recommendedActions": ["action1", "action2", "action3"]
+            "recommendedActions": ["action1", "action2", "action3"],
+            "seekMedicalAttention": "When to see a doctor immediately"
           }
         ]
       }
@@ -85,7 +117,7 @@ serve(async (req) => {
     `;
 
     console.log("Sending request to Groq API with symptoms:", symptomsText);
-    console.log("Has photo analysis:", hasPhotos);
+    console.log("Has photo analysis:", hasDetailedVisualAnalysis);
 
     // Call Groq API with a structured output format
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -99,7 +131,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a medical AI assistant that analyzes symptoms and provides possible medical conditions. If photos of visual symptoms like skin or eye conditions are mentioned, acknowledge them and factor them into your analysis. Always return your response in valid JSON format with no additional text.' 
+            content: 'You are a medical AI assistant specialized in visual diagnosis that analyzes symptoms and provides possible medical conditions. When photos of visual symptoms like eye or skin conditions are provided, perform a detailed analysis of the visual symptoms. Always return your response in valid JSON format with no additional text.' 
           },
           { role: 'user', content: prompt }
         ],
@@ -134,9 +166,9 @@ serve(async (req) => {
         throw new Error("Response missing expected 'conditions' array");
       }
       
-      // Add a note about photo analysis if photos were provided
-      if (hasPhotos) {
-        analysisResult.photoAnalysisIncluded = true;
+      // Add a note about whether detailed visual analysis was included
+      if (hasDetailedVisualAnalysis) {
+        analysisResult.visualAnalysisIncluded = true;
       }
       
       return new Response(
@@ -175,3 +207,21 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper functions to categorize symptoms
+function isEyeSymptom(symptom: string): boolean {
+  const eyeSymptoms = [
+    "Blurry vision", "Eye redness", "Eye pain", "Dry eyes", 
+    "Watery eyes", "Eye discharge", "Light sensitivity", 
+    "Double vision", "Eye strain"
+  ];
+  return eyeSymptoms.includes(symptom);
+}
+
+function isSkinSymptom(symptom: string): boolean {
+  const skinSymptoms = [
+    "Rash", "Itching", "Bruising", "Dryness", 
+    "Sores", "Changes in mole"
+  ];
+  return skinSymptoms.includes(symptom);
+}
