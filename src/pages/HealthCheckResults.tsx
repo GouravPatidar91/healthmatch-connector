@@ -128,11 +128,12 @@ const HealthCheckResults = () => {
                   photoSrc && (
                     <div key={symptom} className="border rounded-md p-2">
                       <p className="text-xs text-gray-500 mb-1">{symptom}</p>
-                      <img 
+                      <Image 
                         src={photoSrc} 
                         alt={`${symptom} photo`} 
                         className="w-full h-auto object-cover rounded"
                         style={{ maxHeight: '150px' }}
+                        fallback="/placeholder.svg"
                       />
                     </div>
                   )

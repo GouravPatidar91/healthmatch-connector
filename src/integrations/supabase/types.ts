@@ -215,6 +215,7 @@ export type Database = {
           notes: string | null
           previous_conditions: string[] | null
           severity: string | null
+          symptom_photos: Json | null
           symptoms: string[] | null
           user_id: string
         }
@@ -227,6 +228,7 @@ export type Database = {
           notes?: string | null
           previous_conditions?: string[] | null
           severity?: string | null
+          symptom_photos?: Json | null
           symptoms?: string[] | null
           user_id: string
         }
@@ -239,6 +241,7 @@ export type Database = {
           notes?: string | null
           previous_conditions?: string[] | null
           severity?: string | null
+          symptom_photos?: Json | null
           symptoms?: string[] | null
           user_id?: string
         }
