@@ -40,6 +40,7 @@ serve(async (req) => {
     // Enhanced photo analysis section
     let photoAnalysisText = "";
     let hasDetailedVisualAnalysis = false;
+    let photoAnalysisDetails = {};
     
     if (symptomDetails && symptomDetails.some(s => s.photo)) {
       photoAnalysisText = "\n\nVisual symptoms from uploaded photos include: \n";
@@ -52,26 +53,57 @@ serve(async (req) => {
       if (eyeSymptoms.length > 0) {
         hasDetailedVisualAnalysis = true;
         photoAnalysisText += "\nEYE SYMPTOMS WITH PHOTOS:\n";
+        photoAnalysisDetails["eyeAnalysis"] = {
+          count: eyeSymptoms.length,
+          symptoms: eyeSymptoms.map(s => s.name)
+        };
+        
         eyeSymptoms.forEach(s => {
           photoAnalysisText += `- ${s.name}: Photo provided shows possible eye condition\n`;
         });
-        photoAnalysisText += "\nFor eye symptoms, carefully analyze for possible conditions like conjunctivitis, dry eye syndrome, allergic reactions, subconjunctival hemorrhage, or more serious conditions.";
+        
+        photoAnalysisText += "\nFor eye symptoms, analyze the following visual characteristics in detail:\n";
+        photoAnalysisText += "1. Redness: Is there visible inflammation or blood vessel dilation in the sclera (white part)?\n";
+        photoAnalysisText += "2. Discharge: Is there any visible discharge or crusting around the eye?\n";
+        photoAnalysisText += "3. Corneal appearance: Is the cornea clear or cloudy?\n";
+        photoAnalysisText += "4. Pupil: Are pupils normal size, dilated, or constricted?\n";
+        photoAnalysisText += "5. Eyelid: Is there swelling, drooping, or abnormal positioning?\n";
+        photoAnalysisText += "6. Conjunctiva: Is the conjunctiva inflamed, swollen, or discolored?\n";
+        photoAnalysisText += "7. Overall appearance: Are there any visible lesions, growths, or structural abnormalities?\n";
       }
       
       // Detailed analysis for skin symptoms
       if (skinSymptoms.length > 0) {
         hasDetailedVisualAnalysis = true;
         photoAnalysisText += "\n\nSKIN SYMPTOMS WITH PHOTOS:\n";
+        photoAnalysisDetails["skinAnalysis"] = {
+          count: skinSymptoms.length,
+          symptoms: skinSymptoms.map(s => s.name)
+        };
+        
         skinSymptoms.forEach(s => {
           photoAnalysisText += `- ${s.name}: Photo provided shows skin condition\n`;
         });
-        photoAnalysisText += "\nFor skin symptoms, carefully analyze for possible conditions like dermatitis, eczema, psoriasis, fungal infections, or potential allergic reactions.";
+        
+        photoAnalysisText += "\nFor skin symptoms, analyze the following visual characteristics in detail:\n";
+        photoAnalysisText += "1. Color: What is the coloration of the affected area (red, brown, purple, etc.)?\n";
+        photoAnalysisText += "2. Pattern: Is there a specific pattern or distribution (localized, widespread, linear, circular)?\n";
+        photoAnalysisText += "3. Texture: Is the skin raised, flat, rough, scaly, or smooth?\n";
+        photoAnalysisText += "4. Borders: Are the borders well-defined or irregular?\n";
+        photoAnalysisText += "5. Associated features: Is there visible swelling, blistering, oozing, or crusting?\n";
+        photoAnalysisText += "6. Distribution: Where on the body is the condition and how extensive is it?\n";
+        photoAnalysisText += "7. Specific lesion type: Identify if these are macules, papules, pustules, plaques, or other lesion types.\n";
       }
       
       // Add info for other symptoms with photos
       const otherSymptoms = symptomDetails.filter(s => s.photo && !isEyeSymptom(s.name) && !isSkinSymptom(s.name));
       if (otherSymptoms.length > 0) {
         photoAnalysisText += "\n\nOTHER SYMPTOMS WITH PHOTOS:\n";
+        photoAnalysisDetails["otherAnalysis"] = {
+          count: otherSymptoms.length,
+          symptoms: otherSymptoms.map(s => s.name)
+        };
+        
         otherSymptoms.forEach(s => {
           photoAnalysisText += `- ${s.name}: Photo provided for symptom analysis\n`;
         });
@@ -99,6 +131,8 @@ serve(async (req) => {
       5. Recommended actions or treatments
       6. When to seek immediate medical attention
       
+      ${hasDetailedVisualAnalysis ? "For conditions diagnosed based on photos, explain clearly which visual characteristics led to this diagnosis and include a 'visualDiagnosticFeatures' section listing specific visual markers that support this diagnosis." : ""}
+      
       Return the top 3 most likely conditions in JSON format like this:
       {
         "conditions": [
@@ -108,9 +142,11 @@ serve(async (req) => {
             "matchedSymptoms": ["symptom1", "symptom2"],
             "matchScore": 85,
             "recommendedActions": ["action1", "action2", "action3"],
-            "seekMedicalAttention": "When to see a doctor immediately"
+            "seekMedicalAttention": "When to see a doctor immediately",
+            "visualDiagnosticFeatures": ["feature1", "feature2"] // Only for photo-based diagnoses
           }
-        ]
+        ],
+        "photoAnalysisMethod": "Description of the visual analysis method used for photos" // Only when photos are analyzed
       }
       
       The JSON should be properly formatted without any non-JSON content before or after.
@@ -118,6 +154,7 @@ serve(async (req) => {
 
     console.log("Sending request to Groq API with symptoms:", symptomsText);
     console.log("Has photo analysis:", hasDetailedVisualAnalysis);
+    console.log("Photo analysis details:", JSON.stringify(photoAnalysisDetails));
 
     // Call Groq API with a structured output format
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -166,9 +203,10 @@ serve(async (req) => {
         throw new Error("Response missing expected 'conditions' array");
       }
       
-      // Add a note about whether detailed visual analysis was included
+      // Add analysis metadata
       if (hasDetailedVisualAnalysis) {
         analysisResult.visualAnalysisIncluded = true;
+        analysisResult.photoAnalysisDetails = photoAnalysisDetails;
       }
       
       return new Response(

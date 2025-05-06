@@ -41,7 +41,9 @@ export interface AnalysisCondition {
   matchedSymptoms: string[];
   matchScore: number;
   recommendedActions: string[];
-  seekMedicalAttention?: string; // Added this property
+  seekMedicalAttention?: string;
+  visualDiagnosticFeatures?: string[]; // Visual features identified in photos
+  photoAnalysisMethod?: string; // Description of the photo analysis method used
 }
 
 // Symptom detail with photo
