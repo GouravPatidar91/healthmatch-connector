@@ -41,6 +41,7 @@ export interface AnalysisCondition {
   matchedSymptoms: string[];
   matchScore: number;
   recommendedActions: string[];
+  seekMedicalAttention?: string; // Added this property
 }
 
 // Symptom detail with photo

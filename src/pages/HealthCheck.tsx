@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -262,7 +261,7 @@ const HealthCheck = () => {
       toast({
         title: "Missing important photos",
         description: `Please add photos for these symptoms for better analysis: ${missing.join(", ")}`,
-        variant: "warning"
+        variant: "default"
       });
       return;
     }
