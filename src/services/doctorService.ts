@@ -1,5 +1,310 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Types for the doctor service
+export interface Doctor {
+  id: string;
+  name: string;
+  specialization: string;
+  hospital: string;
+  region: string;
+  address: string;
+  degrees: string;
+  experience: number;
+  rating?: number;
+  verified: boolean;
+  available: boolean;
+  availability?: {
+    day: string;
+    slots: string[];
+  }[];
+}
+
+export interface AppointmentSlot {
+  id: string;
+  doctor_id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  maxPatients: number;
+  status: 'available' | 'booked' | 'cancelled';
+}
+
+export interface DoctorAppointment {
+  id: string;
+  patientName?: string;
+  date: string;
+  time: string;
+  reason?: string;
+  status: string;
+}
+
+// Custom hook for doctor slots
+export const useDoctorSlots = () => {
+  const { user } = useAuth();
+  const [slots, setSlots] = useState<AppointmentSlot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchSlots = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await getDoctorAppointmentSlots(user.id);
+      
+      if (error) throw new Error(error.message);
+      
+      // Transform the data to match the AppointmentSlot interface
+      const transformedSlots = data.map(slot => ({
+        id: slot.id,
+        doctor_id: slot.doctor_id,
+        date: slot.date,
+        startTime: slot.start_time,
+        endTime: slot.end_time,
+        duration: slot.duration,
+        maxPatients: slot.max_patients,
+        status: slot.status as 'available' | 'booked' | 'cancelled',
+      }));
+      
+      setSlots(transformedSlots);
+    } catch (err) {
+      console.error("Error fetching doctor slots:", err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createSlot = async (slotData: Omit<AppointmentSlot, 'id'>) => {
+    if (!user) throw new Error("User not authenticated");
+    
+    try {
+      const slotId = await createAppointmentSlots(
+        user.id,
+        slotData.date,
+        slotData.startTime,
+        slotData.endTime,
+        slotData.duration,
+        slotData.maxPatients
+      );
+      
+      await fetchSlots();
+      return slotId;
+    } catch (err) {
+      console.error("Error creating slot:", err);
+      throw err;
+    }
+  };
+
+  const deleteSlot = async (slotId: string) => {
+    try {
+      const success = await deleteAppointmentSlot(slotId);
+      if (success) {
+        await fetchSlots();
+      }
+      return success;
+    } catch (err) {
+      console.error("Error deleting slot:", err);
+      throw err;
+    }
+  };
+
+  const updateSlotStatus = async (slotId: string, status: 'available' | 'booked' | 'cancelled') => {
+    try {
+      const { error } = await supabase
+        .from('appointment_slots')
+        .update({ status })
+        .eq('id', slotId);
+      
+      if (error) throw error;
+      
+      await fetchSlots();
+      return true;
+    } catch (err) {
+      console.error("Error updating slot status:", err);
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchSlots();
+    }
+  }, [user]);
+
+  return { slots, loading, error, createSlot, deleteSlot, updateSlotStatus, refreshSlots: fetchSlots };
+};
+
+// Custom hook for doctor appointments
+export const useDoctorAppointments = () => {
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchAppointments = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // Fetch doctor appointments from the database
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('doctor_id', user.id);
+      
+      if (error) throw new Error(error.message);
+      
+      // Transform the data to match the DoctorAppointment interface
+      const transformedAppointments = data.map(apt => ({
+        id: apt.id,
+        patientName: apt.user_name || 'Patient',
+        date: apt.date,
+        time: apt.time,
+        reason: apt.reason,
+        status: apt.status,
+      }));
+      
+      setAppointments(transformedAppointments);
+    } catch (err) {
+      console.error("Error fetching doctor appointments:", err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAppointmentAsCompleted = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'completed' })
+        .eq('id', appointmentId);
+      
+      if (error) throw error;
+      
+      await fetchAppointments();
+      return true;
+    } catch (err) {
+      console.error("Error marking appointment as completed:", err);
+      throw err;
+    }
+  };
+
+  const cancelAppointment = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', appointmentId);
+      
+      if (error) throw error;
+      
+      await fetchAppointments();
+      return true;
+    } catch (err) {
+      console.error("Error cancelling appointment:", err);
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user]);
+
+  return { 
+    appointments, 
+    loading, 
+    error, 
+    markAppointmentAsCompleted, 
+    cancelAppointment, 
+    refreshAppointments: fetchAppointments 
+  };
+};
+
+// Custom hook for managing doctors
+export const useDoctors = () => {
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchDoctors = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await getAvailableDoctors();
+      
+      if (error) throw new Error(error.message);
+      
+      // Add dummy availability data for each doctor
+      const doctorsWithAvailability = data.map(doc => ({
+        ...doc,
+        rating: 4.5, // Default rating
+        availability: [
+          { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
+          { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
+          { day: 'Friday', slots: ['10:00', '11:00', '12:00'] },
+        ]
+      }));
+      
+      setDoctors(doctorsWithAvailability);
+    } catch (err) {
+      console.error("Error fetching doctors:", err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const findNearbyDoctors = async () => {
+    try {
+      // Get user's geolocation
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        });
+      });
+      
+      const { latitude, longitude } = position.coords;
+      
+      // Query the database for nearby doctors
+      const { data, error } = await supabase
+        .rpc('find_nearest_doctor', { lat: latitude, long: longitude });
+      
+      if (error) throw error;
+      
+      // Add dummy availability data for each doctor
+      const doctorsWithAvailability = data.map(doc => ({
+        ...doc,
+        rating: 4.5, // Default rating
+        availability: [
+          { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
+          { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
+          { day: 'Friday', slots: ['10:00', '11:00', '12:00'] },
+        ]
+      }));
+      
+      setDoctors(doctorsWithAvailability);
+      return true;
+    } catch (err) {
+      console.error("Error finding nearby doctors:", err);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  return { doctors, loading, error, findNearbyDoctors, refreshDoctors: fetchDoctors };
+};
 
 // Check if a user has doctor access
 export const checkDoctorAccess = async (userId: string) => {

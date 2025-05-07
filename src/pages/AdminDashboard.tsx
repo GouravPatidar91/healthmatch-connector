@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -354,9 +353,7 @@ const AdminDashboard = () => {
                           <TableCell>{doctor.email || `user-${doctor.id.substring(0, 8)}@example.com`}</TableCell>
                           <TableCell>{doctor.specialization}</TableCell>
                           <TableCell>
-                            <Badge variant={doctor.verified ? "success" : "outline"}>
-                              {doctor.verified ? 'Approved' : 'Pending'}
-                            </Badge>
+                            <Badge variant="secondary">Approved</Badge>
                           </TableCell>
                           <TableCell className="flex gap-2">
                             <Button 

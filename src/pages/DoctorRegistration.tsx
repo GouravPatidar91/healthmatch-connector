@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Form,
@@ -130,8 +129,10 @@ const DoctorRegistration = () => {
 
       // Extract email from auth.users via service if available
       const userEmail = user.email || '';
-      const firstName = userData?.first_name || user.user_metadata?.first_name || '';
-      const lastName = userData?.last_name || user.user_metadata?.last_name || '';
+      const profile = userData || user.user_metadata;
+      const displayName = profile 
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User'
+        : 'User';
       
       // Insert doctor information with the file URL and the user's ID
       const { error: doctorError } = await supabase
@@ -150,8 +151,8 @@ const DoctorRegistration = () => {
           verified: false, // Initially set to false, pending admin approval
           degree_verification_photo: publicUrl,
           email: userEmail, // Store email for admin reference
-          first_name: firstName, // Store first name for admin reference
-          last_name: lastName // Store last name for admin reference
+          first_name: displayName, // Store first name for admin reference
+          last_name: displayName // Store last name for admin reference
         });
       
       if (doctorError) {
