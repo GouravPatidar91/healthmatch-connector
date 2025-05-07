@@ -134,7 +134,7 @@ export const useDoctorSlots = () => {
 // Custom hook for doctor appointments - FIX: Simplified type handling to avoid deep instantiation
 export const useDoctorAppointments = () => {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]); // Using any[] to prevent deep instantiation errors
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -157,16 +157,14 @@ export const useDoctorAppointments = () => {
       }
       
       // Transform the data to match the DoctorAppointment interface
-      const transformedAppointments: DoctorAppointment[] = data.map(apt => ({
+      setAppointments(data.map(apt => ({
         id: apt.id,
         patientName: apt.user_id ? 'Patient' : 'Patient', // Replace with actual patient name if available
         date: apt.date,
         time: apt.time,
         reason: apt.reason,
         status: apt.status ?? 'pending',
-      }));
-      
-      setAppointments(transformedAppointments);
+      })));
     } catch (err) {
       console.error("Error fetching doctor appointments:", err);
       setError(err instanceof Error ? err : new Error('Unknown error'));
@@ -254,7 +252,7 @@ export const useDoctors = () => {
         name: doc.name,
         specialization: doc.specialization,
         hospital: doc.hospital,
-        region: doc.region,
+        region: doc.address.split(',').pop()?.trim() || 'Unknown',
         address: doc.address,
         degrees: doc.degrees,
         experience: doc.experience,
