@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -132,7 +131,7 @@ export const useDoctorSlots = () => {
   return { slots, loading, error, createSlot, deleteSlot, updateSlotStatus, refreshSlots: fetchSlots };
 };
 
-// Custom hook for doctor appointments
+// Custom hook for doctor appointments - FIX: Simplified type handling to avoid deep instantiation
 export const useDoctorAppointments = () => {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
@@ -164,7 +163,7 @@ export const useDoctorAppointments = () => {
         date: apt.date,
         time: apt.time,
         reason: apt.reason,
-        status: apt.status,
+        status: apt.status ?? 'pending',
       }));
       
       setAppointments(transformedAppointments);
@@ -260,7 +259,7 @@ export const useDoctors = () => {
         degrees: doc.degrees,
         experience: doc.experience,
         rating: 4.5, // Default rating
-        verified: doc.verified,
+        verified: doc.verified ?? false,
         available: doc.available,
         availability: [
           { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
@@ -302,13 +301,13 @@ export const useDoctors = () => {
         return true;
       }
       
-      // Add availability data for each doctor
+      // Add availability data for each doctor - FIX: Added missing region property
       const doctorsWithAvailability: Doctor[] = data.map(doc => ({
         id: doc.id,
         name: doc.name,
         specialization: doc.specialization,
         hospital: doc.hospital,
-        region: doc.region || doc.address.split(',').pop()?.trim() || '',
+        region: doc.address.split(',').pop()?.trim() || 'Unknown',
         address: doc.address,
         degrees: 'MD',
         experience: 5,
