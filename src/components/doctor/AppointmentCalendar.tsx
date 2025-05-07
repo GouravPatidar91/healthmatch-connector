@@ -23,9 +23,9 @@ import {
   PopoverContent,
   PopoverTrigger 
 } from "@/components/ui/popover";
-import { format, addDays } from "date-fns";
+import { format, addDays, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useDoctorAppointments } from "@/services/doctorService";
+import { useDoctorAppointments, useDoctorSlots } from "@/services/doctorService";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, CheckCircle, Clock, Edit, X } from "lucide-react";
 
@@ -34,8 +34,8 @@ const AppointmentCalendar = () => {
   const [view, setView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const { toast } = useToast();
   
-  // This will be replaced with actual data from the database
-  const { appointments, loading, error, markAppointmentAsCompleted, cancelAppointment } = useDoctorAppointments();
+  const { appointments, loading: appointmentsLoading, error: appointmentsError, markAppointmentAsCompleted, cancelAppointment } = useDoctorAppointments();
+  const { slots, loading: slotsLoading } = useDoctorSlots();
 
   // Get appointments for the selected date
   const getAppointmentsForDate = (date: Date) => {
@@ -51,7 +51,16 @@ const AppointmentCalendar = () => {
     });
   };
   
+  // Get appointment slots for the selected date
+  const getSlotsForDate = (date: Date) => {
+    if (!slots) return [];
+    
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return slots.filter(slot => slot.date === dateStr);
+  };
+  
   const appointmentsForSelectedDate = getAppointmentsForDate(selectedDate);
+  const slotsForSelectedDate = getSlotsForDate(selectedDate);
   
   const handleStatusChange = async (appointmentId: string, status: string) => {
     try {
@@ -77,6 +86,9 @@ const AppointmentCalendar = () => {
       });
     }
   };
+  
+  const loading = appointmentsLoading || slotsLoading;
+  const error = appointmentsError;
   
   return (
     <div className="space-y-6">
@@ -113,75 +125,98 @@ const AppointmentCalendar = () => {
       </div>
       
       {loading ? (
-        <div className="text-center py-8">Loading appointments...</div>
+        <div className="text-center py-8">Loading calendar data...</div>
       ) : error ? (
-        <div className="text-center py-8 text-red-500">Error loading appointments. Please try again.</div>
+        <div className="text-center py-8 text-red-500">Error loading calendar data. Please try again.</div>
       ) : (
         <div className="border rounded-lg overflow-hidden">
           {view === 'daily' && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {appointmentsForSelectedDate.length > 0 ? (
-                  appointmentsForSelectedDate.map((appointment) => (
-                    <TableRow key={appointment.id}>
-                      <TableCell className="font-medium">
-                        {appointment.time}
-                      </TableCell>
-                      <TableCell>
-                        {appointment.patientName || 'Patient Name'}
-                      </TableCell>
-                      <TableCell>{appointment.reason || 'Consultation'}</TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          appointment.status === 'completed' ? 'outline' : 
-                          appointment.status === 'cancelled' ? 'destructive' : 
-                          'default'
-                        }>
-                          {appointment.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
-                            onClick={() => handleStatusChange(appointment.id, 'completed')}
-                            title="Mark as completed"
-                          >
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
-                            onClick={() => handleStatusChange(appointment.id, 'cancelled')}
-                            title="Cancel appointment"
-                          >
-                            <X className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
+            <>
+              <div className="p-4 border-b">
+                <h3 className="font-medium">Available Slots</h3>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {slotsForSelectedDate.length > 0 ? (
+                    slotsForSelectedDate.map((slot) => (
+                      <Badge 
+                        key={slot.id} 
+                        variant={slot.status === 'available' ? 'default' : 
+                                slot.status === 'booked' ? 'outline' : 
+                                'destructive'}
+                        className="px-3 py-1"
+                      >
+                        {slot.startTime} - {slot.endTime} ({slot.status})
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-500">No slots available for this day</p>
+                  )}
+                </div>
+              </div>
+            
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Patient</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {appointmentsForSelectedDate.length > 0 ? (
+                    appointmentsForSelectedDate.map((appointment) => (
+                      <TableRow key={appointment.id}>
+                        <TableCell className="font-medium">
+                          {appointment.time}
+                        </TableCell>
+                        <TableCell>
+                          {appointment.patientName || 'Patient Name'}
+                        </TableCell>
+                        <TableCell>{appointment.reason || 'Consultation'}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            appointment.status === 'completed' ? 'outline' : 
+                            appointment.status === 'cancelled' ? 'destructive' : 
+                            'default'
+                          }>
+                            {appointment.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
+                              onClick={() => handleStatusChange(appointment.id, 'completed')}
+                              title="Mark as completed"
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
+                              onClick={() => handleStatusChange(appointment.id, 'cancelled')}
+                              title="Cancel appointment"
+                            >
+                              <X className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        No appointments for this day
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No appointments for this day
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </>
           )}
           
           {view === 'weekly' && (
@@ -189,6 +224,7 @@ const AppointmentCalendar = () => {
               {Array.from({ length: 7 }).map((_, i) => {
                 const date = addDays(selectedDate, i - selectedDate.getDay());
                 const dayAppointments = getAppointmentsForDate(date);
+                const daySlots = getSlotsForDate(date);
                 
                 return (
                   <Card key={i} className={`border ${format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'border-blue-500' : ''}`}>
@@ -198,17 +234,37 @@ const AppointmentCalendar = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="py-2 px-3">
+                      {daySlots.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-xs font-medium mb-1">Slots:</p>
+                          <div className="space-y-1 max-h-20 overflow-y-auto">
+                            {daySlots.map(slot => (
+                              <div key={slot.id} className="p-1 text-xs border rounded flex items-center bg-blue-50">
+                                <Clock className="h-3 w-3 mr-1" />
+                                <span>{slot.startTime}</span>
+                                <Badge variant="outline" className="ml-auto text-[10px]">
+                                  {slot.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
                       {dayAppointments.length > 0 ? (
-                        <div className="space-y-1 max-h-40 overflow-y-auto">
-                          {dayAppointments.map(appointment => (
-                            <div key={appointment.id} className="p-1 text-xs border rounded flex items-center">
-                              <Clock className="h-3 w-3 mr-1" />
-                              <span>{appointment.time}</span>
-                              <Badge variant="outline" className="ml-auto text-[10px]">
-                                {appointment.status}
-                              </Badge>
-                            </div>
-                          ))}
+                        <div>
+                          <p className="text-xs font-medium mb-1">Appointments:</p>
+                          <div className="space-y-1 max-h-20 overflow-y-auto">
+                            {dayAppointments.map(appointment => (
+                              <div key={appointment.id} className="p-1 text-xs border rounded flex items-center">
+                                <Clock className="h-3 w-3 mr-1" />
+                                <span>{appointment.time}</span>
+                                <Badge variant="outline" className="ml-auto text-[10px]">
+                                  {appointment.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ) : (
                         <div className="text-xs text-slate-500">No appointments</div>

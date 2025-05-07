@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Doctor, AppointmentSlot } from "@/types";
@@ -328,44 +329,46 @@ export const useDoctorSlots = () => {
     try {
       setLoading(true);
       
-      // Sample data for demonstration
-      const sampleSlots: AppointmentSlot[] = [
-        {
-          id: '1',
-          doctorId: '123',
-          date: '2024-04-15',
-          startTime: '09:00',
-          endTime: '09:30',
-          duration: 30,
-          maxPatients: 1,
-          status: 'available'
-        },
-        {
-          id: '2',
-          doctorId: '123',
-          date: '2024-04-15',
-          startTime: '10:00',
-          endTime: '10:30',
-          duration: 30,
-          maxPatients: 1,
-          status: 'booked'
-        },
-        {
-          id: '3',
-          doctorId: '123',
-          date: '2024-04-16',
-          startTime: '14:00',
-          endTime: '15:00',
-          duration: 60,
-          maxPatients: 2,
-          status: 'available'
-        }
-      ];
+      // Get the doctor's ID based on the current user
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
       
-      setSlots(sampleSlots);
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        throw profileError;
+      }
       
+      // Fetch actual slots from the database
+      const { data: fetchedSlots, error: slotsError } = await supabase
+        .from('appointment_slots')
+        .select('*')
+        .eq('doctor_id', profile.id)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+      
+      if (slotsError) {
+        console.error('Error fetching appointment slots:', slotsError);
+        throw slotsError;
+      }
+      
+      // Transform fetched slots to match our AppointmentSlot type
+      const formattedSlots: AppointmentSlot[] = fetchedSlots.map(slot => ({
+        id: slot.id,
+        doctorId: slot.doctor_id,
+        date: slot.date,
+        startTime: slot.start_time.slice(0, 5), // Convert "14:00:00" to "14:00"
+        endTime: slot.end_time.slice(0, 5), // Convert "14:30:00" to "14:30"
+        duration: slot.duration,
+        maxPatients: slot.max_patients,
+        status: slot.status as 'available' | 'booked' | 'cancelled'
+      }));
+      
+      setSlots(formattedSlots);
     } catch (err) {
-      console.error('Error fetching doctor slots:', err);
+      console.error('Error in fetchDoctorSlots:', err);
       setError(err as Error);
       toast({
         title: "Error",
@@ -387,30 +390,103 @@ export const useDoctorSlots = () => {
     if (!user) throw new Error('User not authenticated');
     
     try {
-      const newId = Math.random().toString(36).substring(2, 15);
+      // Format times to ensure they have seconds component for PostgreSQL time format
+      const startTimeFormatted = slotData.startTime.includes(':') && slotData.startTime.split(':').length === 2
+        ? `${slotData.startTime}:00`
+        : slotData.startTime;
       
-      const newSlot: AppointmentSlot = {
-        id: newId,
-        doctorId: '123',
-        ...slotData
+      const endTimeFormatted = slotData.endTime.includes(':') && slotData.endTime.split(':').length === 2
+        ? `${slotData.endTime}:00`
+        : slotData.endTime;
+      
+      // Insert the new slot into the database
+      const { data: newSlot, error } = await supabase
+        .from('appointment_slots')
+        .insert({
+          doctor_id: user.id,
+          date: slotData.date,
+          start_time: startTimeFormatted,
+          end_time: endTimeFormatted,
+          duration: slotData.duration,
+          max_patients: slotData.maxPatients,
+          status: slotData.status
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating appointment slot:', error);
+        throw error;
+      }
+      
+      // Convert the new slot to match our AppointmentSlot type
+      const formattedNewSlot: AppointmentSlot = {
+        id: newSlot.id,
+        doctorId: newSlot.doctor_id,
+        date: newSlot.date,
+        startTime: newSlot.start_time.slice(0, 5),
+        endTime: newSlot.end_time.slice(0, 5),
+        duration: newSlot.duration,
+        maxPatients: newSlot.max_patients,
+        status: newSlot.status as 'available' | 'booked' | 'cancelled'
       };
       
-      setSlots(prev => [...prev, newSlot]);
+      // Update local state
+      setSlots(prev => [...prev, formattedNewSlot]);
       
-      return newSlot;
+      return formattedNewSlot;
     } catch (error) {
-      console.error('Error creating appointment slot:', error);
+      console.error('Error in createSlot:', error);
       throw error;
     }
   };
   
   const deleteSlot = async (slotId: string) => {
     try {
+      // Delete the slot from the database
+      const { error } = await supabase
+        .from('appointment_slots')
+        .delete()
+        .eq('id', slotId);
+      
+      if (error) {
+        console.error('Error deleting appointment slot:', error);
+        throw error;
+      }
+      
+      // Update local state
       setSlots(prev => prev.filter(slot => slot.id !== slotId));
       
       return true;
     } catch (error) {
-      console.error('Error deleting appointment slot:', error);
+      console.error('Error in deleteSlot:', error);
+      throw error;
+    }
+  };
+  
+  const updateSlotStatus = async (slotId: string, status: 'available' | 'booked' | 'cancelled') => {
+    try {
+      // Update the slot status in the database
+      const { error } = await supabase
+        .from('appointment_slots')
+        .update({ status })
+        .eq('id', slotId);
+      
+      if (error) {
+        console.error('Error updating appointment slot status:', error);
+        throw error;
+      }
+      
+      // Update local state
+      setSlots(prev => 
+        prev.map(slot => 
+          slot.id === slotId ? { ...slot, status } : slot
+        )
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error in updateSlotStatus:', error);
       throw error;
     }
   };
@@ -421,6 +497,7 @@ export const useDoctorSlots = () => {
     error,
     refetch: fetchDoctorSlots,
     createSlot,
-    deleteSlot
+    deleteSlot,
+    updateSlotStatus
   };
 };

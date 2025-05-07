@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 import { CalendarPlus, ChevronDown, ChevronUp, Clock, Loader2, Trash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, addMinutes } from 'date-fns';
+import { format, addMinutes, parseISO } from 'date-fns';
 import { useDoctorSlots } from '@/services/doctorService';
 
 const timeSlots = Array.from({ length: 24 }, (_, i) => {
@@ -56,7 +56,7 @@ const AppointmentSlots = () => {
     status: 'available' as const,
   });
   
-  const { slots, loading, error, createSlot, deleteSlot } = useDoctorSlots();
+  const { slots, loading, error, createSlot, deleteSlot, updateSlotStatus } = useDoctorSlots();
   
   const handleCreateSlot = async () => {
     try {
@@ -103,6 +103,23 @@ const AppointmentSlots = () => {
       toast({
         title: "Error",
         description: "Failed to delete appointment slot. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleStatusChange = async (slotId: string, status: 'available' | 'booked' | 'cancelled') => {
+    try {
+      await updateSlotStatus(slotId, status);
+      toast({
+        title: "Status updated",
+        description: `Appointment slot status has been updated to ${status}.`,
+      });
+    } catch (error) {
+      console.error('Error updating slot status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update appointment slot status. Please try again.",
         variant: "destructive",
       });
     }
@@ -248,7 +265,7 @@ const AppointmentSlots = () => {
                     <CardHeader className="py-3 cursor-pointer" onClick={() => toggleDayExpansion(date)}>
                       <div className="flex justify-between items-center">
                         <CardTitle className="text-base">
-                          {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+                          {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
                           <span className="ml-2 text-sm text-slate-500">
                             ({dateSlots.length} slot{dateSlots.length !== 1 ? 's' : ''})
                           </span>
@@ -276,7 +293,7 @@ const AppointmentSlots = () => {
                                 <Select
                                   value={slot.status}
                                   onValueChange={(value: 'available' | 'booked' | 'cancelled') => {
-                                    console.log("Status changed:", value);
+                                    handleStatusChange(slot.id, value);
                                   }}
                                 >
                                   <SelectTrigger className="w-32 h-8">
