@@ -54,7 +54,12 @@ export const useDoctorSlots = () => {
     
     setLoading(true);
     try {
-      const { data, error } = await getDoctorAppointmentSlots(user.id);
+      const { data, error } = await supabase
+        .from('appointment_slots')
+        .select('*')
+        .eq('doctor_id', user.id)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
       
       if (error) throw new Error(error.message);
       
@@ -83,17 +88,24 @@ export const useDoctorSlots = () => {
     if (!user) throw new Error("User not authenticated");
     
     try {
-      const slotId = await createAppointmentSlots(
-        user.id,
-        slotData.date,
-        slotData.startTime,
-        slotData.endTime,
-        slotData.duration,
-        slotData.maxPatients
-      );
+      const { data, error } = await supabase
+        .from('appointment_slots')
+        .insert({
+          doctor_id: slotData.doctor_id,
+          date: slotData.date,
+          start_time: slotData.startTime,
+          end_time: slotData.endTime,
+          duration: slotData.duration,
+          max_patients: slotData.maxPatients,
+          status: slotData.status
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
       
       await fetchSlots();
-      return slotId;
+      return data.id;
     } catch (err) {
       console.error("Error creating slot:", err);
       throw err;
@@ -102,11 +114,15 @@ export const useDoctorSlots = () => {
 
   const deleteSlot = async (slotId: string) => {
     try {
-      const success = await deleteAppointmentSlot(slotId);
-      if (success) {
-        await fetchSlots();
-      }
-      return success;
+      const { error } = await supabase
+        .from('appointment_slots')
+        .delete()
+        .eq('id', slotId);
+      
+      if (error) throw error;
+      
+      await fetchSlots();
+      return true;
     } catch (err) {
       console.error("Error deleting slot:", err);
       throw err;
@@ -162,7 +178,7 @@ export const useDoctorAppointments = () => {
       // Transform the data to match the DoctorAppointment interface
       const transformedAppointments = data.map(apt => ({
         id: apt.id,
-        patientName: apt.user_name || 'Patient',
+        patientName: apt.user_id ? 'Patient' : 'Patient', // Replace with actual patient name if available
         date: apt.date,
         time: apt.time,
         reason: apt.reason,
@@ -237,8 +253,12 @@ export const useDoctors = () => {
   const fetchDoctors = async () => {
     setLoading(true);
     try {
-      const { data, error } = await getAvailableDoctors();
-      
+      const { data, error } = await supabase
+        .from('doctors')
+        .select('*')
+        .eq('verified', true)
+        .eq('available', true);
+        
       if (error) throw new Error(error.message);
       
       // Add dummy availability data for each doctor
@@ -250,7 +270,7 @@ export const useDoctors = () => {
           { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
           { day: 'Friday', slots: ['10:00', '11:00', '12:00'] },
         ]
-      }));
+      })) as Doctor[];
       
       setDoctors(doctorsWithAvailability);
     } catch (err) {
@@ -284,12 +304,17 @@ export const useDoctors = () => {
       const doctorsWithAvailability = data.map(doc => ({
         ...doc,
         rating: 4.5, // Default rating
+        verified: true,
+        available: true,
+        degrees: 'MD',
+        experience: 5,
+        region: doc.address.split(',').pop()?.trim() || '',
         availability: [
           { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
           { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
           { day: 'Friday', slots: ['10:00', '11:00', '12:00'] },
         ]
-      }));
+      })) as Doctor[];
       
       setDoctors(doctorsWithAvailability);
       return true;

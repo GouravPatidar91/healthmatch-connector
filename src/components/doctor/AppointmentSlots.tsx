@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -37,6 +36,7 @@ import { CalendarPlus, ChevronDown, ChevronUp, Clock, Loader2, Trash } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { format, addMinutes, parseISO } from 'date-fns';
 import { useDoctorSlots } from '@/services/doctorService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const timeSlots = Array.from({ length: 24 }, (_, i) => {
   const hour = i;
@@ -45,6 +45,7 @@ const timeSlots = Array.from({ length: 24 }, (_, i) => {
 
 const AppointmentSlots = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showSlotDialog, setShowSlotDialog] = useState(false);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
@@ -60,6 +61,15 @@ const AppointmentSlots = () => {
   
   const handleCreateSlot = async () => {
     try {
+      if (!user) {
+        toast({
+          title: "Not authenticated",
+          description: "You need to be logged in to create slots.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const [hours, minutes] = newSlot.startTime.split(':').map(Number);
       const startDateTime = new Date(selectedDate);
       startDateTime.setHours(hours, minutes, 0);
@@ -68,6 +78,7 @@ const AppointmentSlots = () => {
       const endTime = format(endDateTime, 'HH:mm');
       
       await createSlot({
+        doctor_id: user.id,
         date: format(selectedDate, 'yyyy-MM-dd'),
         startTime: newSlot.startTime,
         endTime: endTime,
@@ -293,7 +304,7 @@ const AppointmentSlots = () => {
                                 <Select
                                   value={slot.status}
                                   onValueChange={(value: 'available' | 'booked' | 'cancelled') => {
-                                    handleStatusChange(slot.id, value);
+                                    updateSlotStatus(slot.id, value);
                                   }}
                                 >
                                   <SelectTrigger className="w-32 h-8">
@@ -310,7 +321,7 @@ const AppointmentSlots = () => {
                                   variant="ghost" 
                                   size="icon"
                                   className="ml-2"
-                                  onClick={() => handleDeleteSlot(slot.id)}
+                                  onClick={() => deleteSlot(slot.id)}
                                 >
                                   <Trash className="h-4 w-4 text-red-500" />
                                 </Button>

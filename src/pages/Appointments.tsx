@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -174,7 +173,7 @@ const Appointments = () => {
   const navigate = useNavigate();
   const { addAppointment } = useUserAppointments();
   const { profile, loading: profileLoading } = useUserProfile();
-  const { doctors, loading: doctorsLoading, findNearbyDoctors } = useDoctors();
+  const { doctors: fetchedDoctors, loading: doctorsLoading, findNearbyDoctors } = useDoctors();
   
   const fromHealthCheck = location.state?.fromHealthCheck || false;
   const symptoms = location.state?.symptoms || [];
@@ -193,21 +192,40 @@ const Appointments = () => {
   const [locationPermissionAsked, setLocationPermissionAsked] = useState<boolean>(false);
   const [locationDetectionInProgress, setLocationDetectionInProgress] = useState<boolean>(false);
   const [cities] = useState<string[]>(getWorldCities());
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   
   const [step, setStep] = useState(1);
 
   useEffect(() => {
-    if (profile?.region) {
-      setSelectedCity(profile.region);
-      filterDoctorsByCity(profile.region);
-    } else {
-      if (!locationPermissionAsked && !locationDetectionInProgress) {
-        detectUserLocation();
+    if (fetchedDoctors.length > 0) {
+      const convertedDoctors = fetchedDoctors.map(doc => {
+        if (!doc.availability) {
+          return {
+            ...doc,
+            availability: [
+              { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
+              { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
+              { day: 'Friday', slots: ['10:00', '11:00', '12:00'] },
+            ]
+          } as Doctor;
+        }
+        return doc as Doctor;
+      }) as Doctor[];
+
+      setDoctors(convertedDoctors);
+      
+      if (profile?.region) {
+        setSelectedCity(profile.region);
+        filterDoctorsByCity(profile.region, convertedDoctors);
       } else {
-        setFilteredDoctors(doctors);
+        if (!locationPermissionAsked && !locationDetectionInProgress) {
+          detectUserLocation();
+        } else {
+          setFilteredDoctors(convertedDoctors);
+        }
       }
     }
-  }, [profile, doctors]);
+  }, [fetchedDoctors, profile]);
   
   const detectUserLocation = async () => {
     setLocationDetectionInProgress(true);
@@ -218,7 +236,7 @@ const Appointments = () => {
       
       if (userCity) {
         setSelectedCity(userCity);
-        filterDoctorsByCity(userCity);
+        filterDoctorsByCity(userCity, doctors);
         
         toast({
           title: "Location detected",
@@ -240,11 +258,11 @@ const Appointments = () => {
     }
   };
   
-  const filterDoctorsByCity = (city: string) => {
+  const filterDoctorsByCity = (city: string, doctorsList = doctors) => {
     if (!city || city === "all") {
-      setFilteredDoctors(doctors);
+      setFilteredDoctors(doctorsList);
     } else {
-      setFilteredDoctors(doctors.filter(doctor => doctor.region === city));
+      setFilteredDoctors(doctorsList.filter(doctor => doctor.region === city));
     }
   };
   
@@ -266,7 +284,7 @@ const Appointments = () => {
     if (!selectedDoctor || !selectedDate) return [];
     
     const dayOfWeek = format(selectedDate, "EEEE");
-    const availabilityForDay = selectedDoctor.availability.find(
+    const availabilityForDay = selectedDoctor.availability?.find(
       (a) => a.day === dayOfWeek
     );
     

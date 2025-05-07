@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -35,15 +34,15 @@ export interface Doctor {
   hospital: string;
   region: string;
   address: string;
-  availability: {
+  availability?: {
     day: string;
     slots: string[];
   }[];
-  rating: number;
-  // Added new fields to match the database schema
+  rating?: number;
   degrees?: string;
   experience?: number;
   verified?: boolean;
+  available?: boolean;
 }
 
 export interface Appointment {
