@@ -2,37 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Doctor, AppointmentSlot } from "@/types";
 
-// Types for the doctor service
-export interface Doctor {
-  id: string;
-  name: string;
-  specialization: string;
-  hospital: string;
-  region: string;
-  address: string;
-  degrees: string;
-  experience: number;
-  rating?: number;
-  verified: boolean;
-  available: boolean;
-  availability?: {
-    day: string;
-    slots: string[];
-  }[];
-}
-
-export interface AppointmentSlot {
-  id: string;
-  doctor_id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  duration: number;
-  maxPatients: number;
-  status: 'available' | 'booked' | 'cancelled';
-}
-
+// Types for local use in the doctor service
 export interface DoctorAppointment {
   id: string;
   patientName?: string;
@@ -63,8 +35,13 @@ export const useDoctorSlots = () => {
       
       if (error) throw new Error(error.message);
       
+      if (!data) {
+        setSlots([]);
+        return;
+      }
+      
       // Transform the data to match the AppointmentSlot interface
-      const transformedSlots = data.map(slot => ({
+      const transformedSlots: AppointmentSlot[] = data.map(slot => ({
         id: slot.id,
         doctor_id: slot.doctor_id,
         date: slot.date,
@@ -175,8 +152,13 @@ export const useDoctorAppointments = () => {
       
       if (error) throw new Error(error.message);
       
+      if (!data) {
+        setAppointments([]);
+        return;
+      }
+      
       // Transform the data to match the DoctorAppointment interface
-      const transformedAppointments = data.map(apt => ({
+      const transformedAppointments: DoctorAppointment[] = data.map(apt => ({
         id: apt.id,
         patientName: apt.user_id ? 'Patient' : 'Patient', // Replace with actual patient name if available
         date: apt.date,
@@ -253,6 +235,7 @@ export const useDoctors = () => {
   const fetchDoctors = async () => {
     setLoading(true);
     try {
+      // Only fetch verified and available doctors
       const { data, error } = await supabase
         .from('doctors')
         .select('*')
@@ -261,10 +244,24 @@ export const useDoctors = () => {
         
       if (error) throw new Error(error.message);
       
-      // Add dummy availability data for each doctor
+      if (!data) {
+        setDoctors([]);
+        return;
+      }
+      
+      // Add availability data for each doctor
       const doctorsWithAvailability: Doctor[] = data.map(doc => ({
-        ...doc,
+        id: doc.id,
+        name: doc.name,
+        specialization: doc.specialization,
+        hospital: doc.hospital,
+        region: doc.region,
+        address: doc.address,
+        degrees: doc.degrees,
+        experience: doc.experience,
         rating: 4.5, // Default rating
+        verified: doc.verified,
+        available: doc.available,
         availability: [
           { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
           { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
@@ -300,15 +297,24 @@ export const useDoctors = () => {
       
       if (error) throw error;
       
-      // Add dummy availability data for each doctor
+      if (!data) {
+        setDoctors([]);
+        return true;
+      }
+      
+      // Add availability data for each doctor
       const doctorsWithAvailability: Doctor[] = data.map(doc => ({
-        ...doc,
+        id: doc.id,
+        name: doc.name,
+        specialization: doc.specialization,
+        hospital: doc.hospital,
+        region: doc.region || doc.address.split(',').pop()?.trim() || '',
+        address: doc.address,
+        degrees: 'MD',
+        experience: 5,
         rating: 4.5, // Default rating
         verified: true,
         available: true,
-        degrees: 'MD',
-        experience: 5,
-        region: doc.address.split(',').pop()?.trim() || '',
         availability: [
           { day: 'Monday', slots: ['09:00', '10:00', '11:00'] },
           { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
@@ -438,29 +444,12 @@ export const revokeDoctorAccess = async (userId: string) => {
 // Get all available, verified doctors for appointments
 export const getAvailableDoctors = async () => {
   try {
-    // Get profiles where is_doctor is true
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('is_doctor', true);
-    
-    if (profilesError) {
-      console.error("Error fetching doctor profiles:", profilesError);
-      return [];
-    }
-    
-    if (!profilesData || profilesData.length === 0) {
-      return [];
-    }
-    
-    // Get doctor details for these profiles
-    const doctorIds = profilesData.map(profile => profile.id);
+    // First, get all verified and available doctors from the doctors table
     const { data: doctorsData, error: doctorsError } = await supabase
       .from('doctors')
       .select('*')
-      .in('id', doctorIds)
-      .eq('available', true)
-      .eq('verified', true);
+      .eq('verified', true)
+      .eq('available', true);
     
     if (doctorsError) {
       console.error("Error fetching doctors:", doctorsError);

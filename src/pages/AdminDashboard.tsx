@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -206,6 +207,7 @@ const AdminDashboard = () => {
       
       // Update local state
       if (success) {
+        // Update users list
         setUsers(users.map(u => 
           u.id === userId ? { ...u, is_doctor: !currentStatus } : u
         ));
@@ -353,7 +355,11 @@ const AdminDashboard = () => {
                           <TableCell>{doctor.email || `user-${doctor.id.substring(0, 8)}@example.com`}</TableCell>
                           <TableCell>{doctor.specialization}</TableCell>
                           <TableCell>
-                            <Badge variant="secondary">Approved</Badge>
+                            <Badge 
+                              variant={doctor.verified ? "default" : "secondary"}
+                            >
+                              {doctor.verified ? 'Approved' : 'Pending'}
+                            </Badge>
                           </TableCell>
                           <TableCell className="flex gap-2">
                             <Button 
