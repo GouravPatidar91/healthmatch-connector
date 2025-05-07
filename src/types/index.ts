@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -60,7 +61,7 @@ export interface Appointment {
 
 export interface AppointmentSlot {
   id: string;
-  doctorId: string;
+  doctor_id: string;
   date: string;
   startTime: string;
   endTime: string;

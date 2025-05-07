@@ -262,7 +262,7 @@ export const useDoctors = () => {
       if (error) throw new Error(error.message);
       
       // Add dummy availability data for each doctor
-      const doctorsWithAvailability = data.map(doc => ({
+      const doctorsWithAvailability: Doctor[] = data.map(doc => ({
         ...doc,
         rating: 4.5, // Default rating
         availability: [
@@ -270,7 +270,7 @@ export const useDoctors = () => {
           { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
           { day: 'Friday', slots: ['10:00', '11:00', '12:00'] },
         ]
-      })) as Doctor[];
+      }));
       
       setDoctors(doctorsWithAvailability);
     } catch (err) {
@@ -301,7 +301,7 @@ export const useDoctors = () => {
       if (error) throw error;
       
       // Add dummy availability data for each doctor
-      const doctorsWithAvailability = data.map(doc => ({
+      const doctorsWithAvailability: Doctor[] = data.map(doc => ({
         ...doc,
         rating: 4.5, // Default rating
         verified: true,
@@ -314,7 +314,7 @@ export const useDoctors = () => {
           { day: 'Wednesday', slots: ['14:00', '15:00', '16:00'] },
           { day: 'Friday', slots: ['10:00', '11:00', '12:00'] },
         ]
-      })) as Doctor[];
+      }));
       
       setDoctors(doctorsWithAvailability);
       return true;
