@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDoctor, setIsDoctor] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasPendingDoctorApplication, setHasPendingDoctorApplication] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -37,6 +39,19 @@ const MainLayout = () => {
           
           setIsDoctor(!!data?.is_doctor);
           setIsAdmin(!!data?.is_admin);
+          
+          // Check if user has a pending doctor application
+          const { data: doctorData, error: doctorError } = await supabase
+            .from('doctors')
+            .select('verified')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          if (!doctorError && doctorData && doctorData.verified === false) {
+            setHasPendingDoctorApplication(true);
+          } else {
+            setHasPendingDoctorApplication(false);
+          }
         } catch (error) {
           console.error("Error checking user roles:", error);
           setIsDoctor(false);
@@ -61,6 +76,9 @@ const MainLayout = () => {
   // Add role-specific navigation items
   if (isDoctor) {
     navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
+  } else if (hasPendingDoctorApplication) {
+    // Show a disabled version or an indicator that application is pending
+    navigationItems.push({ name: "Doctor Application Pending", path: "/dashboard", icon: UserPlus });
   } else {
     navigationItems.push({ name: "Doctor Registration", path: "/doctor-registration", icon: UserPlus });
   }
@@ -132,8 +150,16 @@ const MainLayout = () => {
                       className={`flex items-center gap-2 px-4 py-2 rounded-md ${
                         isActive(item.path) 
                           ? "bg-medical-blue text-white" 
-                          : "hover:bg-gray-100"
+                          : item.name === "Doctor Application Pending" 
+                            ? "opacity-60 cursor-not-allowed"
+                            : "hover:bg-gray-100"
                       }`}
+                      onClick={e => {
+                        if (item.name === "Doctor Application Pending") {
+                          e.preventDefault();
+                          // Optional: Show toast notification about pending status
+                        }
+                      }}
                     >
                       <item.icon className="h-5 w-5" />
                       {item.name}
@@ -167,8 +193,16 @@ const MainLayout = () => {
                 className={`flex items-center gap-2 px-4 py-2 rounded-md ${
                   isActive(item.path) 
                     ? "bg-medical-blue text-white" 
-                    : "hover:bg-gray-100"
+                    : item.name === "Doctor Application Pending" 
+                      ? "opacity-60 cursor-not-allowed"
+                      : "hover:bg-gray-100"
                 }`}
+                onClick={e => {
+                  if (item.name === "Doctor Application Pending") {
+                    e.preventDefault();
+                    // Optional: Show toast notification about pending status
+                  }
+                }}
               >
                 <item.icon className="h-5 w-5" />
                 {item.name}

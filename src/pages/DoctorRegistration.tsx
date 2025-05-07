@@ -117,10 +117,27 @@ const DoctorRegistration = () => {
       
       const publicUrl = publicUrlData.publicUrl;
       
-      // Insert doctor information with the file URL
+      // Get user profile data
+      const { data: userData, error: userDataError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, email')
+        .eq('id', user.id)
+        .single();
+
+      if (userDataError) {
+        console.error("Failed to fetch user profile:", userDataError);
+      }
+
+      // Extract email from auth.users via service if available
+      const userEmail = user.email || '';
+      const firstName = userData?.first_name || user.user_metadata?.first_name || '';
+      const lastName = userData?.last_name || user.user_metadata?.last_name || '';
+      
+      // Insert doctor information with the file URL and the user's ID
       const { error: doctorError } = await supabase
         .from('doctors')
         .insert({
+          id: user.id, // Use the user's ID as the doctor's ID
           name: data.name,
           specialization: data.specialization,
           hospital: data.hospital,
@@ -130,19 +147,27 @@ const DoctorRegistration = () => {
           experience: data.experience,
           registration_number: data.registration_number,
           available: true,
+          verified: false, // Initially set to false, pending admin approval
           degree_verification_photo: publicUrl,
+          email: userEmail, // Store email for admin reference
+          first_name: firstName, // Store first name for admin reference
+          last_name: lastName // Store last name for admin reference
         });
       
-      if (doctorError) throw doctorError;
-      
-      // Update user profile to mark as doctor (request for approval)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ is_doctor: false }) // Initially set to false, pending admin approval
-        .eq('id', user.id);
-      
-      if (profileError) {
-        console.error("Failed to update user profile:", profileError);
+      if (doctorError) {
+        // Check if it's a unique constraint error (doctor already exists)
+        if (doctorError.code === '23505') {
+          // You've already submitted an application
+          toast({
+            title: "Application already exists",
+            description: "You have already submitted a doctor registration application. Please wait for admin approval.",
+            variant: "destructive",
+          });
+          navigate("/dashboard");
+          return;
+        } else {
+          throw doctorError;
+        }
       }
       
       toast({

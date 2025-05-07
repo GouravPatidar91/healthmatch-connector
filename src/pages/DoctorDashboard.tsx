@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import AppointmentSlots from '@/components/doctor/AppointmentSlots';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { checkDoctorAccess } from '@/services/doctorService';
+import { supabase } from "@/integrations/supabase/client";
 
 const DoctorDashboard = () => {
   const { user } = useAuth();
@@ -16,6 +16,7 @@ const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState("calendar");
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isPending, setIsPending] = useState(false);
 
   // Check if user has doctor access
   useEffect(() => {
@@ -26,11 +27,28 @@ const DoctorDashboard = () => {
           setHasAccess(hasDocAccess);
           
           if (!hasDocAccess) {
-            toast({
-              title: "Access Denied",
-              description: "You don't have permission to access the doctor dashboard.",
-              variant: "destructive"
-            });
+            // Check if user has a pending doctor application
+            const { data, error } = await supabase
+              .from('doctors')
+              .select('verified')
+              .eq('id', user.id)
+              .maybeSingle();
+            
+            if (!error && data && data.verified === false) {
+              setIsPending(true);
+              toast({
+                title: "Application Pending",
+                description: "Your doctor application is still pending approval from an admin.",
+                variant: "default"
+              });
+            } else {
+              toast({
+                title: "Access Denied",
+                description: "You don't have permission to access the doctor dashboard.",
+                variant: "destructive"
+              });
+            }
+            
             navigate('/dashboard');
           }
         } catch (error) {
