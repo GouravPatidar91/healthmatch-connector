@@ -592,3 +592,23 @@ export const getDoctorDetails = async (doctorId: string) => {
     return null;
   }
 };
+
+export const getDoctorsBySpecialization = async (specialization: string): Promise<Doctor[]> => {
+  try {
+    const { data: doctors, error } = await supabase
+      .from('doctors')
+      .select('*')
+      .eq('specialization', specialization)
+      .eq('verified', true);
+
+    if (error) {
+      console.error('Error fetching doctors by specialization:', error);
+      throw error;
+    }
+
+    return doctors as Doctor[];
+  } catch (error) {
+    console.error('Error in getDoctorsBySpecialization:', error);
+    throw error;
+  }
+};
