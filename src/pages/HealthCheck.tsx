@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,16 @@ const HealthCheck = () => {
   const [currentSymptomForPhoto, setCurrentSymptomForPhoto] = useState<string>("");
   const [cameraActive, setCameraActive] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+
+  // Add cleanup effect for camera stream
+  useEffect(() => {
+    return () => {
+      // Cleanup camera stream when component unmounts
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
 
   const handleSymptomToggle = (symptom: string, category: string) => {
     setSelectedSymptoms((current) => {
@@ -207,20 +217,36 @@ const HealthCheck = () => {
   const startCamera = async (symptom: string) => {
     try {
       setCurrentSymptomForPhoto(symptom);
+      
+      // Stop any existing stream first
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      
+      console.log("Requesting camera access for symptom:", symptom);
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 }
         } 
       });
+      
+      console.log("Camera stream obtained successfully");
       
       setStream(mediaStream);
       setCameraActive(true);
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
+      // Wait for video element to be available and set the stream
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.play().catch(err => {
+            console.error("Error playing video:", err);
+          });
+        }
+      }, 100);
       
       toast({
         title: "Camera activated",
@@ -230,20 +256,38 @@ const HealthCheck = () => {
       console.error("Error accessing camera:", error);
       toast({
         title: "Camera error",
-        description: "Unable to access camera. Please try uploading a photo instead.",
+        description: "Unable to access camera. Please check permissions and try again.",
         variant: "destructive"
       });
+      setCameraActive(false);
+      setCurrentSymptomForPhoto("");
     }
   };
 
   const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current || !currentSymptomForPhoto) return;
+    if (!videoRef.current || !canvasRef.current || !currentSymptomForPhoto) {
+      console.error("Missing required elements for photo capture");
+      return;
+    }
     
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    if (!ctx) return;
+    if (!ctx) {
+      console.error("Could not get canvas context");
+      return;
+    }
+    
+    // Check if video is ready
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+      toast({
+        title: "Camera not ready",
+        description: "Please wait for camera to initialize",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
@@ -269,10 +313,19 @@ const HealthCheck = () => {
   };
 
   const stopCamera = () => {
+    console.log("Stopping camera");
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log("Camera track stopped");
+      });
       setStream(null);
     }
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
     setCameraActive(false);
     setCurrentSymptomForPhoto("");
   };
@@ -460,10 +513,10 @@ const HealthCheck = () => {
         {/* Hidden canvas for photo capture */}
         <canvas ref={canvasRef} className="hidden" />
         
-        {/* Camera modal */}
+        {/* Camera modal with improved styling and error handling */}
         {cameraActive && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">
                   Capture Photo for {currentSymptomForPhoto}
@@ -472,16 +525,37 @@ const HealthCheck = () => {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4">
+              
+              <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden mb-4 relative">
                 <video 
                   ref={videoRef} 
                   autoPlay 
                   playsInline 
+                  muted
                   className="w-full h-full object-cover"
+                  onLoadedMetadata={() => {
+                    console.log("Video metadata loaded");
+                  }}
+                  onError={(e) => {
+                    console.error("Video error:", e);
+                  }}
                 />
+                {!stream && (
+                  <div className="absolute inset-0 flex items-center justify-center text-white">
+                    <div className="text-center">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                      <p>Initializing camera...</p>
+                    </div>
+                  </div>
+                )}
               </div>
+              
               <div className="flex gap-2 justify-center">
-                <Button onClick={capturePhoto}>
+                <Button 
+                  onClick={capturePhoto}
+                  disabled={!stream}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
                   <Camera className="h-4 w-4 mr-2" />
                   Capture Photo
                 </Button>
@@ -489,6 +563,10 @@ const HealthCheck = () => {
                   Cancel
                 </Button>
               </div>
+              
+              <p className="text-sm text-gray-600 mt-3 text-center">
+                Make sure the symptom area is clearly visible and well-lit for better analysis
+              </p>
             </div>
           </div>
         )}

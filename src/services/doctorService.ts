@@ -131,10 +131,10 @@ export const useDoctorSlots = () => {
   return { slots, loading, error, createSlot, deleteSlot, updateSlotStatus, refreshSlots: fetchSlots };
 };
 
-// Custom hook for doctor appointments - FIX: Simplified type handling to avoid deep instantiation
+// Custom hook for doctor appointments - Simplified to avoid deep instantiation
 export const useDoctorAppointments = () => {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState<any[]>([]); // Using any[] to prevent deep instantiation errors
+  const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -143,7 +143,6 @@ export const useDoctorAppointments = () => {
     
     setLoading(true);
     try {
-      // Fetch doctor appointments from the database
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
@@ -156,15 +155,16 @@ export const useDoctorAppointments = () => {
         return;
       }
       
-      // Transform the data to match the DoctorAppointment interface
-      setAppointments(data.map(apt => ({
+      const transformedAppointments: DoctorAppointment[] = data.map(apt => ({
         id: apt.id,
-        patientName: apt.user_id ? 'Patient' : 'Patient', // Replace with actual patient name if available
+        patientName: 'Patient',
         date: apt.date,
         time: apt.time,
         reason: apt.reason,
         status: apt.status ?? 'pending',
-      })));
+      }));
+      
+      setAppointments(transformedAppointments);
     } catch (err) {
       console.error("Error fetching doctor appointments:", err);
       setError(err instanceof Error ? err : new Error('Unknown error'));
@@ -593,7 +593,7 @@ export const getDoctorDetails = async (doctorId: string) => {
   }
 };
 
-export const getDoctorsBySpecialization = async (specialization: string): Promise<Doctor[]> => {
+export const getDoctorsBySpecialization = async (specialization: string) => {
   try {
     const { data: doctors, error } = await supabase
       .from('doctors')
@@ -606,7 +606,7 @@ export const getDoctorsBySpecialization = async (specialization: string): Promis
       throw error;
     }
 
-    return doctors as Doctor[];
+    return doctors || [];
   } catch (error) {
     console.error('Error in getDoctorsBySpecialization:', error);
     throw error;
