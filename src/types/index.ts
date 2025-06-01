@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -74,3 +73,16 @@ export type SymptomCategory = {
   category: string;
   symptoms: string[];
 };
+
+export interface AnalysisCondition {
+  name: string;
+  description: string;
+  matchedSymptoms: string[];
+  matchScore: number;
+  recommendedActions: string[];
+  seekMedicalAttention?: string;
+  visualDiagnosticFeatures?: string[]; // Visual features identified in photos
+  photoAnalysisMethod?: string; // Description of the photo analysis method used
+  medicalHistoryRelevance?: string; // How this condition relates to patient's medical history
+  medicationConsiderations?: string; // Drug interactions or medication-related factors
+}

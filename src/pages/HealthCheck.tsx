@@ -275,46 +275,59 @@ const HealthCheck = () => {
         photo: symptomPhotos[symptom] || null
       }));
       
+      // Enhanced analysis request with all patient information
       const response = await supabase.functions.invoke('analyze-symptoms', {
         body: { 
           symptoms: selectedSymptoms,
           severity,
           duration,
-          symptomDetails: symptomsWithPhotos
+          symptomDetails: symptomsWithPhotos,
+          previousConditions: previousConditions ? previousConditions.split(',').map(item => item.trim()).filter(item => item) : [],
+          medications: medications ? medications.split(',').map(item => item.trim()).filter(item => item) : [],
+          notes: notes.trim() || null
         }
       });
 
-      console.log("Analysis response:", response);
+      console.log("Enhanced analysis response:", response);
 
       if (response.data && response.data.conditions) {
         setAnalysisResults(response.data.conditions);
         
-        // Show different toast based on whether visual analysis was included
-        if (response.data.visualAnalysisIncluded) {
-          toast({
-            title: "Visual analysis complete",
-            description: `Found ${response.data.conditions.length} potential conditions based on your symptoms and photos.`,
-          });
-        } else {
-          toast({
-            title: "Analysis complete",
-            description: `Found ${response.data.conditions.length} potential conditions based on your symptoms.`
-          });
+        // Enhanced toast message based on comprehensive analysis
+        let toastMessage = `Found ${response.data.conditions.length} potential conditions`;
+        
+        if (response.data.comprehensiveAnalysis) {
+          const analysisFactors = [];
+          if (response.data.includedMedicalHistory) analysisFactors.push("medical history");
+          if (response.data.includedMedications) analysisFactors.push("current medications");
+          if (response.data.includedNotes) analysisFactors.push("additional notes");
+          if (response.data.visualAnalysisIncluded) analysisFactors.push("photo analysis");
+          
+          if (analysisFactors.length > 0) {
+            toastMessage += ` based on symptoms, ${analysisFactors.join(", ")}.`;
+          }
         }
+        
+        toast({
+          title: "Comprehensive analysis complete",
+          description: toastMessage,
+        });
 
-        // After successful analysis, navigate to the results page with the necessary data
+        // Navigate with enhanced health check data
         const healthCheckData = {
           symptoms: selectedSymptoms,
           severity,
           duration,
-          previous_conditions: previousConditions ? previousConditions.split(',').map(item => item.trim()) : [],
-          medications: medications ? medications.split(',').map(item => item.trim()) : [],
+          previous_conditions: previousConditions ? previousConditions.split(',').map(item => item.trim()).filter(item => item) : [],
+          medications: medications ? medications.split(',').map(item => item.trim()).filter(item => item) : [],
           notes,
           analysis_results: response.data.conditions,
-          symptom_photos: symptomPhotos
+          symptom_photos: symptomPhotos,
+          comprehensive_analysis: response.data.comprehensiveAnalysis,
+          urgency_level: response.data.urgencyLevel,
+          overall_assessment: response.data.overallAssessment
         };
         
-        // Navigate to the results page with the state
         navigate('/health-check-results', { 
           state: { healthCheckData }
         });

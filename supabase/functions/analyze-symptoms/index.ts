@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { symptoms, severity, duration, symptomDetails } = await req.json();
+    const { symptoms, severity, duration, symptomDetails, previousConditions, medications, notes } = await req.json();
 
     if (!symptoms || symptoms.length === 0) {
       return new Response(
@@ -36,6 +36,22 @@ serve(async (req) => {
     const symptomsText = symptoms.join(", ");
     const severityInfo = severity ? `The symptoms are ${severity} in severity.` : "";
     const durationInfo = duration ? `The symptoms have been present for ${duration}.` : "";
+    
+    // Format additional medical information
+    let medicalHistoryText = "";
+    if (previousConditions && previousConditions.length > 0) {
+      medicalHistoryText += `\n\nPREVIOUS MEDICAL CONDITIONS: ${previousConditions.join(", ")}`;
+    }
+    
+    let medicationsText = "";
+    if (medications && medications.length > 0) {
+      medicationsText += `\n\nCURRENT MEDICATIONS: ${medications.join(", ")}`;
+    }
+    
+    let notesText = "";
+    if (notes && notes.trim()) {
+      notesText += `\n\nADDITIONAL NOTES: ${notes}`;
+    }
     
     // Enhanced photo analysis section
     let photoAnalysisText = "";
@@ -112,24 +128,34 @@ serve(async (req) => {
       photoAnalysisText += "\n\nThe photos show visible symptoms which have been considered in this analysis.";
     }
 
-    // Create the prompt for the AI
+    // Create the enhanced prompt for the AI with medical history context
     const prompt = `
-      As a medical AI assistant specializing in visual diagnosis, analyze the following symptoms and provide possible conditions:
+      As a medical AI assistant specializing in comprehensive health analysis, analyze the following patient information and provide possible conditions:
       
-      Symptoms: ${symptomsText}
+      CURRENT SYMPTOMS: ${symptomsText}
       ${severityInfo}
       ${durationInfo}
       ${photoAnalysisText}
+      ${medicalHistoryText}
+      ${medicationsText}
+      ${notesText}
       
-      ${hasDetailedVisualAnalysis ? "Pay special attention to the visual symptoms where photos were provided. For eye conditions, examine for redness, discharge, swelling, or abnormal appearance. For skin conditions, look for patterns, coloration, texture, and distribution of the affected areas." : ""}
+      IMPORTANT ANALYSIS CONSIDERATIONS:
+      1. Consider how previous medical conditions might influence current symptoms
+      2. Evaluate potential drug interactions or medication side effects that could contribute to symptoms
+      3. Factor in the patient's additional notes for context about symptom onset, triggers, or patterns
+      4. Assess if current symptoms could be related to existing conditions or complications
+      ${hasDetailedVisualAnalysis ? "5. Pay special attention to visual symptoms where photos were provided. For eye conditions, examine for redness, discharge, swelling, or abnormal appearance. For skin conditions, look for patterns, coloration, texture, and distribution of the affected areas." : ""}
       
       For each potential condition, provide:
       1. Name of the condition
-      2. A detailed description including visual characteristics
+      2. A detailed description including how it relates to the patient's medical history
       3. Which symptoms match this condition
-      4. A confidence score (percentage)
-      5. Recommended actions or treatments
-      6. When to seek immediate medical attention
+      4. How previous conditions or medications might influence this diagnosis
+      5. A confidence score (percentage) considering all patient information
+      6. Recommended actions or treatments (considering existing medications and conditions)
+      7. When to seek immediate medical attention
+      8. Drug interaction warnings if relevant
       
       ${hasDetailedVisualAnalysis ? "For conditions diagnosed based on photos, explain clearly which visual characteristics led to this diagnosis and include a 'visualDiagnosticFeatures' section listing specific visual markers that support this diagnosis." : ""}
       
@@ -138,25 +164,31 @@ serve(async (req) => {
         "conditions": [
           {
             "name": "Condition Name",
-            "description": "Detailed description including visual characteristics and symptoms",
+            "description": "Detailed description including visual characteristics, relationship to medical history, and symptoms",
             "matchedSymptoms": ["symptom1", "symptom2"],
             "matchScore": 85,
             "recommendedActions": ["action1", "action2", "action3"],
             "seekMedicalAttention": "When to see a doctor immediately",
+            "medicalHistoryRelevance": "How this relates to previous conditions",
+            "medicationConsiderations": "Drug interactions or medication-related factors",
             "visualDiagnosticFeatures": ["feature1", "feature2"] // Only for photo-based diagnoses
           }
         ],
+        "overallAssessment": "Summary considering all patient information including medical history and medications",
+        "urgencyLevel": "low/moderate/high",
         "photoAnalysisMethod": "Description of the visual analysis method used for photos" // Only when photos are analyzed
       }
       
       The JSON should be properly formatted without any non-JSON content before or after.
     `;
 
-    console.log("Sending request to Groq API with symptoms:", symptomsText);
+    console.log("Sending comprehensive analysis request to Groq API");
+    console.log("Symptoms:", symptomsText);
+    console.log("Previous conditions:", previousConditions);
+    console.log("Medications:", medications);
     console.log("Has photo analysis:", hasDetailedVisualAnalysis);
-    console.log("Photo analysis details:", JSON.stringify(photoAnalysisDetails));
 
-    // Call Groq API with a structured output format
+    // Call Groq API with enhanced prompt
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -168,12 +200,12 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a medical AI assistant specialized in visual diagnosis that analyzes symptoms and provides possible medical conditions. When photos of visual symptoms like eye or skin conditions are provided, perform a detailed analysis of the visual symptoms. Always return your response in valid JSON format with no additional text.' 
+            content: 'You are a comprehensive medical AI assistant that considers complete patient history including previous conditions, medications, and additional notes for accurate diagnosis. When photos of visual symptoms are provided, perform detailed analysis. Always return valid JSON format with no additional text.' 
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.2,
-        response_format: { type: "json_object" } // Ensure we get JSON back
+        response_format: { type: "json_object" }
       }),
     });
 
@@ -184,7 +216,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log("Received response from Groq:", JSON.stringify(data));
+    console.log("Received enhanced analysis response from Groq");
     
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error("Unexpected response structure:", JSON.stringify(data));
@@ -192,13 +224,10 @@ serve(async (req) => {
     }
 
     const aiResponse = data.choices[0].message.content;
-    console.log("AI response content:", aiResponse);
     
     try {
-      // Parse the JSON response directly
       const analysisResult = JSON.parse(aiResponse);
       
-      // Validate that the result has the expected structure
       if (!analysisResult.conditions || !Array.isArray(analysisResult.conditions)) {
         throw new Error("Response missing expected 'conditions' array");
       }
@@ -209,6 +238,12 @@ serve(async (req) => {
         analysisResult.photoAnalysisDetails = photoAnalysisDetails;
       }
       
+      // Add comprehensive analysis flag
+      analysisResult.comprehensiveAnalysis = true;
+      analysisResult.includedMedicalHistory = !!(previousConditions && previousConditions.length > 0);
+      analysisResult.includedMedications = !!(medications && medications.length > 0);
+      analysisResult.includedNotes = !!(notes && notes.trim());
+      
       return new Response(
         JSON.stringify(analysisResult),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -217,7 +252,6 @@ serve(async (req) => {
       console.error("Error parsing JSON from AI response:", jsonError);
       console.error("AI response was:", aiResponse);
       
-      // Attempt to extract JSON from a text response as fallback
       try {
         const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -234,7 +268,7 @@ serve(async (req) => {
       throw new Error("Could not parse valid JSON from AI response");
     }
   } catch (error) {
-    console.error("Error in analyze-symptoms function:", error);
+    console.error("Error in enhanced analyze-symptoms function:", error);
     
     return new Response(
       JSON.stringify({ 

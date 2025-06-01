@@ -52,7 +52,7 @@ export interface SymptomDetail {
   photo?: string | null;
 }
 
-// Health check type definition
+// Enhanced health check type definition
 export interface HealthCheck {
   id?: string;
   user_id?: string;
@@ -65,6 +65,9 @@ export interface HealthCheck {
   created_at?: string;
   analysis_results?: AnalysisCondition[]; // For detailed analysis results
   symptom_photos?: {[symptom: string]: string}; // For photos of external symptoms
+  comprehensive_analysis?: boolean; // Flag for enhanced analysis
+  urgency_level?: string; // Analysis urgency assessment
+  overall_assessment?: string; // Comprehensive summary
 }
 
 // Helper function to parse analysis_results from JSON to proper type
@@ -557,7 +560,7 @@ export const useUserHealthChecks = () => {
           }, {} as Record<string, string>)
         : undefined;
 
-      // Prepare health check data with proper serialization of analysis_results and symptom_photos
+      // Prepare enhanced health check data with proper serialization
       const healthCheckWithUserId = {
         ...healthCheckData,
         user_id: user.id,
@@ -571,7 +574,7 @@ export const useUserHealthChecks = () => {
         })
       };
 
-      console.log('Saving health check with data:', healthCheckWithUserId);
+      console.log('Saving enhanced health check with data:', healthCheckWithUserId);
 
       const { data, error } = await supabase
         .from('health_checks')
@@ -589,12 +592,12 @@ export const useUserHealthChecks = () => {
       
       toast({
         title: "Success",
-        description: "Health check saved successfully"
+        description: "Comprehensive health check saved successfully"
       });
       
       return parsedResult;
     } catch (err) {
-      console.error('Error saving health check:', err);
+      console.error('Error saving enhanced health check:', err);
       toast({
         title: "Error",
         description: "Failed to save health check data",

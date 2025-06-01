@@ -25,6 +25,9 @@ interface HealthCheckData {
   notes?: string;
   analysis_results?: AnalysisCondition[];
   symptom_photos?: {[symptom: string]: string};
+  comprehensive_analysis?: boolean;
+  urgency_level?: string;
+  overall_assessment?: string;
 }
 
 const HealthCheckResults = () => {
@@ -110,7 +113,9 @@ const HealthCheckResults = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-medical-neutral-darkest">Health Check Results</h1>
+        <h1 className="text-3xl font-bold text-medical-neutral-darkest">
+          {healthCheckData.comprehensive_analysis ? "Comprehensive Health Analysis" : "Health Check Results"}
+        </h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleBack}>
             Back to Form
@@ -121,13 +126,40 @@ const HealthCheckResults = () => {
         </div>
       </div>
 
-      {/* Summary Card */}
+      {/* Enhanced Summary Card with urgency level */}
       <Card>
         <CardHeader>
-          <CardTitle>Symptom Summary</CardTitle>
-          <CardDescription>Based on your reported symptoms</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Comprehensive Assessment Summary</CardTitle>
+              <CardDescription>
+                {healthCheckData.comprehensive_analysis 
+                  ? "Analysis based on symptoms, medical history, medications, and additional information"
+                  : "Based on your reported symptoms"}
+              </CardDescription>
+            </div>
+            {healthCheckData.urgency_level && (
+              <Badge className={`${
+                healthCheckData.urgency_level === 'high' 
+                  ? 'bg-red-100 text-red-800' 
+                  : healthCheckData.urgency_level === 'moderate'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-green-100 text-green-800'
+              }`}>
+                {healthCheckData.urgency_level.toUpperCase()} URGENCY
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Overall Assessment if available */}
+          {healthCheckData.overall_assessment && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <h3 className="font-medium text-blue-800 mb-2">Overall Assessment</h3>
+              <p className="text-blue-700">{healthCheckData.overall_assessment}</p>
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <h3 className="text-sm font-medium text-gray-500">Reported Symptoms</h3>
@@ -154,6 +186,25 @@ const HealthCheckResults = () => {
               </div>
             </div>
           </div>
+
+          {/* Enhanced Medical History Display */}
+          {(healthCheckData.previous_conditions?.length || healthCheckData.medications?.length) && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <h3 className="font-medium text-amber-800 mb-2">Medical History Considered in Analysis</h3>
+              <div className="grid gap-2 md:grid-cols-2 text-sm text-amber-700">
+                {healthCheckData.previous_conditions?.length > 0 && (
+                  <div>
+                    <span className="font-medium">Previous Conditions:</span> {healthCheckData.previous_conditions.join(", ")}
+                  </div>
+                )}
+                {healthCheckData.medications?.length > 0 && (
+                  <div>
+                    <span className="font-medium">Current Medications:</span> {healthCheckData.medications.join(", ")}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Display symptom photos if any */}
           {healthCheckData.symptom_photos && Object.keys(healthCheckData.symptom_photos).length > 0 && (
@@ -218,13 +269,13 @@ const HealthCheckResults = () => {
         </CardContent>
       </Card>
 
-      {/* Analysis Results */}
+      {/* Enhanced Analysis Results */}
       <Card>
         <CardHeader>
-          <CardTitle>Analysis Results</CardTitle>
+          <CardTitle>Detailed Analysis Results</CardTitle>
           <CardDescription>
-            {visualPhotosCount > 0 
-              ? `Conditions based on your symptoms and photo analysis` 
+            {healthCheckData.comprehensive_analysis 
+              ? `Comprehensive conditions assessment considering all provided information` 
               : `Possible conditions based on your symptoms`}
           </CardDescription>
         </CardHeader>
@@ -234,7 +285,7 @@ const HealthCheckResults = () => {
               <AccordionItem key={idx} value={`condition-${idx}`}>
                 <AccordionTrigger className="text-left">
                   <div className="flex flex-col items-start">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span>{condition.name}</span>
                       <Badge className={`${condition.matchScore > 80 
                         ? 'bg-red-100 text-red-800 hover:bg-red-100' 
@@ -246,6 +297,11 @@ const HealthCheckResults = () => {
                       {condition.visualDiagnosticFeatures && condition.visualDiagnosticFeatures.length > 0 && (
                         <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
                           Photo-Based
+                        </Badge>
+                      )}
+                      {healthCheckData.comprehensive_analysis && (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          Comprehensive
                         </Badge>
                       )}
                     </div>
@@ -260,6 +316,9 @@ const HealthCheckResults = () => {
                           <TabsTrigger value="visual">Visual Analysis</TabsTrigger>
                         )}
                         <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+                        {healthCheckData.comprehensive_analysis && (
+                          <TabsTrigger value="medical-context">Medical Context</TabsTrigger>
+                        )}
                       </TabsList>
                       
                       <TabsContent value="overview">
@@ -321,6 +380,26 @@ const HealthCheckResults = () => {
                           )}
                         </div>
                       </TabsContent>
+
+                      {healthCheckData.comprehensive_analysis && (
+                        <TabsContent value="medical-context">
+                          <div className="space-y-3">
+                            {condition.medicalHistoryRelevance && (
+                              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                <h4 className="font-medium text-blue-800">Medical History Relevance:</h4>
+                                <p className="text-sm text-blue-700 mt-1">{condition.medicalHistoryRelevance}</p>
+                              </div>
+                            )}
+                            
+                            {condition.medicationConsiderations && (
+                              <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
+                                <h4 className="font-medium text-orange-800">Medication Considerations:</h4>
+                                <p className="text-sm text-orange-700 mt-1">{condition.medicationConsiderations}</p>
+                              </div>
+                            )}
+                          </div>
+                        </TabsContent>
+                      )}
                     </Tabs>
                   </div>
                 </AccordionContent>
@@ -351,37 +430,52 @@ const HealthCheckResults = () => {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
               </>
             ) : (
-              'Save to Health Records'
+              'Save Comprehensive Analysis to Health Records'
             )}
           </Button>
         </CardFooter>
       </Card>
 
-      {/* Additional Information */}
+      {/* Additional Information - Enhanced */}
       {(healthCheckData.previous_conditions?.length || healthCheckData.medications?.length || healthCheckData.notes) && (
         <Card>
           <CardHeader>
-            <CardTitle>Additional Information</CardTitle>
+            <CardTitle>Additional Patient Information</CardTitle>
+            <CardDescription>Medical history and notes considered in analysis</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {healthCheckData.previous_conditions?.length > 0 && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Previous Medical Conditions</h3>
-                <p className="mt-1">{healthCheckData.previous_conditions.join(", ")}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {healthCheckData.previous_conditions.map((condition, idx) => (
+                    <Badge key={idx} variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                      {condition}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
             
             {healthCheckData.medications?.length > 0 && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Current Medications</h3>
-                <p className="mt-1">{healthCheckData.medications.join(", ")}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {healthCheckData.medications.map((medication, idx) => (
+                    <Badge key={idx} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      {medication}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
             
             {healthCheckData.notes && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500">Notes</h3>
-                <p className="mt-1">{healthCheckData.notes}</p>
+                <h3 className="text-sm font-medium text-gray-500">Additional Notes</h3>
+                <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <p className="text-gray-700">{healthCheckData.notes}</p>
+                </div>
               </div>
             )}
           </CardContent>
