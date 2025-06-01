@@ -35,15 +35,25 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
   
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const conversationRef = useRef<any>(null);
+  const [containerReady, setContainerReady] = useState(false);
 
   // Tavus configuration
   const TAVUS_API_KEY = "1f2bbfa81a08407ea011a4d717a52bf9";
   const TAVUS_REPLICA_ID = "r6ae5b6efc9d";
 
+  // Check if container is ready
+  useEffect(() => {
+    if (videoContainerRef.current && isVideoActive) {
+      setContainerReady(true);
+    }
+  }, [isVideoActive]);
+
   // Initialize Tavus conversation
   const initializeTavusConversation = async () => {
     try {
       setIsLoading(true);
+      
+      console.log('Creating Tavus conversation...');
       
       // Create a conversation with Tavus
       const response = await fetch('https://tavusapi.com/v2/conversations', {
@@ -73,8 +83,13 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
       console.log('Conversation created:', conversationData);
       setConversationId(conversationData.conversation_id);
       
-      // Start the video call directly with iframe instead of SDK
-      await startVideoCallWithIframe(conversationData.conversation_url);
+      // Set video active first to render the container
+      setIsVideoActive(true);
+      
+      // Wait a bit for the container to be rendered, then start the video call
+      setTimeout(() => {
+        startVideoCallWithIframe(conversationData.conversation_url);
+      }, 100);
       
     } catch (error) {
       console.error('Error initializing Tavus conversation:', error);
@@ -91,9 +106,23 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
   // Start the video call using iframe instead of SDK
   const startVideoCallWithIframe = async (conversationUrl: string) => {
     try {
-      if (!videoContainerRef.current) {
-        throw new Error('Video container not available');
+      console.log('Starting video call with iframe...');
+      
+      // Wait for container to be available with retries
+      let retries = 0;
+      const maxRetries = 10;
+      
+      while (!videoContainerRef.current && retries < maxRetries) {
+        console.log(`Waiting for video container... retry ${retries + 1}/${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
       }
+      
+      if (!videoContainerRef.current) {
+        throw new Error('Video container not available after retries');
+      }
+
+      console.log('Video container found, creating iframe...');
 
       // Create iframe for the video call
       const iframe = document.createElement('iframe');
@@ -108,7 +137,6 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
       videoContainerRef.current.innerHTML = '';
       videoContainerRef.current.appendChild(iframe);
 
-      setIsVideoActive(true);
       toast({
         title: "Video Assistant Connected",
         description: "You are now connected with our AI medical assistant.",
@@ -135,6 +163,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
         description: "Failed to start video call. Please try again.",
         variant: "destructive"
       });
+      setIsVideoActive(false);
     }
   };
 
@@ -195,6 +224,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
     setIsVideoActive(false);
     setConversationId(null);
     conversationRef.current = null;
+    setContainerReady(false);
     
     toast({
       title: "Video Call Ended",
