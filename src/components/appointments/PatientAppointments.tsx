@@ -18,12 +18,16 @@ import { useAppointmentBooking } from '@/services/appointmentService';
 
 interface PatientAppointment {
   id: string;
+  user_id: string;
   doctor_name: string;
+  doctor_specialty?: string;
   date: string;
   time: string;
   reason?: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  created_at?: string;
+  status: string; // Changed from union type to string to match database
+  notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const PatientAppointments: React.FC = () => {
