@@ -113,6 +113,7 @@ export type Database = {
           created_at: string
           degree_verification_photo: string | null
           degrees: string
+          email: string | null
           experience: number
           hospital: string
           id: string
@@ -130,6 +131,7 @@ export type Database = {
           created_at?: string
           degree_verification_photo?: string | null
           degrees: string
+          email?: string | null
           experience: number
           hospital: string
           id?: string
@@ -147,6 +149,7 @@ export type Database = {
           created_at?: string
           degree_verification_photo?: string | null
           degrees?: string
+          email?: string | null
           experience?: number
           hospital?: string
           id?: string
@@ -362,6 +365,7 @@ export type Database = {
           created_at: string
           degree_verification_photo: string | null
           degrees: string
+          email: string | null
           experience: number
           hospital: string
           id: string

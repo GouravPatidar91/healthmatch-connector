@@ -27,6 +27,9 @@ const doctorFormSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
   specialization: z.string().min(2, {
     message: "Specialization must be at least 2 characters.",
   }),
@@ -73,6 +76,7 @@ const DoctorRegistration = () => {
     resolver: zodResolver(doctorFormSchema),
     defaultValues: {
       name: "",
+      email: "",
       specialization: "",
       hospital: "",
       address: "",
@@ -140,6 +144,7 @@ const DoctorRegistration = () => {
         .insert({
           id: user.id, // Use the user's ID as the doctor's ID
           name: data.name,
+          email: data.email, // Add email to the insert
           specialization: data.specialization,
           hospital: data.hospital,
           address: data.address,
@@ -149,10 +154,7 @@ const DoctorRegistration = () => {
           registration_number: data.registration_number,
           available: true,
           verified: false, // Initially set to false, pending admin approval
-          degree_verification_photo: publicUrl,
-          email: userEmail, // Store email for admin reference
-          first_name: firstName, // Store first name for admin reference
-          last_name: lastName // Store last name for admin reference
+          degree_verification_photo: publicUrl
         });
       
       if (doctorError) {
@@ -235,6 +237,20 @@ const DoctorRegistration = () => {
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Dr. Jane Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="doctor@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

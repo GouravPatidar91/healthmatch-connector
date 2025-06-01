@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +9,7 @@ export interface Doctor {
   hospital: string;
   region: string;
   address: string;
+  email?: string;
   availability?: {
     day: string;
     slots: string[];
@@ -291,7 +291,7 @@ export const useDoctorSlots = () => {
           end_time: data.end_time,
           duration: data.duration,
           max_patients: data.max_patients,
-          status: data.status
+          status: data.status as 'available' | 'booked' | 'cancelled'
         };
         setSlots(prev => [...prev, newSlot]);
       }
