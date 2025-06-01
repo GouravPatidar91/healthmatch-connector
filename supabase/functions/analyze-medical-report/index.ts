@@ -2,7 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || "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";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,22 +28,10 @@ serve(async (req) => {
       );
     }
 
-    if (!openAIApiKey) {
-      console.error('OpenAI API key not found in environment variables');
+    if (!GROQ_API_KEY) {
+      console.error('Groq API key not found in environment variables');
       return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured. Please check your Supabase secrets.' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // Validate API key format
-    if (!openAIApiKey.startsWith('sk-')) {
-      console.error('Invalid OpenAI API key format');
-      return new Response(
-        JSON.stringify({ error: 'Invalid OpenAI API key format' }),
+        JSON.stringify({ error: 'Groq API key not configured. Please check your Supabase secrets.' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -52,9 +40,6 @@ serve(async (req) => {
     }
 
     console.log(`Analyzing medical report: ${fileName} in ${language}`);
-
-    // Extract base64 content (remove data URL prefix if present)
-    const base64Content = file.includes(',') ? file.split(',')[1] : file;
 
     // Language mapping for better prompts
     const languageInstructions = {
@@ -71,88 +56,72 @@ serve(async (req) => {
     const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || 
                                languageInstructions['simple-english'];
 
-    let messages;
-
-    if (fileType === 'application/pdf') {
-      // For PDF files, we'll ask the user to describe the content since vision API doesn't support PDF
-      messages = [
-        {
-          role: 'system',
-          content: `You are a medical report analyzer. ${languageInstruction} 
-          
-          Analyze the medical report content and provide:
-          1. A clear summary of what the report shows
-          2. Key findings (list 3-5 important points)
-          3. Recommendations for the patient (list 3-5 actionable items)
-          4. Urgency level (Low/Medium/High)
-          
-          Respond in JSON format with: summary, keyFindings (array), recommendations (array), urgencyLevel, language.`
-        },
-        {
-          role: 'user',
-          content: `Please analyze this medical report content. Since this is a PDF, I'll need you to provide a general analysis framework. The file name is: ${fileName}`
-        }
-      ];
-    } else {
-      // For image files, use vision capabilities
-      messages = [
-        {
-          role: 'system',
-          content: `You are a medical report analyzer. ${languageInstruction}
-          
-          Analyze the medical report image and provide:
-          1. A clear summary of what the report shows
-          2. Key findings (list 3-5 important points from the visible content)
-          3. Recommendations for the patient (list 3-5 actionable items)
-          4. Urgency level (Low/Medium/High) based on the visible findings
-          
-          Respond in JSON format with: summary, keyFindings (array), recommendations (array), urgencyLevel, language.`
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Please analyze this medical report image: ${fileName}`
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${fileType};base64,${base64Content}`
-              }
-            }
-          ]
-        }
-      ];
+    // Create prompt for medical report analysis
+    const prompt = `
+    You are a medical report analyzer. ${languageInstruction}
+    
+    Analyze the medical report content and provide:
+    1. A clear summary of what the report shows
+    2. Key findings (list 3-5 important points)
+    3. Recommendations for the patient (list 3-5 actionable items)
+    4. Urgency level (Low/Medium/High)
+    
+    The report file is: ${fileName} (${fileType})
+    
+    ${fileType === 'application/pdf' 
+      ? `Since this is a PDF file, provide a general analysis framework based on common medical report structures.`
+      : `This is an image file that contains medical report content.`
     }
+    
+    Please respond in JSON format with the following structure:
+    {
+      "summary": "Clear summary of the report",
+      "keyFindings": ["finding1", "finding2", "finding3"],
+      "recommendations": ["recommendation1", "recommendation2", "recommendation3"],
+      "urgencyLevel": "Low/Medium/High",
+      "language": "${language}"
+    }
+    
+    Ensure the JSON is properly formatted without any additional text before or after.
+    `;
 
-    console.log('Making request to OpenAI API...');
+    console.log('Making request to Groq API...');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey.trim()}`,
+        'Authorization': `Bearer ${GROQ_API_KEY.trim()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: fileType === 'application/pdf' ? 'gpt-4o-mini' : 'gpt-4o',
-        messages: messages,
+        model: 'llama3-8b-8192',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a medical report analyzer. ${languageInstruction} Always return valid JSON format with no additional text.`
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.2,
         max_tokens: 1500,
-        temperature: 0.3,
+        response_format: { type: "json_object" }
       }),
     });
 
-    console.log('OpenAI API response status:', response.status);
+    console.log('Groq API response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error(`OpenAI API error (${response.status}):`, errorData);
+      console.error(`Groq API error (${response.status}):`, errorData);
       
       let errorMessage = 'Failed to analyze medical report';
       if (response.status === 401) {
-        errorMessage = 'Invalid OpenAI API key. Please check your API key configuration.';
+        errorMessage = 'Invalid Groq API key. Please check your API key configuration.';
       } else if (response.status === 429) {
-        errorMessage = 'OpenAI API rate limit exceeded. Please try again later.';
+        errorMessage = 'Groq API rate limit exceeded. Please try again later.';
       } else if (response.status === 400) {
         errorMessage = 'Invalid request format. Please check your file format.';
       }
@@ -167,7 +136,12 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('OpenAI response received successfully');
+    console.log('Groq response received successfully');
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Unexpected response structure:", JSON.stringify(data));
+      throw new Error("Invalid response structure from Groq");
+    }
 
     let analysisResult;
     try {
