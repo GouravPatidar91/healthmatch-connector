@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,11 +73,8 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
       console.log('Conversation created:', conversationData);
       setConversationId(conversationData.conversation_id);
       
-      // Load Tavus SDK
-      await loadTavusSDK();
-      
-      // Initialize the video call
-      await startVideoCall(conversationData.conversation_id);
+      // Start the video call directly with iframe instead of SDK
+      await startVideoCallWithIframe(conversationData.conversation_url);
       
     } catch (error) {
       console.error('Error initializing Tavus conversation:', error);
@@ -90,62 +88,45 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
     }
   };
 
-  // Load Tavus SDK dynamically
-  const loadTavusSDK = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (window.TavusConversation) {
-        resolve();
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://cdn.tavus.io/sdk/tavus-conversation.js';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Tavus SDK'));
-      document.head.appendChild(script);
-    });
-  };
-
-  // Start the video call
-  const startVideoCall = async (conversationId: string) => {
+  // Start the video call using iframe instead of SDK
+  const startVideoCallWithIframe = async (conversationUrl: string) => {
     try {
-      if (!window.TavusConversation || !videoContainerRef.current) {
-        throw new Error('Tavus SDK not loaded or container not available');
+      if (!videoContainerRef.current) {
+        throw new Error('Video container not available');
       }
 
-      const conversation = new window.TavusConversation(conversationId, {
-        onConversationStarted: () => {
-          console.log('Conversation started');
-          setIsVideoActive(true);
-          toast({
-            title: "Video Assistant Connected",
-            description: "You are now connected with our AI medical assistant.",
-          });
-        },
-        onConversationEnded: () => {
-          console.log('Conversation ended');
-          setIsVideoActive(false);
-          handleCallComplete();
-        },
-        onError: (error: any) => {
-          console.error('Tavus conversation error:', error);
-          toast({
-            title: "Video Call Error",
-            description: "There was an issue with the video call.",
-            variant: "destructive"
-          });
-        },
-        onParticipantJoined: () => {
-          console.log('Participant joined');
-        },
-        onParticipantLeft: () => {
-          console.log('Participant left');
-        }
+      // Create iframe for the video call
+      const iframe = document.createElement('iframe');
+      iframe.src = conversationUrl;
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = 'none';
+      iframe.allow = 'camera; microphone; fullscreen';
+      iframe.allowFullscreen = true;
+
+      // Clear container and add iframe
+      videoContainerRef.current.innerHTML = '';
+      videoContainerRef.current.appendChild(iframe);
+
+      setIsVideoActive(true);
+      toast({
+        title: "Video Assistant Connected",
+        description: "You are now connected with our AI medical assistant.",
       });
 
-      // Mount the video to the container
-      await conversation.mount(videoContainerRef.current);
-      conversationRef.current = conversation;
+      // Set up iframe load event
+      iframe.onload = () => {
+        console.log('Video call iframe loaded successfully');
+      };
+
+      iframe.onerror = () => {
+        console.error('Error loading video call iframe');
+        toast({
+          title: "Video Call Error",
+          description: "There was an issue loading the video call.",
+          variant: "destructive"
+        });
+      };
 
     } catch (error) {
       console.error('Error starting video call:', error);
@@ -207,8 +188,8 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
 
   // End the emergency call
   const endEmergencyCall = () => {
-    if (conversationRef.current) {
-      conversationRef.current.endConversation();
+    if (videoContainerRef.current) {
+      videoContainerRef.current.innerHTML = '';
     }
     
     setIsVideoActive(false);
@@ -224,8 +205,8 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (conversationRef.current) {
-        conversationRef.current.endConversation();
+      if (videoContainerRef.current) {
+        videoContainerRef.current.innerHTML = '';
       }
     };
   }, []);
@@ -324,11 +305,5 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
   );
 };
 
-// Extend window object for Tavus SDK
-declare global {
-  interface Window {
-    TavusConversation: any;
-  }
-}
-
 export default TavusVideoAssistant;
+
