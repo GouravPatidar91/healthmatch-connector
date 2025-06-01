@@ -208,41 +208,50 @@ export type Database = {
       health_checks: {
         Row: {
           analysis_results: Json | null
+          comprehensive_analysis: boolean | null
           created_at: string
           duration: string | null
           id: string
           medications: string[] | null
           notes: string | null
+          overall_assessment: string | null
           previous_conditions: string[] | null
           severity: string | null
           symptom_photos: Json | null
           symptoms: string[] | null
+          urgency_level: string | null
           user_id: string
         }
         Insert: {
           analysis_results?: Json | null
+          comprehensive_analysis?: boolean | null
           created_at?: string
           duration?: string | null
           id?: string
           medications?: string[] | null
           notes?: string | null
+          overall_assessment?: string | null
           previous_conditions?: string[] | null
           severity?: string | null
           symptom_photos?: Json | null
           symptoms?: string[] | null
+          urgency_level?: string | null
           user_id: string
         }
         Update: {
           analysis_results?: Json | null
+          comprehensive_analysis?: boolean | null
           created_at?: string
           duration?: string | null
           id?: string
           medications?: string[] | null
           notes?: string | null
+          overall_assessment?: string | null
           previous_conditions?: string[] | null
           severity?: string | null
           symptom_photos?: Json | null
           symptoms?: string[] | null
+          urgency_level?: string | null
           user_id?: string
         }
         Relationships: [

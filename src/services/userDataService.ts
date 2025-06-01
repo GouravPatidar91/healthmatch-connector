@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +45,8 @@ export interface AnalysisCondition {
   seekMedicalAttention?: string;
   visualDiagnosticFeatures?: string[]; // Visual features identified in photos
   photoAnalysisMethod?: string; // Description of the photo analysis method used
+  medicalHistoryRelevance?: string; // How this condition relates to patient's medical history
+  medicationConsiderations?: string; // Drug interactions or medication-related factors
 }
 
 // Symptom detail with photo
@@ -86,7 +89,12 @@ const parseAnalysisResults = (data: any): HealthCheck => {
           description: String(item.description || ''),
           matchedSymptoms: Array.isArray(item.matchedSymptoms) ? item.matchedSymptoms : [],
           matchScore: Number(item.matchScore || 0),
-          recommendedActions: Array.isArray(item.recommendedActions) ? item.recommendedActions : []
+          recommendedActions: Array.isArray(item.recommendedActions) ? item.recommendedActions : [],
+          seekMedicalAttention: item.seekMedicalAttention || undefined,
+          visualDiagnosticFeatures: Array.isArray(item.visualDiagnosticFeatures) ? item.visualDiagnosticFeatures : undefined,
+          photoAnalysisMethod: item.photoAnalysisMethod || undefined,
+          medicalHistoryRelevance: item.medicalHistoryRelevance || undefined,
+          medicationConsiderations: item.medicationConsiderations || undefined
         }));
       } 
       // If it's a string, parse it
@@ -98,7 +106,12 @@ const parseAnalysisResults = (data: any): HealthCheck => {
             description: String(item.description || ''),
             matchedSymptoms: Array.isArray(item.matchedSymptoms) ? item.matchedSymptoms : [],
             matchScore: Number(item.matchScore || 0),
-            recommendedActions: Array.isArray(item.recommendedActions) ? item.recommendedActions : []
+            recommendedActions: Array.isArray(item.recommendedActions) ? item.recommendedActions : [],
+            seekMedicalAttention: item.seekMedicalAttention || undefined,
+            visualDiagnosticFeatures: Array.isArray(item.visualDiagnosticFeatures) ? item.visualDiagnosticFeatures : undefined,
+            photoAnalysisMethod: item.photoAnalysisMethod || undefined,
+            medicalHistoryRelevance: item.medicalHistoryRelevance || undefined,
+            medicationConsiderations: item.medicationConsiderations || undefined
           }));
         }
       }
@@ -571,7 +584,11 @@ export const useUserHealthChecks = () => {
         // Convert processed symptom_photos to JSON for Supabase
         ...(processedPhotos && {
           symptom_photos: processedPhotos as unknown as Json
-        })
+        }),
+        // Include the new fields
+        comprehensive_analysis: healthCheckData.comprehensive_analysis || false,
+        urgency_level: healthCheckData.urgency_level || null,
+        overall_assessment: healthCheckData.overall_assessment || null
       };
 
       console.log('Saving enhanced health check with data:', healthCheckWithUserId);
