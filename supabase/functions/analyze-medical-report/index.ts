@@ -29,8 +29,21 @@ serve(async (req) => {
     }
 
     if (!openAIApiKey) {
+      console.error('OpenAI API key not found in environment variables');
       return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured' }),
+        JSON.stringify({ error: 'OpenAI API key not configured. Please check your Supabase secrets.' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate API key format
+    if (!openAIApiKey.startsWith('sk-')) {
+      console.error('Invalid OpenAI API key format');
+      return new Response(
+        JSON.stringify({ error: 'Invalid OpenAI API key format' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -113,10 +126,12 @@ serve(async (req) => {
       ];
     }
 
+    console.log('Making request to OpenAI API...');
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${openAIApiKey.trim()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -127,12 +142,32 @@ serve(async (req) => {
       }),
     });
 
+    console.log('OpenAI API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorData = await response.text();
+      console.error(`OpenAI API error (${response.status}):`, errorData);
+      
+      let errorMessage = 'Failed to analyze medical report';
+      if (response.status === 401) {
+        errorMessage = 'Invalid OpenAI API key. Please check your API key configuration.';
+      } else if (response.status === 429) {
+        errorMessage = 'OpenAI API rate limit exceeded. Please try again later.';
+      } else if (response.status === 400) {
+        errorMessage = 'Invalid request format. Please check your file format.';
+      }
+      
+      return new Response(
+        JSON.stringify({ error: errorMessage, details: errorData }),
+        {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const data = await response.json();
-    console.log('OpenAI response:', data);
+    console.log('OpenAI response received successfully');
 
     let analysisResult;
     try {
@@ -153,7 +188,7 @@ serve(async (req) => {
     // Ensure the response has the correct language field
     analysisResult.language = language;
 
-    console.log('Analysis result:', analysisResult);
+    console.log('Analysis completed successfully');
 
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
