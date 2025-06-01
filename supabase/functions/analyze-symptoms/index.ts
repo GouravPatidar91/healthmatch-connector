@@ -1,8 +1,7 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || "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";
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || "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";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
