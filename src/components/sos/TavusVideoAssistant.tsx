@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +36,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
 
   // Tavus configuration
   const TAVUS_API_KEY = "1f2bbfa81a08407ea011a4d717a52bf9";
-  const TAVUS_REPLICA_ID = "r8b8c8e4-4e4e-4e4e-8e4e-8e4e8e4e8e4e"; // You'll need to create a replica
+  const TAVUS_REPLICA_ID = "r6ae5b6efc9d";
 
   // Initialize Tavus conversation
   const initializeTavusConversation = async () => {
