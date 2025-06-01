@@ -159,7 +159,7 @@ export const useDoctorsBySpecialization = (specialization?: string) => {
   return { doctors, loading, error };
 };
 
-// Custom hook for doctor appointments
+// Custom hook for doctor appointments - updated to fetch from appointments table
 export const useDoctorAppointments = () => {
   const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,19 +169,37 @@ export const useDoctorAppointments = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        // Mock appointments data for now
-        const mockAppointments: DoctorAppointment[] = [
-          {
-            id: '1',
-            patientName: 'John Doe',
-            time: '09:00',
-            reason: 'Consultation',
-            status: 'pending',
-            date: new Date().toISOString().split('T')[0]
-          }
-        ];
+        const { data: { user } } = await supabase.auth.getUser();
         
-        setAppointments(mockAppointments);
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+
+        // Fetch appointments from the appointments table where doctor matches
+        const { data, error } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            profiles(first_name, last_name)
+          `)
+          .order('date', { ascending: true })
+          .order('time', { ascending: true });
+
+        if (error) {
+          throw error;
+        }
+
+        // Transform the data to match our interface
+        const transformedAppointments: DoctorAppointment[] = (data || []).map(apt => ({
+          id: apt.id,
+          patientName: apt.profiles ? `${apt.profiles.first_name || ''} ${apt.profiles.last_name || ''}`.trim() || 'Patient' : 'Patient',
+          time: apt.time,
+          reason: apt.reason || 'General consultation',
+          status: apt.status as 'pending' | 'completed' | 'cancelled',
+          date: apt.date
+        }));
+        
+        setAppointments(transformedAppointments);
       } catch (err) {
         console.error('Error fetching appointments:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch appointments'));
@@ -194,19 +212,47 @@ export const useDoctorAppointments = () => {
   }, []);
 
   const markAppointmentAsCompleted = async (appointmentId: string) => {
-    setAppointments(prev => 
-      prev.map(apt => 
-        apt.id === appointmentId ? { ...apt, status: 'completed' as const } : apt
-      )
-    );
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'completed' })
+        .eq('id', appointmentId);
+
+      if (error) {
+        throw error;
+      }
+
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt.id === appointmentId ? { ...apt, status: 'completed' as const } : apt
+        )
+      );
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      throw error;
+    }
   };
 
   const cancelAppointment = async (appointmentId: string) => {
-    setAppointments(prev => 
-      prev.map(apt => 
-        apt.id === appointmentId ? { ...apt, status: 'cancelled' as const } : apt
-      )
-    );
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', appointmentId);
+
+      if (error) {
+        throw error;
+      }
+
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt.id === appointmentId ? { ...apt, status: 'cancelled' as const } : apt
+        )
+      );
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      throw error;
+    }
   };
 
   return { 

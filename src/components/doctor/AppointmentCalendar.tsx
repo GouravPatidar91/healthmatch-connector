@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -144,7 +143,7 @@ const AppointmentCalendar = () => {
                                 'destructive'}
                         className="px-3 py-1"
                       >
-                        {slot.startTime} - {slot.endTime} ({slot.status})
+                        {slot.start_time} - {slot.end_time} ({slot.status})
                       </Badge>
                     ))
                   ) : (
@@ -241,7 +240,7 @@ const AppointmentCalendar = () => {
                             {daySlots.map(slot => (
                               <div key={slot.id} className="p-1 text-xs border rounded flex items-center bg-blue-50">
                                 <Clock className="h-3 w-3 mr-1" />
-                                <span>{slot.startTime}</span>
+                                <span>{slot.start_time}</span>
                                 <Badge variant="outline" className="ml-auto text-[10px]">
                                   {slot.status}
                                 </Badge>
