@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -51,9 +52,9 @@ const AppointmentSlots = () => {
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
   
   const [newSlot, setNewSlot] = useState({
-    startTime: '09:00',
+    start_time: '09:00',
     duration: 30,
-    maxPatients: 1,
+    max_patients: 1,
     status: 'available' as const,
   });
   
@@ -70,20 +71,20 @@ const AppointmentSlots = () => {
         return;
       }
       
-      const [hours, minutes] = newSlot.startTime.split(':').map(Number);
+      const [hours, minutes] = newSlot.start_time.split(':').map(Number);
       const startDateTime = new Date(selectedDate);
       startDateTime.setHours(hours, minutes, 0);
       
       const endDateTime = addMinutes(startDateTime, newSlot.duration);
-      const endTime = format(endDateTime, 'HH:mm');
+      const end_time = format(endDateTime, 'HH:mm');
       
       await createSlot({
         doctor_id: user.id,
         date: format(selectedDate, 'yyyy-MM-dd'),
-        startTime: newSlot.startTime,
-        endTime: endTime,
+        start_time: newSlot.start_time,
+        end_time: end_time,
         duration: newSlot.duration,
-        maxPatients: newSlot.maxPatients,
+        max_patients: newSlot.max_patients,
         status: newSlot.status,
       });
       
@@ -198,12 +199,12 @@ const AppointmentSlots = () => {
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="startTime" className="text-right">
+                <Label htmlFor="start_time" className="text-right">
                   Start Time
                 </Label>
                 <Select 
-                  value={newSlot.startTime} 
-                  onValueChange={(value) => setNewSlot({...newSlot, startTime: value})}
+                  value={newSlot.start_time} 
+                  onValueChange={(value) => setNewSlot({...newSlot, start_time: value})}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select start time" />
@@ -235,16 +236,16 @@ const AppointmentSlots = () => {
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="maxPatients" className="text-right">
+                <Label htmlFor="max_patients" className="text-right">
                   Max Patients
                 </Label>
                 <Input
-                  id="maxPatients"
+                  id="max_patients"
                   type="number"
                   min={1}
                   max={10}
-                  value={newSlot.maxPatients}
-                  onChange={(e) => setNewSlot({...newSlot, maxPatients: parseInt(e.target.value)})}
+                  value={newSlot.max_patients}
+                  onChange={(e) => setNewSlot({...newSlot, max_patients: parseInt(e.target.value)})}
                   className="col-span-3"
                 />
               </div>
@@ -295,9 +296,9 @@ const AppointmentSlots = () => {
                             >
                               <div className="flex items-center">
                                 <Clock className="h-4 w-4 mr-2 text-slate-500" />
-                                <span className="font-medium">{slot.startTime} - {slot.endTime}</span>
+                                <span className="font-medium">{slot.start_time} - {slot.end_time}</span>
                                 <span className="ml-3 text-sm text-slate-500">
-                                  ({slot.duration} mins, {slot.maxPatients} patient{slot.maxPatients !== 1 ? 's' : ''})
+                                  ({slot.duration} mins, {slot.max_patients} patient{slot.max_patients !== 1 ? 's' : ''})
                                 </span>
                               </div>
                               <div className="flex items-center">
