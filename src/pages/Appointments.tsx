@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Clock, MapPin, Star, Stethoscope, User } from "lucide-react";
 import { useDoctors, useDoctorsBySpecialization } from '@/services/doctorService';
 import DoctorSlots from '@/components/appointments/DoctorSlots';
+import PatientAppointments from '@/components/appointments/PatientAppointments';
 
 const specializations = [
   "Cardiology",
@@ -64,10 +64,15 @@ const Appointments = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-lg grid-cols-3">
+            <TabsTrigger value="my-appointments">My Appointments</TabsTrigger>
             <TabsTrigger value="browse">Browse Doctors</TabsTrigger>
             <TabsTrigger value="nearby">Find Nearby</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="my-appointments" className="space-y-6">
+            <PatientAppointments />
+          </TabsContent>
           
           <TabsContent value="browse" className="space-y-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
