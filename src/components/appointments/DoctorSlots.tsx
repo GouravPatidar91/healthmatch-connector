@@ -98,7 +98,7 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
               {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
             </p>
             <div className="flex flex-wrap gap-2">
-              {dateSlots.slice(0, 4).map((slot) => (
+              {(dateSlots as any[]).slice(0, 4).map((slot) => (
                 <Button
                   key={slot.id}
                   variant="outline"
@@ -110,9 +110,9 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
                   {slot.start_time}
                 </Button>
               ))}
-              {dateSlots.length > 4 && (
+              {(dateSlots as any[]).length > 4 && (
                 <Badge variant="secondary" className="text-xs">
-                  +{dateSlots.length - 4} more
+                  +{(dateSlots as any[]).length - 4} more
                 </Badge>
               )}
             </div>
