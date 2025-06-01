@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +38,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
   // Tavus configuration
   const TAVUS_API_KEY = "1f2bbfa81a08407ea011a4d717a52bf9";
   const TAVUS_REPLICA_ID = "r6ae5b6efc9d";
+  const TAVUS_PERSONA_ID = "p92039232c9e";
 
   // Check if container is ready
   useEffect(() => {
@@ -53,9 +52,9 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
     try {
       setIsLoading(true);
       
-      console.log('Creating Tavus conversation...');
+      console.log('Creating Tavus conversation with persona...');
       
-      // Create a conversation with Tavus
+      // Create a conversation with Tavus using persona
       const response = await fetch('https://tavusapi.com/v2/conversations', {
         method: 'POST',
         headers: {
@@ -64,6 +63,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
         },
         body: JSON.stringify({
           replica_id: TAVUS_REPLICA_ID,
+          persona_id: TAVUS_PERSONA_ID,
           conversation_name: `Emergency Call - ${user?.user_metadata?.name || 'Patient'}`,
           properties: {
             max_call_duration: 300,
@@ -80,16 +80,16 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
       }
 
       const conversationData = await response.json();
-      console.log('Conversation created:', conversationData);
+      console.log('Conversation created with persona:', conversationData);
       setConversationId(conversationData.conversation_id);
       
       // Set video active first to render the container
       setIsVideoActive(true);
       
-      // Wait a bit for the container to be rendered, then start the video call
+      // Wait for the container to be rendered, then start the video call
       setTimeout(() => {
         startVideoCallWithIframe(conversationData.conversation_url);
-      }, 100);
+      }, 200);
       
     } catch (error) {
       console.error('Error initializing Tavus conversation:', error);
@@ -98,19 +98,18 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
         description: "Failed to initialize video assistant. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
     }
   };
 
-  // Start the video call using iframe instead of SDK
+  // Start the video call using iframe
   const startVideoCallWithIframe = async (conversationUrl: string) => {
     try {
       console.log('Starting video call with iframe...');
       
       // Wait for container to be available with retries
       let retries = 0;
-      const maxRetries = 10;
+      const maxRetries = 15;
       
       while (!videoContainerRef.current && retries < maxRetries) {
         console.log(`Waiting for video container... retry ${retries + 1}/${maxRetries}`);
@@ -122,33 +121,36 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
         throw new Error('Video container not available after retries');
       }
 
-      console.log('Video container found, creating iframe...');
+      console.log('Video container found, creating iframe for persona video call...');
 
-      // Create iframe for the video call
+      // Create iframe for the video call with persona
       const iframe = document.createElement('iframe');
       iframe.src = conversationUrl;
       iframe.style.width = '100%';
       iframe.style.height = '100%';
       iframe.style.border = 'none';
-      iframe.allow = 'camera; microphone; fullscreen';
+      iframe.style.borderRadius = '8px';
+      iframe.allow = 'camera; microphone; fullscreen; autoplay';
       iframe.allowFullscreen = true;
 
       // Clear container and add iframe
       videoContainerRef.current.innerHTML = '';
       videoContainerRef.current.appendChild(iframe);
 
+      setIsLoading(false);
+
       toast({
         title: "Video Assistant Connected",
-        description: "You are now connected with our AI medical assistant.",
+        description: "You are now connected with our AI medical assistant persona.",
       });
 
       // Set up iframe load event
       iframe.onload = () => {
-        console.log('Video call iframe loaded successfully');
+        console.log('Persona video call iframe loaded successfully');
       };
 
       iframe.onerror = () => {
-        console.error('Error loading video call iframe');
+        console.error('Error loading persona video call iframe');
         toast({
           title: "Video Call Error",
           description: "There was an issue loading the video call.",
@@ -164,6 +166,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
         variant: "destructive"
       });
       setIsVideoActive(false);
+      setIsLoading(false);
     }
   };
 
@@ -246,7 +249,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
       <CardHeader>
         <CardTitle>AI Video Medical Assistant</CardTitle>
         <CardDescription>
-          Connect with our AI video assistant for immediate medical consultation
+          Connect with our AI video assistant for immediate medical consultation with a specialized medical persona
         </CardDescription>
       </CardHeader>
       
@@ -267,7 +270,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
               {isLoading ? (
                 <>
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> 
-                  Connecting...
+                  Connecting to Medical Assistant...
                 </>
               ) : (
                 <>
@@ -281,9 +284,9 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
           <div className="space-y-6">
             <Alert className="bg-green-50 border-green-200">
               <VideoIcon className="h-4 w-4 text-green-500" />
-              <AlertTitle>Video Call Active</AlertTitle>
+              <AlertTitle>Video Call Active with AI Persona</AlertTitle>
               <AlertDescription>
-                You are connected with our AI medical assistant. Please describe your symptoms clearly.
+                You are connected with our specialized AI medical assistant. Please describe your emergency situation clearly.
               </AlertDescription>
             </Alert>
             
@@ -299,9 +302,18 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
                 style={{ minHeight: '400px' }}
               />
               
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <div className="text-white text-center">
+                    <Loader2Icon className="h-8 w-8 animate-spin mx-auto mb-2" />
+                    <p>Connecting to AI Medical Assistant...</p>
+                  </div>
+                </div>
+              )}
+              
               {/* Video overlay with call info */}
               <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                Emergency Medical Consultation
+                Emergency Medical Consultation - AI Persona
               </div>
               
               {conversationId && (
@@ -327,7 +339,7 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
         
         {!isVideoActive && !isLoading && (
           <div className="w-full text-center text-sm text-gray-500">
-            <p>Video calls are powered by Tavus AI technology</p>
+            <p>Video calls are powered by Tavus AI technology with specialized medical persona</p>
           </div>
         )}
       </CardFooter>
@@ -336,4 +348,3 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
 };
 
 export default TavusVideoAssistant;
-
