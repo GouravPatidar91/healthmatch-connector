@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,22 +53,23 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
         },
         body: JSON.stringify({
           replica_id: TAVUS_REPLICA_ID,
-          persona_id: "emergency_medical_assistant",
-          callback_url: `${window.location.origin}/api/tavus-callback`,
+          conversation_name: `Emergency Call - ${user?.user_metadata?.name || 'Patient'}`,
           properties: {
-            max_call_duration: 300, // 5 minutes
+            max_call_duration: 300,
             participant_left_timeout: 30,
             participant_absent_timeout: 30,
-          },
-          conversation_name: `Emergency Call - ${user?.user_metadata?.name || 'Patient'}`,
+          }
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to create conversation: ${response.statusText}`);
+        const errorData = await response.text();
+        console.error('Tavus API Error:', errorData);
+        throw new Error(`Failed to create conversation: ${response.status} ${response.statusText}`);
       }
 
       const conversationData = await response.json();
+      console.log('Conversation created:', conversationData);
       setConversationId(conversationData.conversation_id);
       
       // Load Tavus SDK
