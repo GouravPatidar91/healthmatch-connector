@@ -90,7 +90,12 @@ export const useDoctors = () => {
             try {
               const { latitude, longitude } = position.coords;
               const nearbyDoctors = await findNearestDoctors(latitude, longitude);
-              setDoctors(nearbyDoctors);
+              // Ensure nearbyDoctors have all required properties
+              const formattedDoctors = nearbyDoctors.map((doctor: any) => ({
+                ...doctor,
+                region: doctor.region || 'Unknown', // Add default region if missing
+              }));
+              setDoctors(formattedDoctors);
               resolve(true);
             } catch (error) {
               console.error('Error finding nearby doctors:', error);

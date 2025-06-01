@@ -66,7 +66,7 @@ const MainLayout = () => {
   const navigationItems = [
     { name: "Dashboard", path: "/dashboard", icon: BarChart },
     { name: "Health Check", path: "/health-check", icon: Heart },
-    // Removing Health History from navigation
+    { name: "Medical Reports", path: "/medical-reports", icon: FileText },
     { name: "Appointments", path: "/appointments", icon: Calendar },
     { name: "Emergency", path: "/emergency", icon: PhoneCall },
     { name: "Profile", path: "/profile", icon: User },

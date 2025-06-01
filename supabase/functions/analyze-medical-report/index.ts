@@ -28,6 +28,16 @@ serve(async (req) => {
       );
     }
 
+    if (!openAIApiKey) {
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key not configured' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     console.log(`Analyzing medical report: ${fileName} in ${language}`);
 
     // Extract base64 content (remove data URL prefix if present)
