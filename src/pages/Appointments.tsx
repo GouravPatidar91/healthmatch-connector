@@ -33,14 +33,14 @@ const specializations = [
 
 const Appointments = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSpecialization, setSelectedSpecialization] = useState<string>('');
+  const [selectedSpecialization, setSelectedSpecialization] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('browse');
   
   const { doctors: allDoctors, loading: allLoading, findNearbyDoctors } = useDoctors();
-  const { doctors: specializedDoctors, loading: specializedLoading } = useDoctorsBySpecialization(selectedSpecialization);
+  const { doctors: specializedDoctors, loading: specializedLoading } = useDoctorsBySpecialization(selectedSpecialization === 'all' ? '' : selectedSpecialization);
 
-  const doctors = selectedSpecialization ? specializedDoctors : allDoctors;
-  const loading = selectedSpecialization ? specializedLoading : allLoading;
+  const doctors = selectedSpecialization === 'all' ? allDoctors : specializedDoctors;
+  const loading = selectedSpecialization === 'all' ? allLoading : specializedLoading;
 
   const filteredDoctors = doctors.filter(doctor =>
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,7 +84,7 @@ const Appointments = () => {
                     <SelectValue placeholder="All Specializations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Specializations</SelectItem>
+                    <SelectItem value="all">All Specializations</SelectItem>
                     {specializations.map((spec) => (
                       <SelectItem key={spec} value={spec}>{spec}</SelectItem>
                     ))}
