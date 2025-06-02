@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +13,6 @@ export interface PatientAppointment {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   reason?: string;
   notes?: string;
-  preferred_time?: string;
   created_at?: string;
 }
 
@@ -26,7 +26,6 @@ export const useAppointmentBooking = () => {
     date: string;
     time: string;
     reason?: string;
-    preferred_time?: string;
   }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -45,21 +44,17 @@ export const useAppointmentBooking = () => {
         throw slotError;
       }
 
-      // Then create the appointment record with preferred time
-      const appointmentRecord = {
-        user_id: user.id,
-        doctor_name: 'Doctor', // This will be updated with actual doctor name
-        date: appointmentData.date,
-        time: appointmentData.time,
-        reason: appointmentData.reason || 'General consultation',
-        status: 'pending' as const,
-        notes: appointmentData.preferred_time ? 
-          `Patient preferred time: ${appointmentData.preferred_time}` : undefined
-      };
-
+      // Then create the appointment record
       const { data, error } = await supabase
         .from('appointments')
-        .insert([appointmentRecord])
+        .insert([{
+          user_id: user.id,
+          doctor_name: 'Doctor', // This will be updated with actual doctor name
+          date: appointmentData.date,
+          time: appointmentData.time,
+          reason: appointmentData.reason || 'General consultation',
+          status: 'pending'
+        }])
         .select()
         .single();
 
@@ -67,13 +62,9 @@ export const useAppointmentBooking = () => {
         throw error;
       }
 
-      const successMessage = appointmentData.preferred_time ? 
-        `Appointment booked! Your preferred time (${appointmentData.preferred_time}) has been noted.` :
-        'Your appointment has been successfully booked.';
-
       toast({
         title: "Appointment booked",
-        description: successMessage,
+        description: "Your appointment has been successfully booked.",
       });
 
       return data;

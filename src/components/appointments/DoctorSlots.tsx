@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,11 +14,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import AppointmentCalendar from './AppointmentCalendar';
 
 interface DoctorSlotsProps {
   doctor: Doctor;
@@ -28,10 +28,8 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
   const { bookAppointment } = useAppointmentBooking();
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [reason, setReason] = useState('');
-  const [preferredTime, setPreferredTime] = useState('');
   const [isBooking, setIsBooking] = useState(false);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
-  const [showCalendarView, setShowCalendarView] = useState(false);
 
   const handleSlotSelect = (slot: any) => {
     setSelectedSlot(slot);
@@ -48,14 +46,12 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
         slot_id: selectedSlot.id,
         date: selectedSlot.date,
         time: selectedSlot.start_time,
-        reason: reason || 'General consultation',
-        preferred_time: preferredTime
+        reason: reason || 'General consultation'
       });
       
       setShowBookingDialog(false);
       setSelectedSlot(null);
       setReason('');
-      setPreferredTime('');
     } catch (error) {
       console.error('Booking failed:', error);
     } finally {
@@ -79,69 +75,50 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
     );
   }
 
+  // Group slots by date
+  const slotsByDate = slots.reduce((acc, slot) => {
+    if (!acc[slot.date]) {
+      acc[slot.date] = [];
+    }
+    acc[slot.date].push(slot);
+    return acc;
+  }, {} as Record<string, any[]>);
+
   return (
     <div className="mt-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="font-medium flex items-center">
-          <Calendar className="h-4 w-4 mr-2" />
-          Available Slots
-        </h4>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowCalendarView(!showCalendarView)}
-        >
-          {showCalendarView ? 'List View' : 'Calendar View'}
-        </Button>
+      <h4 className="font-medium mb-3 flex items-center">
+        <Calendar className="h-4 w-4 mr-2" />
+        Available Slots
+      </h4>
+      
+      <div className="space-y-3">
+        {Object.entries(slotsByDate).slice(0, 3).map(([date, dateSlots]) => (
+          <div key={date} className="border rounded-lg p-3">
+            <p className="text-sm font-medium mb-2">
+              {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(dateSlots as any[]).slice(0, 4).map((slot) => (
+                <Button
+                  key={slot.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSlotSelect(slot)}
+                  className="text-xs"
+                >
+                  <Clock className="h-3 w-3 mr-1" />
+                  {slot.start_time}
+                </Button>
+              ))}
+              {(dateSlots as any[]).length > 4 && (
+                <Badge variant="secondary" className="text-xs">
+                  +{(dateSlots as any[]).length - 4} more
+                </Badge>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
-
-      {showCalendarView ? (
-        <AppointmentCalendar 
-          doctorId={doctor.id} 
-          onSlotSelect={handleSlotSelect}
-        />
-      ) : (
-        // ... keep existing code (list view of slots by date)
-        <div className="space-y-3">
-          {(() => {
-            // Group slots by date
-            const slotsByDate = slots.reduce((acc, slot) => {
-              if (!acc[slot.date]) {
-                acc[slot.date] = [];
-              }
-              acc[slot.date].push(slot);
-              return acc;
-            }, {} as Record<string, any[]>);
-
-            return Object.entries(slotsByDate).slice(0, 3).map(([date, dateSlots]) => (
-              <div key={date} className="border rounded-lg p-3">
-                <p className="text-sm font-medium mb-2">
-                  {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(dateSlots as any[]).slice(0, 4).map((slot) => (
-                    <Button
-                      key={slot.id}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSlotSelect(slot)}
-                      className="text-xs"
-                    >
-                      <Clock className="h-3 w-3 mr-1" />
-                      {slot.start_time}
-                    </Button>
-                  ))}
-                  {(dateSlots as any[]).length > 4 && (
-                    <Badge variant="secondary" className="text-xs">
-                      +{(dateSlots as any[]).length - 4} more
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ));
-          })()}
-        </div>
-      )}
 
       <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
         <DialogContent>
@@ -164,26 +141,6 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
                 onChange={(e) => setReason(e.target.value)}
                 className="mt-1"
               />
-            </div>
-            
-            <div>
-              <Label htmlFor="preferredTime">
-                Preferred Time (optional)
-                <span className="text-sm text-gray-500 ml-1">
-                  - if the selected slot doesn't work for you
-                </span>
-              </Label>
-              <Input
-                id="preferredTime"
-                type="time"
-                value={preferredTime}
-                onChange={(e) => setPreferredTime(e.target.value)}
-                className="mt-1"
-                placeholder="e.g., 14:30"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Doctor will contact you if your preferred time is available
-              </p>
             </div>
           </div>
           
