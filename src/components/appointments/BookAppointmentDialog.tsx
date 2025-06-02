@@ -19,6 +19,7 @@ import { HealthCheck } from "@/services/userDataService";
 interface BookAppointmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  selectedDoctor?: any;
   healthCheckData?: HealthCheck | null;
 }
 
@@ -41,17 +42,28 @@ const specialties = [
   "Urology"
 ];
 
-export const BookAppointmentDialog = ({ open, onOpenChange, healthCheckData }: BookAppointmentDialogProps) => {
+export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, healthCheckData }: BookAppointmentDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
   const [formData, setFormData] = useState({
-    doctorName: '',
-    doctorSpecialty: '',
+    doctorName: selectedDoctor?.name || '',
+    doctorSpecialty: selectedDoctor?.specialization || '',
     time: '',
     reason: '',
     notes: ''
   });
+
+  // Update form data when selectedDoctor changes
+  React.useEffect(() => {
+    if (selectedDoctor) {
+      setFormData(prev => ({
+        ...prev,
+        doctorName: selectedDoctor.name || '',
+        doctorSpecialty: selectedDoctor.specialization || ''
+      }));
+    }
+  }, [selectedDoctor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +120,7 @@ export const BookAppointmentDialog = ({ open, onOpenChange, healthCheckData }: B
           const success = await sendHealthCheckToDoctor(
             healthCheckData,
             appointment.id,
-            'doctor-placeholder' // This would need to be resolved from doctor selection
+            selectedDoctor?.id || 'doctor-placeholder'
           );
           
           if (success) {
