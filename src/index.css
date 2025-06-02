@@ -5,65 +5,65 @@
 
 @layer base {
   :root {
-    --background: 210 50% 98%;
-    --foreground: 215 25% 27%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 29%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 27%;
+    --card-foreground: 0 0% 29%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 27%;
+    --popover-foreground: 0 0% 29%;
 
-    --primary: 210 75% 60%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 145 30% 75%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 142 43% 57%;
-    --secondary-foreground: 355 100% 100%;
+    --secondary: 4 100% 71%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 29%;
 
-    --accent: 142 43% 57%;
-    --accent-foreground: 355 100% 100%;
+    --accent: 4 100% 71%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 4 100% 71%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 210 75% 60%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 145 30% 75%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 215 25% 27%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 12%;
+    --foreground: 0 0% 98%;
 
-    --card: 215 25% 27%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 215 25% 27%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 210 75% 60%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 145 30% 75%;
+    --primary-foreground: 0 0% 12%;
 
-    --secondary: 142 43% 57%;
-    --secondary-foreground: 355 100% 100%;
+    --secondary: 4 100% 71%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 142 43% 57%;
-    --accent-foreground: 355 100% 100%;
+    --accent: 4 100% 71%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 4 100% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 210 75% 60%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 145 30% 75%;
   }
 }
 
@@ -73,28 +73,64 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-offwhite text-slate-custom font-sans antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    @apply font-semibold tracking-tight text-slate-custom;
   }
 
   h1 {
-    @apply text-3xl md:text-4xl;
+    @apply text-3xl md:text-4xl lg:text-5xl;
   }
 
   h2 {
-    @apply text-2xl md:text-3xl;
+    @apply text-2xl md:text-3xl lg:text-4xl;
   }
 
   h3 {
-    @apply text-xl md:text-2xl;
+    @apply text-xl md:text-2xl lg:text-3xl;
   }
 }
 
 @layer components {
-  .card-hover {
-    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
+  .card-modern {
+    @apply transition-all duration-300 hover:shadow-medium hover:-translate-y-1 bg-white border border-gray-100 rounded-2xl;
   }
+  
+  .btn-primary {
+    @apply bg-sage-500 hover:bg-sage-600 text-white font-medium rounded-xl px-6 py-3 transition-all duration-200 shadow-soft hover:shadow-medium;
+  }
+  
+  .btn-secondary {
+    @apply bg-coral-500 hover:bg-coral-600 text-white font-medium rounded-xl px-6 py-3 transition-all duration-200 shadow-soft hover:shadow-medium;
+  }
+  
+  .gradient-bg {
+    @apply bg-gradient-to-br from-sage-50 via-offwhite to-coral-50;
+  }
+  
+  .glass-effect {
+    @apply bg-white/70 backdrop-blur-sm border border-white/20;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #A8D5BA;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8bc9a7;
 }

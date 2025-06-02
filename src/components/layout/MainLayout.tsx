@@ -98,24 +98,28 @@ const MainLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col gradient-bg">
       {/* Top Navigation Bar */}
-      <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-        <Link to="/dashboard" className="flex items-center space-x-2">
-          <Heart className="text-medical-blue h-6 w-6" />
-          <span className="font-bold text-xl text-medical-blue">HealthMatch</span>
+      <header className="glass-effect shadow-soft p-4 flex justify-between items-center border-b border-sage-100">
+        <Link to="/dashboard" className="flex items-center space-x-3 group">
+          <div className="p-2 bg-sage-500 rounded-xl group-hover:bg-sage-600 transition-colors duration-200">
+            <Heart className="text-white h-6 w-6" />
+          </div>
+          <span className="font-bold text-2xl bg-gradient-to-r from-sage-600 to-sage-700 bg-clip-text text-transparent">
+            HealthMatch
+          </span>
         </Link>
         
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-4">
             {user && (
-              <div className="mr-4 text-sm text-medical-neutral-dark">
+              <div className="mr-4 text-sm text-slate-custom font-medium">
                 Hi, {user.user_metadata.name || user.email}
               </div>
             )}
             <Button 
               variant="ghost" 
-              className="text-medical-neutral-dark"
+              className="text-slate-custom hover:bg-sage-50 hover:text-sage-700 rounded-xl"
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />
@@ -125,19 +129,23 @@ const MainLayout = () => {
           
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="rounded-xl hover:bg-sage-50">
                 {isMobileMenuOpen ? <X /> : <Menu />}
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64">
+            <SheetContent side="left" className="w-64 bg-white/95 backdrop-blur-md">
               <div className="py-6 flex flex-col h-full">
-                <div className="flex items-center gap-2 mb-8">
-                  <Heart className="text-medical-blue h-6 w-6" />
-                  <span className="font-bold text-xl text-medical-blue">HealthMatch</span>
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-sage-500 rounded-xl">
+                    <Heart className="text-white h-6 w-6" />
+                  </div>
+                  <span className="font-bold text-xl bg-gradient-to-r from-sage-600 to-sage-700 bg-clip-text text-transparent">
+                    HealthMatch
+                  </span>
                 </div>
                 
                 {user && (
-                  <div className="px-4 py-2 mb-2 text-sm text-medical-neutral-dark border-b">
+                  <div className="px-4 py-3 mb-4 text-sm text-slate-custom bg-sage-50 rounded-xl border-l-4 border-sage-500">
                     Signed in as: {user.user_metadata.name || user.email}
                   </div>
                 )}
@@ -147,17 +155,16 @@ const MainLayout = () => {
                     <Link 
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                         isActive(item.path) 
-                          ? "bg-medical-blue text-white" 
+                          ? "bg-sage-500 text-white shadow-medium" 
                           : item.name === "Doctor Application Pending" 
-                            ? "opacity-60 cursor-not-allowed"
-                            : "hover:bg-gray-100"
+                            ? "opacity-60 cursor-not-allowed text-slate-400"
+                            : "hover:bg-sage-50 text-slate-custom hover:text-sage-700"
                       }`}
                       onClick={e => {
                         if (item.name === "Doctor Application Pending") {
                           e.preventDefault();
-                          // Optional: Show toast notification about pending status
                         }
                       }}
                     >
@@ -169,7 +176,7 @@ const MainLayout = () => {
                 
                 <Button 
                   variant="ghost" 
-                  className="mt-auto text-medical-neutral-dark"
+                  className="mt-auto text-slate-custom hover:bg-coral-50 hover:text-coral-700 rounded-xl"
                   onClick={handleLogout}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
@@ -184,35 +191,34 @@ const MainLayout = () => {
       {/* Main Content with Sidebar (on larger screens) */}
       <div className="flex flex-1">
         {/* Sidebar for desktop */}
-        <aside className="hidden md:block w-64 bg-medical-neutral-lightest border-r border-gray-200 p-4">
+        <aside className="hidden md:block w-72 glass-effect border-r border-sage-100 p-6">
           <nav className="space-y-2">
             {navigationItems.map((item) => (
               <Link 
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive(item.path) 
-                    ? "bg-medical-blue text-white" 
+                    ? "bg-sage-500 text-white shadow-medium transform scale-105" 
                     : item.name === "Doctor Application Pending" 
-                      ? "opacity-60 cursor-not-allowed"
-                      : "hover:bg-gray-100"
+                      ? "opacity-60 cursor-not-allowed text-slate-400"
+                      : "hover:bg-sage-50 text-slate-custom hover:text-sage-700 hover:translate-x-1"
                 }`}
                 onClick={e => {
                   if (item.name === "Doctor Application Pending") {
                     e.preventDefault();
-                    // Optional: Show toast notification about pending status
                   }
                 }}
               >
                 <item.icon className="h-5 w-5" />
-                {item.name}
+                <span className="font-medium">{item.name}</span>
               </Link>
             ))}
           </nav>
         </aside>
         
         {/* Main content */}
-        <main className="flex-1 p-6 overflow-auto bg-medical-neutral-lightest">
+        <main className="flex-1 p-6 overflow-auto">
           <Outlet />
         </main>
       </div>

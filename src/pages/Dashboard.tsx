@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Activity, Calendar, Users, AlertTriangle, ArrowRight, Phone as PhoneIcon, Info } from "lucide-react";
+import { Activity, Calendar, Users, AlertTriangle, ArrowRight, Phone as PhoneIcon, Info, TrendingUp, Heart, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,7 +45,7 @@ const Dashboard = () => {
   
   // Determine health status based on the most recent health check
   const determineHealthStatus = () => {
-    if (!latestHealthCheck) return { status: "Unknown", color: "text-medical-neutral-dark" };
+    if (!latestHealthCheck) return { status: "Unknown", color: "text-slate-custom" };
     
     // If there's analysis results, use the highest match score to determine status
     if (latestHealthCheck.analysis_results && latestHealthCheck.analysis_results.length > 0) {
@@ -57,7 +57,7 @@ const Dashboard = () => {
       if (highestMatch.matchScore >= 75) {
         return { 
           status: "Attention Needed", 
-          color: "text-red-600",
+          color: "text-coral-600",
           condition: highestMatch.name
         };
       } else if (highestMatch.matchScore >= 50) {
@@ -73,18 +73,18 @@ const Dashboard = () => {
     if (latestHealthCheck.severity) {
       switch (latestHealthCheck.severity.toLowerCase()) {
         case "severe":
-          return { status: "Attention Needed", color: "text-red-600" };
+          return { status: "Attention Needed", color: "text-coral-600" };
         case "moderate":
           return { status: "Monitor", color: "text-amber-600" };
         case "mild":
-          return { status: "Good", color: "text-medical-green" };
+          return { status: "Good", color: "text-sage-600" };
         default:
-          return { status: "Good", color: "text-medical-green" };
+          return { status: "Good", color: "text-sage-600" };
       }
     }
     
     // Default if no severity or results
-    return { status: "Good", color: "text-medical-green" };
+    return { status: "Good", color: "text-sage-600" };
   };
 
   // Count alerts based on health checks
@@ -115,28 +115,32 @@ const Dashboard = () => {
   const alertCount = countAlerts();
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-medical-neutral-darkest">Welcome, {userName}</h1>
-          <p className="text-medical-neutral-dark">Here's an overview of your health journey</p>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header Section */}
+      <div className="flex flex-wrap items-center justify-between gap-6">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-sage-700 to-sage-500 bg-clip-text text-transparent">
+            Welcome back, {userName}
+          </h1>
+          <p className="text-slate-custom text-lg">Here's an overview of your health journey</p>
         </div>
         
         <Button 
           onClick={() => navigate('/emergency')}
-          className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+          className="bg-coral-500 hover:bg-coral-600 text-white flex items-center gap-2 px-6 py-3 rounded-xl shadow-medium hover:shadow-large transition-all duration-200 transform hover:scale-105"
           size="lg"
         >
-          <PhoneIcon className="h-4 w-4" />
+          <PhoneIcon className="h-5 w-5" />
           Emergency Services
         </Button>
       </div>
 
+      {/* Alert Section */}
       {latestHealthCheck && healthStatus.status === "Attention Needed" && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertTitle className="text-red-600">Health Alert</AlertTitle>
-          <AlertDescription>
+        <Alert className="border-coral-200 bg-coral-50 rounded-2xl shadow-soft animate-slide-up">
+          <AlertTriangle className="h-5 w-5 text-coral-600" />
+          <AlertTitle className="text-coral-700 font-semibold">Health Alert</AlertTitle>
+          <AlertDescription className="text-coral-600">
             Your recent health check indicates attention is needed
             {healthStatus.condition && ` for potential "${healthStatus.condition}"`}.
             Please consider consulting a healthcare professional.
@@ -144,15 +148,18 @@ const Dashboard = () => {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-medical-neutral-dark">Health Status</CardTitle>
-            <Activity className="h-4 w-4 text-medical-blue" />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="card-modern group">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-semibold text-slate-custom">Health Status</CardTitle>
+            <div className="p-2 bg-sage-100 rounded-xl group-hover:bg-sage-200 transition-colors">
+              <Activity className="h-5 w-5 text-sage-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${healthStatus.color}`}>{healthStatus.status}</div>
-            <p className="text-xs text-medical-neutral-dark mt-1">
+            <div className={`text-2xl font-bold ${healthStatus.color} mb-1`}>{healthStatus.status}</div>
+            <p className="text-xs text-slate-400">
               {latestHealthCheck 
                 ? `Based on your check from ${new Date(latestHealthCheck.created_at || '').toLocaleDateString()}` 
                 : "No recent health checks found"}
@@ -160,46 +167,52 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-medical-neutral-dark">Upcoming Appointments</CardTitle>
-            <Calendar className="h-4 w-4 text-medical-blue" />
+        <Card className="card-modern group">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-semibold text-slate-custom">Upcoming Appointments</CardTitle>
+            <div className="p-2 bg-sage-100 rounded-xl group-hover:bg-sage-200 transition-colors">
+              <Calendar className="h-5 w-5 text-sage-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statsLoading ? "..." : stats.upcomingAppointments}</div>
-            <p className="text-xs text-medical-neutral-dark mt-1">
+            <div className="text-2xl font-bold text-slate-custom mb-1">{statsLoading ? "..." : stats.upcomingAppointments}</div>
+            <p className="text-xs text-slate-400">
               {upcomingAppointment ? `Next: ${upcomingAppointment.date}` : "No upcoming appointments"}
             </p>
           </CardContent>
         </Card>
         
         <Card 
-          className="card-hover cursor-pointer" 
+          className="card-modern cursor-pointer group" 
           onClick={() => navigate('/health-check-history')}
         >
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-medical-neutral-dark">Health Checks</CardTitle>
-            <Users className="h-4 w-4 text-medical-blue" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-semibold text-slate-custom">Health Checks</CardTitle>
+            <div className="p-2 bg-sage-100 rounded-xl group-hover:bg-sage-200 transition-colors">
+              <TrendingUp className="h-5 w-5 text-sage-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statsLoading ? "..." : stats.healthChecksCount}</div>
-            <p className="text-xs text-medical-neutral-dark mt-1">
+            <div className="text-2xl font-bold text-slate-custom mb-1">{statsLoading ? "..." : stats.healthChecksCount}</div>
+            <p className="text-xs text-slate-400">
               {stats.healthChecksCount > 0 ? "View your health check history" : "Start tracking your health"}
             </p>
           </CardContent>
         </Card>
         
         <Card 
-          className={`card-hover cursor-pointer ${alertCount > 0 ? 'border-red-200' : ''}`}
+          className={`card-modern cursor-pointer group ${alertCount > 0 ? 'border-coral-200 bg-coral-50' : ''}`}
           onClick={() => navigate('/health-check-history')}
         >
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-medical-neutral-dark">Alerts</CardTitle>
-            <AlertTriangle className={`h-4 w-4 ${alertCount > 0 ? 'text-red-600' : 'text-medical-blue'}`} />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-semibold text-slate-custom">Alerts</CardTitle>
+            <div className={`p-2 rounded-xl transition-colors ${alertCount > 0 ? 'bg-coral-100 group-hover:bg-coral-200' : 'bg-sage-100 group-hover:bg-sage-200'}`}>
+              <AlertTriangle className={`h-5 w-5 ${alertCount > 0 ? 'text-coral-600' : 'text-sage-600'}`} />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${alertCount > 0 ? 'text-red-600' : ''}`}>{alertCount}</div>
-            <p className="text-xs text-medical-neutral-dark mt-1">
+            <div className={`text-2xl font-bold mb-1 ${alertCount > 0 ? 'text-coral-600' : 'text-slate-custom'}`}>{alertCount}</div>
+            <p className="text-xs text-slate-400">
               {alertCount > 0 
                 ? "Health conditions needing attention" 
                 : "No urgent issues"}
@@ -208,30 +221,32 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Display specific alerts if any */}
+      {/* Alert Details */}
       {alertCount > 0 && latestHealthCheck && latestHealthCheck.analysis_results && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-coral-200 bg-gradient-to-r from-coral-50 to-red-50 rounded-2xl shadow-medium">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <span>Health Alerts</span>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-coral-500 rounded-xl">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-coral-700">Health Alerts</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {latestHealthCheck.analysis_results
               .filter(result => result.matchScore >= 75)
               .map((result, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-red-600 mt-1" />
+                <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-xl border border-coral-100">
+                  <Info className="h-5 w-5 text-coral-600 mt-1" />
                   <div>
-                    <p className="font-medium">{result.name} ({result.matchScore}% match)</p>
-                    <p className="text-sm text-gray-700">{result.seekMedicalAttention || "Please consult a healthcare professional."}</p>
+                    <p className="font-semibold text-slate-custom">{result.name} ({result.matchScore}% match)</p>
+                    <p className="text-sm text-slate-600 mt-1">{result.seekMedicalAttention || "Please consult a healthcare professional."}</p>
                   </div>
                 </div>
               ))}
             <Button 
               variant="outline" 
-              className="mt-2 border-red-300 text-red-700 hover:bg-red-100"
+              className="mt-4 border-coral-300 text-coral-700 hover:bg-coral-100 rounded-xl"
               onClick={() => navigate('/health-check-history')}
             >
               View Health Check Details
@@ -240,15 +255,21 @@ const Dashboard = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+      {/* Action Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="card-modern">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-sage-500 rounded-xl">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              Quick Actions
+            </CardTitle>
             <CardDescription>Common tasks you might want to perform</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <Button 
-              className="flex justify-between items-center" 
+              className="btn-primary flex justify-between items-center" 
               onClick={() => navigate('/health-check')}
             >
               <span>Start Health Check</span>
@@ -256,7 +277,7 @@ const Dashboard = () => {
             </Button>
             <Button 
               variant="outline" 
-              className="flex justify-between items-center"
+              className="flex justify-between items-center border-sage-200 text-sage-700 hover:bg-sage-50 rounded-xl"
               onClick={() => navigate('/appointments')}
             >
               <span>Book an Appointment</span>
@@ -264,7 +285,7 @@ const Dashboard = () => {
             </Button>
             <Button 
               variant="outline" 
-              className="flex justify-between items-center"
+              className="flex justify-between items-center border-sage-200 text-sage-700 hover:bg-sage-50 rounded-xl"
               onClick={() => navigate('/health-check-history')}
             >
               <span>View Health History</span>
@@ -272,7 +293,7 @@ const Dashboard = () => {
             </Button>
             <Button 
               variant="outline"
-              className="flex justify-between items-center bg-red-50 hover:bg-red-100 border-red-200 text-red-700"
+              className="btn-secondary flex justify-between items-center"
               onClick={() => navigate('/emergency')}
             >
               <span>Emergency Services</span>
@@ -281,37 +302,45 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="card-modern">
           <CardHeader>
-            <CardTitle>Recent Appointment</CardTitle>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-sage-500 rounded-xl">
+                <Heart className="h-6 w-6 text-white" />
+              </div>
+              Recent Appointment
+            </CardTitle>
             <CardDescription>Your upcoming medical appointment</CardDescription>
           </CardHeader>
           <CardContent>
             {upcomingAppointment ? (
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="font-semibold">{recentAppointment.doctor_name}</h3>
-                    <p className="text-sm text-medical-neutral-dark">{recentAppointment.doctor_specialty}</p>
+              <div className="space-y-6">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-lg text-slate-custom">{recentAppointment.doctor_name}</h3>
+                    <p className="text-sm text-slate-500">{recentAppointment.doctor_specialty}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">{recentAppointment.date}</p>
-                    <p className="text-sm text-medical-neutral-dark">{recentAppointment.time}</p>
+                  <div className="text-right space-y-1">
+                    <p className="font-semibold text-slate-custom">{recentAppointment.date}</p>
+                    <p className="text-sm text-slate-500">{recentAppointment.time}</p>
                   </div>
                 </div>
                 <Button 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full border-sage-200 text-sage-700 hover:bg-sage-50 rounded-xl"
                   onClick={() => navigate('/appointments')}
                 >
                   View Details
                 </Button>
               </div>
             ) : (
-              <div className="text-center py-6">
-                <p className="text-medical-neutral-dark">No upcoming appointments</p>
+              <div className="text-center py-8">
+                <div className="p-4 bg-sage-50 rounded-2xl mb-4 inline-block">
+                  <Calendar className="h-12 w-12 text-sage-400" />
+                </div>
+                <p className="text-slate-500 mb-4">No upcoming appointments</p>
                 <Button 
-                  className="mt-4"
+                  className="btn-primary"
                   onClick={() => navigate('/appointments')}
                 >
                   Book Now
