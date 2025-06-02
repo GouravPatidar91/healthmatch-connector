@@ -212,13 +212,13 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                <Badge variant={doctor.available ? "default" : "secondary"}>
-                  {doctor.available ? "Available" : "Busy"}
+                <Badge variant="default" className="bg-green-100 text-green-800">
+                  Available
                 </Badge>
                 
                 <Button
                   onClick={() => handleBookAppointment(doctor)}
-                  disabled={!doctor.available || bookingDoctor === doctor.id}
+                  disabled={bookingDoctor === doctor.id}
                   className="ml-2"
                 >
                   {bookingDoctor === doctor.id ? (
