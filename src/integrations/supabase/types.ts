@@ -106,6 +106,71 @@ export type Database = {
           },
         ]
       }
+      doctor_notifications: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          doctor_id: string
+          health_check_id: string
+          id: string
+          patient_id: string
+          status: string
+          symptoms_data: Json
+          updated_at: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          doctor_id: string
+          health_check_id: string
+          id?: string
+          patient_id: string
+          status?: string
+          symptoms_data: Json
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          doctor_id?: string
+          health_check_id?: string
+          id?: string
+          patient_id?: string
+          status?: string
+          symptoms_data?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_notifications_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_notifications_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_notifications_health_check_id_fkey"
+            columns: ["health_check_id"]
+            isOneToOne: false
+            referencedRelation: "health_checks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_notifications_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctors: {
         Row: {
           address: string

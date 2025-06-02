@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Camera, AlertCircle, CheckCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from '@/hooks/use-toast';
-import { useUserHealthChecks, AnalysisCondition } from '@/services/userDataService';
+import { useUserHealthChecks, AnalysisCondition, HealthCheck } from '@/services/userDataService';
 import {
   Accordion,
   AccordionContent,

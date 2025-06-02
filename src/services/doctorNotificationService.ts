@@ -33,12 +33,12 @@ export const useDoctorNotifications = () => {
           throw new Error('User not authenticated');
         }
 
-        // Fetch notifications for the current doctor
+        // Fetch notifications for the current doctor using raw query to avoid type issues
         const { data, error } = await supabase
-          .from('doctor_notifications')
+          .from('doctor_notifications' as any)
           .select(`
             *,
-            profiles!doctor_notifications_patient_id_fkey(first_name, last_name),
+            patient_profiles:profiles!doctor_notifications_patient_id_fkey(first_name, last_name),
             appointments!doctor_notifications_appointment_id_fkey(date, time)
           `)
           .eq('doctor_id', user.id)
@@ -49,10 +49,10 @@ export const useDoctorNotifications = () => {
         }
 
         // Transform the data to include patient names and appointment details
-        const transformedNotifications: DoctorNotification[] = (data || []).map(notification => ({
+        const transformedNotifications: DoctorNotification[] = (data || []).map((notification: any) => ({
           ...notification,
-          patient_name: notification.profiles 
-            ? `${notification.profiles.first_name || ''} ${notification.profiles.last_name || ''}`.trim() || 'Unknown Patient'
+          patient_name: notification.patient_profiles 
+            ? `${notification.patient_profiles.first_name || ''} ${notification.patient_profiles.last_name || ''}`.trim() || 'Unknown Patient'
             : 'Unknown Patient',
           appointment_date: notification.appointments?.date,
           appointment_time: notification.appointments?.time
@@ -78,7 +78,7 @@ export const useDoctorNotifications = () => {
   const markAsRead = async (notificationId: string) => {
     try {
       const { error } = await supabase
-        .from('doctor_notifications')
+        .from('doctor_notifications' as any)
         .update({ status: 'read' })
         .eq('id', notificationId);
 
@@ -106,7 +106,7 @@ export const useDoctorNotifications = () => {
   const markAsAcknowledged = async (notificationId: string) => {
     try {
       const { error } = await supabase
-        .from('doctor_notifications')
+        .from('doctor_notifications' as any)
         .update({ status: 'acknowledged' })
         .eq('id', notificationId);
 

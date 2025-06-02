@@ -42,20 +42,31 @@ export const sendHealthCheckToDoctor = async (
       check_date: healthCheckData.created_at || new Date().toISOString()
     };
 
-    // Store notification for doctor
-    const { error } = await supabase
-      .from('doctor_notifications')
-      .insert([{
-        doctor_id: doctorId,
-        patient_id: user.id,
-        appointment_id: appointmentId,
-        health_check_id: healthCheckData.id || '',
-        symptoms_data: symptomsDataForDoctor,
-        status: 'sent'
-      }]);
+    // Store notification for doctor using raw SQL to avoid type issues
+    const { error } = await supabase.rpc('exec', {
+      sql: `
+        INSERT INTO doctor_notifications (doctor_id, patient_id, appointment_id, health_check_id, symptoms_data, status)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `,
+      params: [doctorId, user.id, appointmentId, healthCheckData.id || '', JSON.stringify(symptomsDataForDoctor), 'sent']
+    });
 
     if (error) {
-      throw error;
+      // Fallback to direct insert
+      const { error: insertError } = await supabase
+        .from('doctor_notifications' as any)
+        .insert([{
+          doctor_id: doctorId,
+          patient_id: user.id,
+          appointment_id: appointmentId,
+          health_check_id: healthCheckData.id || '',
+          symptoms_data: symptomsDataForDoctor,
+          status: 'sent'
+        }]);
+
+      if (insertError) {
+        throw insertError;
+      }
     }
 
     console.log('Health check data sent to doctor successfully');
