@@ -15,6 +15,7 @@ import { Calendar, Clock, MapPin, Star, Stethoscope, User } from "lucide-react";
 import { useDoctors, useDoctorsBySpecialization } from '@/services/doctorService';
 import DoctorSlots from '@/components/appointments/DoctorSlots';
 import PatientAppointments from '@/components/appointments/PatientAppointments';
+import AppointmentCalendar from '@/components/appointments/AppointmentCalendar';
 
 const specializations = [
   "Cardiology",
@@ -64,14 +65,29 @@ const Appointments = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="my-appointments">My Appointments</TabsTrigger>
             <TabsTrigger value="browse">Browse Doctors</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
             <TabsTrigger value="nearby">Find Nearby</TabsTrigger>
           </TabsList>
           
           <TabsContent value="my-appointments" className="space-y-6">
             <PatientAppointments />
+          </TabsContent>
+
+          <TabsContent value="calendar" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Appointment Calendar</CardTitle>
+                <CardDescription>
+                  View available appointment slots across all doctors by date
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AppointmentCalendar />
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="browse" className="space-y-6">
