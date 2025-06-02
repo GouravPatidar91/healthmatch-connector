@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Camera, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Camera, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from '@/hooks/use-toast';
 import { useUserHealthChecks, AnalysisCondition, HealthCheck } from '@/services/userDataService';
@@ -16,6 +15,7 @@ import {
 import { Image } from "@/components/ui/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHealthCheckDoctorIntegration, checkUpcomingAppointments } from '@/services/healthCheckService';
+import { BookAppointmentDialog } from '@/components/appointments/BookAppointmentDialog';
 
 interface HealthCheckData {
   symptoms: string[];
@@ -40,6 +40,8 @@ const HealthCheckResults = () => {
   const [saving, setSaving] = useState(false);
   const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
   const [sendingToDoctor, setSendingToDoctor] = useState(false);
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const [savedHealthCheck, setSavedHealthCheck] = useState<HealthCheck | null>(null);
 
   // Extract health check data from location state
   const healthCheckData = location.state?.healthCheckData as HealthCheckData | undefined;
@@ -106,13 +108,14 @@ const HealthCheckResults = () => {
       
       console.log("Saving health check with data:", dataToSave);
       
-      const savedHealthCheck = await saveHealthCheck(dataToSave);
+      const savedCheck = await saveHealthCheck(dataToSave);
+      setSavedHealthCheck(savedCheck);
       
       // Automatically send to doctor if there are upcoming appointments
       if (upcomingAppointments.length > 0) {
         setSendingToDoctor(true);
         try {
-          await sendToDoctor(savedHealthCheck);
+          await sendToDoctor(savedCheck);
         } catch (error) {
           console.error('Error sending to doctor:', error);
         } finally {
@@ -137,6 +140,40 @@ const HealthCheckResults = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleBookAppointment = async () => {
+    // First save the health check if not already saved
+    if (!savedHealthCheck) {
+      setSaving(true);
+      try {
+        const dataToSave = {
+          ...healthCheckData,
+          analysis_results: healthCheckData.analysis_results
+        };
+        
+        const savedCheck = await saveHealthCheck(dataToSave);
+        setSavedHealthCheck(savedCheck);
+        
+        toast({
+          title: "Health check saved",
+          description: "Your health check has been saved and will be shared with the doctor you book with"
+        });
+      } catch (error) {
+        console.error("Error saving health check:", error);
+        toast({
+          title: "Error",
+          description: "Failed to save your health check information",
+          variant: "destructive"
+        });
+        setSaving(false);
+        return;
+      } finally {
+        setSaving(false);
+      }
+    }
+    
+    setShowBookingDialog(true);
   };
 
   const handleSendToDoctor = async () => {
@@ -501,9 +538,13 @@ const HealthCheckResults = () => {
             </div>
           )}
         </CardContent>
-        <CardFooter>
+      </Card>
+
+      {/* Action Buttons */}
+      <Card>
+        <CardFooter className="flex gap-4">
           <Button
-            className="w-full"
+            className="flex-1"
             onClick={handleSave}
             disabled={saving || sendingToDoctor}
           >
@@ -518,8 +559,18 @@ const HealthCheckResults = () => {
             ) : (
               upcomingAppointments.length > 0 
                 ? 'Save & Share with Doctor'
-                : 'Save Comprehensive Analysis to Health Records'
+                : 'Save to Health Records'
             )}
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={handleBookAppointment}
+            disabled={saving}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            Book Appointment
           </Button>
         </CardFooter>
       </Card>
@@ -569,6 +620,13 @@ const HealthCheckResults = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Book Appointment Dialog */}
+      <BookAppointmentDialog
+        open={showBookingDialog}
+        onOpenChange={setShowBookingDialog}
+        healthCheckData={savedHealthCheck}
+      />
     </div>
   );
 };

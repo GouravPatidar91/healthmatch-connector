@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { HealthCheck } from "./userDataService";
@@ -14,11 +13,11 @@ export interface DoctorNotification {
   status?: 'sent' | 'read' | 'acknowledged';
 }
 
-// Function to send health check data to doctor
+// Function to send health check data to doctor when appointment is booked
 export const sendHealthCheckToDoctor = async (
   healthCheckData: HealthCheck,
   appointmentId: string,
-  doctorId: string
+  doctorId: string = 'placeholder-doctor'
 ): Promise<boolean> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -27,7 +26,7 @@ export const sendHealthCheckToDoctor = async (
       throw new Error('User not authenticated');
     }
 
-    // Prepare simplified symptom data for doctor - convert to JSON-compatible format
+    // Prepare comprehensive symptom data for doctor
     const symptomsDataForDoctor = {
       symptoms: healthCheckData.symptoms || [],
       severity: healthCheckData.severity || '',
@@ -39,7 +38,14 @@ export const sendHealthCheckToDoctor = async (
       urgency_level: healthCheckData.urgency_level || '',
       overall_assessment: healthCheckData.overall_assessment || '',
       comprehensive_analysis: healthCheckData.comprehensive_analysis || false,
-      check_date: healthCheckData.created_at || new Date().toISOString()
+      check_date: healthCheckData.created_at || new Date().toISOString(),
+      symptom_photos: healthCheckData.symptom_photos || {},
+      forwarded_from: 'health_check_booking',
+      booking_context: {
+        appointment_id: appointmentId,
+        forwarded_at: new Date().toISOString(),
+        patient_notes: 'Health check data automatically forwarded from appointment booking'
+      }
     };
 
     // Store notification for doctor using direct insert with type assertion
@@ -58,10 +64,10 @@ export const sendHealthCheckToDoctor = async (
       throw error;
     }
 
-    console.log('Health check data sent to doctor successfully');
+    console.log('Health check data forwarded to doctor successfully for appointment:', appointmentId);
     return true;
   } catch (error) {
-    console.error('Error sending health check to doctor:', error);
+    console.error('Error forwarding health check to doctor:', error);
     return false;
   }
 };
@@ -99,13 +105,31 @@ export const checkUpcomingAppointments = async (): Promise<any[]> => {
   }
 };
 
-// Custom hook for health check to doctor integration
+// Enhanced hook for health check to doctor integration with appointment booking
 export const useHealthCheckDoctorIntegration = () => {
   const { toast } = useToast();
 
-  const sendToDoctor = async (healthCheckData: HealthCheck) => {
+  const sendToDoctor = async (healthCheckData: HealthCheck, appointmentId?: string) => {
     try {
-      // Check for upcoming appointments
+      // If appointment ID is provided, use it directly (from booking flow)
+      if (appointmentId) {
+        const success = await sendHealthCheckToDoctor(
+          healthCheckData,
+          appointmentId,
+          'placeholder-doctor' // This would need to be resolved from the appointment
+        );
+
+        if (success) {
+          toast({
+            title: "Health Check Shared",
+            description: "Your health check has been automatically shared with the doctor for your appointment",
+          });
+        }
+
+        return success;
+      }
+
+      // Otherwise, check for upcoming appointments (existing flow)
       const upcomingAppointments = await checkUpcomingAppointments();
       
       if (upcomingAppointments.length === 0) {
@@ -116,8 +140,6 @@ export const useHealthCheckDoctorIntegration = () => {
       // Send to the nearest appointment's doctor
       const nearestAppointment = upcomingAppointments[0];
       
-      // Extract doctor ID from doctor_name or use a lookup
-      // For now, we'll need to get doctor info from the appointment
       const success = await sendHealthCheckToDoctor(
         healthCheckData,
         nearestAppointment.id,
