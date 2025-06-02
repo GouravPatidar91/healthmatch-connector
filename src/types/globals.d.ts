@@ -46,25 +46,3 @@ interface SpeechRecognitionErrorEvent extends Event {
   error: string;
   message: string;
 }
-
-// Screen Orientation API
-interface ScreenOrientation extends EventTarget {
-  angle: number;
-  type: string;
-  lock(orientation: OrientationLockType): Promise<void>;
-  unlock(): void;
-}
-
-type OrientationLockType = 
-  | "any"
-  | "natural" 
-  | "landscape"
-  | "portrait"
-  | "portrait-primary"
-  | "portrait-secondary"
-  | "landscape-primary"
-  | "landscape-secondary";
-
-interface Screen {
-  orientation: ScreenOrientation;
-}
