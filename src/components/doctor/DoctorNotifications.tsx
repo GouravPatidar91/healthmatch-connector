@@ -1,198 +1,459 @@
 
-import React from 'react';
-import { useDoctorNotifications } from '@/services/doctorNotificationService';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Bell, CheckCircle, Clock, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Clock, User, AlertCircle, CheckCircle, Eye, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { HealthDataDownloader } from "./HealthDataDownloader";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+interface DoctorNotification {
+  id: string;
+  doctor_id: string;
+  patient_id: string;
+  appointment_id: string;
+  health_check_id: string;
+  symptoms_data: any;
+  created_at: string;
+  status: 'sent' | 'read' | 'acknowledged';
+  patient_name?: string;
+  appointment_date?: string;
+  appointment_time?: string;
+}
 
 const DoctorNotifications = () => {
-  const { notifications, loading, error, markAsRead, markAsAcknowledged } = useDoctorNotifications();
+  const { toast } = useToast();
+  const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedNotification, setSelectedNotification] = useState<DoctorNotification | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get doctor's information
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('name')
+        .eq('id', user.id)
+        .single();
+
+      if (doctorError) {
+        console.error('Error fetching doctor data:', doctorError);
+        return;
+      }
+
+      // Fetch notifications with appointment and patient details
+      const { data, error } = await supabase
+        .from('doctor_notifications')
+        .select(`
+          *,
+          appointments(date, time),
+          profiles(first_name, last_name)
+        `)
+        .eq('doctor_id', 'placeholder-doctor') // This should be the actual doctor ID
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Transform the data to include patient names and appointment details
+      const transformedNotifications = (data || []).map(notification => ({
+        ...notification,
+        patient_name: notification.profiles 
+          ? `${notification.profiles.first_name || ''} ${notification.profiles.last_name || ''}`.trim() || 'Patient'
+          : 'Patient',
+        appointment_date: notification.appointments?.date,
+        appointment_time: notification.appointments?.time
+      }));
+
+      setNotifications(transformedNotifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch patient health check notifications",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('doctor_notifications')
+        .update({ status: 'read' })
+        .eq('id', notificationId);
+
+      if (error) {
+        throw error;
+      }
+
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, status: 'read' as const }
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const markAsAcknowledged = async (notificationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('doctor_notifications')
+        .update({ status: 'acknowledged' })
+        .eq('id', notificationId);
+
+      if (error) {
+        throw error;
+      }
+
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, status: 'acknowledged' as const }
+            : notification
+        )
+      );
+
+      toast({
+        title: "Acknowledged",
+        description: "Health check notification has been acknowledged",
+      });
+    } catch (error) {
+      console.error('Error acknowledging notification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to acknowledge notification",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleViewDetails = (notification: DoctorNotification) => {
+    setSelectedNotification(notification);
+    setShowDetailDialog(true);
+    
+    if (notification.status === 'sent') {
+      markAsRead(notification.id);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'sent': return 'bg-blue-100 text-blue-800';
+      case 'read': return 'bg-yellow-100 text-yellow-800';
+      case 'acknowledged': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency?.toLowerCase()) {
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'moderate': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
       <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-red-600">
-            <p>Error loading notifications: {error.message}</p>
+        <CardHeader>
+          <CardTitle>Loading Notifications...</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'sent':
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />New</Badge>;
-      case 'read':
-        return <Badge variant="outline"><Bell className="w-3 h-3 mr-1" />Read</Badge>;
-      case 'acknowledged':
-        return <Badge variant="default"><CheckCircle className="w-3 h-3 mr-1" />Acknowledged</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Patient Health Check Notifications</h2>
+        <Badge variant="outline" className="bg-blue-50 text-blue-700">
+          {notifications.filter(n => n.status === 'sent').length} new
+        </Badge>
+      </div>
+
       {notifications.length === 0 ? (
         <Card>
-          <CardContent className="p-6">
-            <div className="text-center text-gray-500">
-              <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No patient health check notifications yet.</p>
-            </div>
+          <CardContent className="text-center py-8">
+            <p className="text-gray-500">No health check notifications yet.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           {notifications.map((notification) => (
-            <Card key={notification.id} className="transition-shadow hover:shadow-md">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <User className="w-5 h-5 text-blue-600" />
-                    <div>
+            <Card key={notification.id} className={`${notification.status === 'sent' ? 'border-blue-200 bg-blue-50' : ''}`}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
                       <CardTitle className="text-lg">{notification.patient_name}</CardTitle>
-                      <CardDescription>
-                        Health Check Shared • {formatDate(notification.created_at)}
-                        {notification.appointment_date && (
-                          <span className="ml-2">
-                            • Appointment: {new Date(notification.appointment_date).toLocaleDateString()}
-                            {notification.appointment_time && ` at ${notification.appointment_time}`}
-                          </span>
-                        )}
-                      </CardDescription>
+                      <Badge className={getStatusColor(notification.status)}>
+                        {notification.status}
+                      </Badge>
+                      {notification.symptoms_data?.urgency_level && (
+                        <Badge className={getUrgencyColor(notification.symptoms_data.urgency_level)}>
+                          {notification.symptoms_data.urgency_level.toUpperCase()} URGENCY
+                        </Badge>
+                      )}
                     </div>
+                    <CardDescription className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        {notification.appointment_date || 'No date'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {notification.appointment_time || 'No time'}
+                      </span>
+                    </CardDescription>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    {getStatusBadge(notification.status)}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewDetails(notification)}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      View Details
+                    </Button>
+                    {notification.status !== 'acknowledged' && (
+                      <Button
+                        size="sm"
+                        onClick={() => markAsAcknowledged(notification.id)}
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Acknowledge
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
+              
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2">
                   <div>
-                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Symptoms</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {notification.symptoms_data?.symptoms?.map((symptom: string, index: number) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {symptom}
-                        </Badge>
-                      ))}
+                    <span className="font-medium text-sm">Symptoms:</span>
+                    <p className="text-sm text-gray-600">
+                      {notification.symptoms_data?.symptoms?.join(', ') || 'No symptoms listed'}
+                    </p>
+                  </div>
+                  
+                  {notification.symptoms_data?.overall_assessment && (
+                    <div>
+                      <span className="font-medium text-sm">Assessment:</span>
+                      <p className="text-sm text-gray-600">
+                        {notification.symptoms_data.overall_assessment}
+                      </p>
                     </div>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Severity & Duration</h4>
-                    <p className="text-sm">
-                      <span className="font-medium">Severity:</span> {notification.symptoms_data?.severity || 'Not specified'}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-medium">Duration:</span> {notification.symptoms_data?.duration || 'Not specified'}
-                    </p>
-                  </div>
-                </div>
-
-                {notification.symptoms_data?.urgency_level && (
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Urgency Level</h4>
-                    <Badge variant={notification.symptoms_data.urgency_level === 'High' ? 'destructive' : 'secondary'}>
-                      {notification.symptoms_data.urgency_level}
-                    </Badge>
-                  </div>
-                )}
-
-                {notification.symptoms_data?.overall_assessment && (
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Overall Assessment</h4>
-                    <p className="text-sm bg-gray-50 p-3 rounded-md">
-                      {notification.symptoms_data.overall_assessment}
-                    </p>
-                  </div>
-                )}
-
-                {notification.symptoms_data?.previous_conditions && notification.symptoms_data.previous_conditions.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Previous Conditions</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {notification.symptoms_data.previous_conditions.map((condition: string, index: number) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {condition}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {notification.symptoms_data?.medications && notification.symptoms_data.medications.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Current Medications</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {notification.symptoms_data.medications.map((medication: string, index: number) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {medication}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {notification.symptoms_data?.notes && (
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Additional Notes</h4>
-                    <p className="text-sm bg-gray-50 p-3 rounded-md">
-                      {notification.symptoms_data.notes}
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex space-x-2 pt-3 border-t">
-                  {notification.status === 'sent' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => markAsRead(notification.id)}
-                    >
-                      Mark as Read
-                    </Button>
                   )}
-                  {notification.status !== 'acknowledged' && (
-                    <Button
-                      size="sm"
-                      onClick={() => markAsAcknowledged(notification.id)}
-                    >
-                      Acknowledge
-                    </Button>
-                  )}
+
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-xs text-gray-500">
+                      Received: {new Date(notification.created_at).toLocaleString()}
+                    </span>
+                    
+                    <HealthDataDownloader
+                      healthCheckData={notification.symptoms_data}
+                      patientName={notification.patient_name}
+                      appointmentDate={notification.appointment_date}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Health Check Details - {selectedNotification?.patient_name}
+            </DialogTitle>
+            <DialogDescription>
+              Comprehensive health check data shared by the patient
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedNotification && (
+            <div className="space-y-6">
+              {/* Summary Card */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Summary</CardTitle>
+                    <div className="flex gap-2">
+                      {selectedNotification.symptoms_data?.urgency_level && (
+                        <Badge className={getUrgencyColor(selectedNotification.symptoms_data.urgency_level)}>
+                          {selectedNotification.symptoms_data.urgency_level.toUpperCase()} URGENCY
+                        </Badge>
+                      )}
+                      <HealthDataDownloader
+                        healthCheckData={selectedNotification.symptoms_data}
+                        patientName={selectedNotification.patient_name}
+                        appointmentDate={selectedNotification.appointment_date}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Patient Information</h4>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="font-medium">Name:</span> {selectedNotification.patient_name}</p>
+                        <p><span className="font-medium">Appointment:</span> {selectedNotification.appointment_date} at {selectedNotification.appointment_time}</p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Health Check Details</h4>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="font-medium">Symptoms:</span> {selectedNotification.symptoms_data?.symptoms?.join(', ')}</p>
+                        {selectedNotification.symptoms_data?.severity && (
+                          <p><span className="font-medium">Severity:</span> {selectedNotification.symptoms_data.severity}</p>
+                        )}
+                        {selectedNotification.symptoms_data?.duration && (
+                          <p><span className="font-medium">Duration:</span> {selectedNotification.symptoms_data.duration}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Detailed Analysis */}
+              {selectedNotification.symptoms_data?.analysis_results?.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Analysis Results</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Accordion type="single" collapsible>
+                      {selectedNotification.symptoms_data.analysis_results.map((result: any, index: number) => (
+                        <AccordionItem key={index} value={`result-${index}`}>
+                          <AccordionTrigger>
+                            <div className="flex items-center gap-2">
+                              <span>{result.name}</span>
+                              <Badge>{result.matchScore}% match</Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-3">
+                              <p>{result.description}</p>
+                              
+                              <div>
+                                <h5 className="font-medium mb-1">Matched Symptoms:</h5>
+                                <p className="text-sm text-gray-600">{result.matchedSymptoms?.join(', ')}</p>
+                              </div>
+                              
+                              {result.recommendedActions?.length > 0 && (
+                                <div>
+                                  <h5 className="font-medium mb-1">Recommendations:</h5>
+                                  <ul className="list-disc pl-5 text-sm text-gray-600">
+                                    {result.recommendedActions.map((action: string, actionIndex: number) => (
+                                      <li key={actionIndex}>{action}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Additional Information */}
+              {(selectedNotification.symptoms_data?.previous_conditions?.length > 0 || 
+                selectedNotification.symptoms_data?.medications?.length > 0 || 
+                selectedNotification.symptoms_data?.notes) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Additional Medical Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {selectedNotification.symptoms_data.previous_conditions?.length > 0 && (
+                      <div>
+                        <h5 className="font-medium mb-2">Previous Conditions:</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedNotification.symptoms_data.previous_conditions.map((condition: string, index: number) => (
+                            <Badge key={index} variant="outline">{condition}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedNotification.symptoms_data.medications?.length > 0 && (
+                      <div>
+                        <h5 className="font-medium mb-2">Current Medications:</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedNotification.symptoms_data.medications.map((medication: string, index: number) => (
+                            <Badge key={index} variant="outline">{medication}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedNotification.symptoms_data.notes && (
+                      <div>
+                        <h5 className="font-medium mb-2">Additional Notes:</h5>
+                        <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded">
+                          {selectedNotification.symptoms_data.notes}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

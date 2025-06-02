@@ -1,37 +1,14 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, MapPin, Star, Stethoscope, User, CalendarDays } from "lucide-react";
-import { useDoctors, useDoctorsBySpecialization } from '@/services/doctorService';
-import DoctorSlots from '@/components/appointments/DoctorSlots';
-import PatientAppointments from '@/components/appointments/PatientAppointments';
-import BookAppointmentDialog from '@/components/appointments/BookAppointmentDialog';
-
-const specializations = [
-  "Cardiology",
-  "Dermatology", 
-  "Emergency Medicine",
-  "Family Medicine",
-  "Internal Medicine",
-  "Neurology",
-  "Oncology",
-  "Orthopedics",
-  "Pediatrics",
-  "Psychiatry",
-  "Radiology",
-  "Surgery"
-];
+import { Calendar, Clock, User, MapPin, Phone, Stethoscope } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAppointmentBooking } from "@/services/appointmentService";
+import { useDoctors } from "@/services/doctorService";
+import { PatientAppointments } from "@/components/appointments/PatientAppointments";
+import { DoctorSlots } from "@/components/appointments/DoctorSlots";
+import { BookAppointmentDialog } from "@/components/appointments/BookAppointmentDialog";
 
 const Appointments = () => {
   const [searchTerm, setSearchTerm] = useState('');

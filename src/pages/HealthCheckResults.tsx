@@ -15,7 +15,14 @@ import {
 import { Image } from "@/components/ui/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHealthCheckDoctorIntegration, checkUpcomingAppointments } from '@/services/healthCheckService';
-import { BookAppointmentDialog } from '@/components/appointments/BookAppointmentDialog';
+import { NearbyDoctorsCard } from '@/components/appointments/NearbyDoctorsCard';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface HealthCheckData {
   symptoms: string[];
@@ -40,7 +47,7 @@ const HealthCheckResults = () => {
   const [saving, setSaving] = useState(false);
   const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
   const [sendingToDoctor, setSendingToDoctor] = useState(false);
-  const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const [showDoctorsDialog, setShowDoctorsDialog] = useState(false);
   const [savedHealthCheck, setSavedHealthCheck] = useState<HealthCheck | null>(null);
 
   // Extract health check data from location state
@@ -173,7 +180,16 @@ const HealthCheckResults = () => {
       }
     }
     
-    setShowBookingDialog(true);
+    setShowDoctorsDialog(true);
+  };
+
+  const handleAppointmentBooked = () => {
+    setShowDoctorsDialog(false);
+    toast({
+      title: "Success",
+      description: "Your appointment has been booked and health data shared!",
+    });
+    navigate('/appointments');
   };
 
   const handleSendToDoctor = async () => {
@@ -407,10 +423,10 @@ const HealthCheckResults = () => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span>{condition.name}</span>
                       <Badge className={`${condition.matchScore > 80 
-                        ? 'bg-red-100 text-red-800 hover:bg-red-100' 
+                        ? 'bg-red-100 text-red-800' 
                         : condition.matchScore > 60 
-                          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100' 
-                          : 'bg-blue-100 text-blue-800 hover:bg-blue-100'}`}>
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : 'bg-blue-100 text-blue-800'}`}>
                         {condition.matchScore}% match
                       </Badge>
                       {condition.visualDiagnosticFeatures && condition.visualDiagnosticFeatures.length > 0 && (
@@ -621,12 +637,22 @@ const HealthCheckResults = () => {
         </Card>
       )}
 
-      {/* Book Appointment Dialog */}
-      <BookAppointmentDialog
-        open={showBookingDialog}
-        onOpenChange={setShowBookingDialog}
-        healthCheckData={savedHealthCheck}
-      />
+      {/* Nearby Doctors Dialog */}
+      <Dialog open={showDoctorsDialog} onOpenChange={setShowDoctorsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Book Appointment with Nearby Doctors</DialogTitle>
+            <DialogDescription>
+              Select a doctor to book an appointment. Your health check data will be automatically shared.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <NearbyDoctorsCard
+            healthCheckData={savedHealthCheck}
+            onAppointmentBooked={handleAppointmentBooked}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
