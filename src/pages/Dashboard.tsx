@@ -305,7 +305,7 @@ const Dashboard = () => {
         <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <div className="p-2 bg-sage-200 rounded-xl">
+              <div className="p-2 bg-sage-70 rounded-xl">
                 <Heart className="h-6 w-6 text-white" />
               </div>
               Recent Appointment
