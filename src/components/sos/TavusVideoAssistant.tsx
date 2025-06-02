@@ -61,8 +61,12 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({ onComplete })
       
       if (isCurrentlyFullscreen && isMobile) {
         // Lock orientation to landscape on mobile when in fullscreen
-        if (screen.orientation && screen.orientation.lock) {
-          screen.orientation.lock('landscape').catch(console.log);
+        try {
+          if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
+            screen.orientation.lock('landscape').catch(console.log);
+          }
+        } catch (error) {
+          console.log('Orientation lock not supported:', error);
         }
       }
     };
