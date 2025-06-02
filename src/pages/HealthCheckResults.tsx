@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/accordion";
 import { Image } from "@/components/ui/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useHealthCheckDoctorIntegration, checkUpcomingAppointments } from '@/services/healthCheckService';
 
 interface HealthCheckData {
   symptoms: string[];
@@ -35,7 +35,10 @@ const HealthCheckResults = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { saveHealthCheck } = useUserHealthChecks();
+  const { sendToDoctor } = useHealthCheckDoctorIntegration();
   const [saving, setSaving] = useState(false);
+  const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
+  const [sendingToDoctor, setSendingToDoctor] = useState(false);
 
   // Extract health check data from location state
   const healthCheckData = location.state?.healthCheckData as HealthCheckData | undefined;
@@ -45,6 +48,20 @@ const HealthCheckResults = () => {
     navigate('/health-check');
     return null;
   }
+
+  // Check for upcoming appointments on component mount
+  useEffect(() => {
+    const fetchUpcomingAppointments = async () => {
+      try {
+        const appointments = await checkUpcomingAppointments();
+        setUpcomingAppointments(appointments);
+      } catch (error) {
+        console.error('Error fetching upcoming appointments:', error);
+      }
+    };
+
+    fetchUpcomingAppointments();
+  }, []);
 
   // Helper functions to categorize symptoms
   const isEyeSymptom = (symptom: string): boolean => {
@@ -88,10 +105,25 @@ const HealthCheckResults = () => {
       
       console.log("Saving health check with data:", dataToSave);
       
-      await saveHealthCheck(dataToSave);
+      const savedHealthCheck = await saveHealthCheck(dataToSave);
+      
+      // Automatically send to doctor if there are upcoming appointments
+      if (upcomingAppointments.length > 0) {
+        setSendingToDoctor(true);
+        try {
+          await sendToDoctor(savedHealthCheck);
+        } catch (error) {
+          console.error('Error sending to doctor:', error);
+        } finally {
+          setSendingToDoctor(false);
+        }
+      }
+      
       toast({
         title: "Health check saved",
-        description: "Your health information has been saved successfully"
+        description: upcomingAppointments.length > 0 
+          ? "Your health information has been saved and shared with your doctor"
+          : "Your health information has been saved successfully"
       });
       navigate('/health-check-history');
     } catch (error) {
@@ -103,6 +135,24 @@ const HealthCheckResults = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSendToDoctor = async () => {
+    if (upcomingAppointments.length === 0) {
+      toast({
+        title: "No upcoming appointments",
+        description: "You need to have an upcoming appointment to share with a doctor",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSendingToDoctor(true);
+    try {
+      await sendToDoctor(healthCheckData as HealthCheck);
+    } finally {
+      setSendingToDoctor(false);
     }
   };
 
@@ -125,6 +175,37 @@ const HealthCheckResults = () => {
           </Button>
         </div>
       </div>
+
+      {/* Show upcoming appointments notification */}
+      {upcomingAppointments.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="text-blue-800 flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Upcoming Appointment Detected
+            </CardTitle>
+            <CardDescription className="text-blue-700">
+              You have an appointment on {upcomingAppointments[0].date} at {upcomingAppointments[0].time} with {upcomingAppointments[0].doctor_name}.
+              Your health check data will be automatically shared with your doctor when you save it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={handleSendToDoctor}
+              disabled={sendingToDoctor}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {sendingToDoctor ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                </>
+              ) : (
+                'Send to Doctor Now'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Enhanced Summary Card with urgency level */}
       <Card>
@@ -423,14 +504,20 @@ const HealthCheckResults = () => {
           <Button
             className="w-full"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || sendingToDoctor}
           >
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
               </>
+            ) : sendingToDoctor ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending to Doctor...
+              </>
             ) : (
-              'Save Comprehensive Analysis to Health Records'
+              upcomingAppointments.length > 0 
+                ? 'Save & Share with Doctor'
+                : 'Save Comprehensive Analysis to Health Records'
             )}
           </Button>
         </CardFooter>
