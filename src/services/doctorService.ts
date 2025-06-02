@@ -37,7 +37,7 @@ export interface DoctorAppointment {
   patientName?: string;
   time: string;
   reason?: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'completed' | 'cancelled' | 'confirmed';
   date: string;
   notes?: string;
 }
@@ -209,7 +209,7 @@ export const useDoctorAppointments = () => {
           patientName: apt.profiles ? `${apt.profiles.first_name || ''} ${apt.profiles.last_name || ''}`.trim() || 'Patient' : 'Patient',
           time: apt.time,
           reason: apt.reason || 'General consultation',
-          status: apt.status as 'pending' | 'completed' | 'cancelled',
+          status: apt.status as 'pending' | 'completed' | 'cancelled' | 'confirmed',
           date: apt.date,
           notes: apt.notes || undefined
         }));
