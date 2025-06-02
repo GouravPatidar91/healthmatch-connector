@@ -14,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -61,16 +60,16 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
 
   if (loading) {
     return (
-      <div className="mt-4 p-4 border rounded-lg">
-        <p className="text-sm text-gray-500">Loading available slots...</p>
+      <div className="mt-4 p-4 border border-sage-200 rounded-xl bg-sage-50">
+        <p className="text-sm text-slate-custom">Loading available slots...</p>
       </div>
     );
   }
 
   if (slots.length === 0) {
     return (
-      <div className="mt-4 p-4 border rounded-lg">
-        <p className="text-sm text-gray-500">No available slots at the moment</p>
+      <div className="mt-4 p-4 border border-sage-200 rounded-xl bg-sage-50">
+        <p className="text-sm text-slate-custom">No available slots at the moment</p>
       </div>
     );
   }
@@ -86,15 +85,15 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
 
   return (
     <div className="mt-4">
-      <h4 className="font-medium mb-3 flex items-center">
-        <Calendar className="h-4 w-4 mr-2" />
+      <h4 className="font-medium mb-3 flex items-center text-slate-custom">
+        <Calendar className="h-4 w-4 mr-2 text-sage-600" />
         Available Slots
       </h4>
       
       <div className="space-y-3">
         {Object.entries(slotsByDate).slice(0, 3).map(([date, dateSlots]) => (
-          <div key={date} className="border rounded-lg p-3">
-            <p className="text-sm font-medium mb-2">
+          <div key={date} className="border border-sage-200 rounded-xl p-3 bg-sage-50">
+            <p className="text-sm font-medium mb-2 text-slate-custom">
               {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -104,14 +103,14 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
                   variant="outline"
                   size="sm"
                   onClick={() => handleSlotSelect(slot)}
-                  className="text-xs"
+                  className="text-xs border-sage-300 hover:bg-sage-100 hover:border-sage-400"
                 >
                   <Clock className="h-3 w-3 mr-1" />
                   {slot.start_time}
                 </Button>
               ))}
               {(dateSlots as any[]).length > 4 && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs bg-coral-100 text-coral-700">
                   +{(dateSlots as any[]).length - 4} more
                 </Badge>
               )}
@@ -121,9 +120,9 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
       </div>
 
       <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-        <DialogContent>
+        <DialogContent className="glass-effect">
           <DialogHeader>
-            <DialogTitle>Book Appointment</DialogTitle>
+            <DialogTitle className="text-sage-700">Book Appointment</DialogTitle>
             <DialogDescription>
               Book an appointment with {doctor.name} on{' '}
               {selectedSlot && format(parseISO(selectedSlot.date), 'MMMM d, yyyy')} at{' '}
@@ -133,22 +132,30 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="reason">Reason for visit (optional)</Label>
+              <Label htmlFor="reason" className="text-slate-custom">Reason for visit (optional)</Label>
               <Textarea
                 id="reason"
                 placeholder="Describe your symptoms or reason for the appointment..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="mt-1"
+                className="mt-1 border-sage-200 focus:ring-sage-500"
               />
             </div>
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowBookingDialog(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowBookingDialog(false)}
+              className="border-sage-200 text-slate-custom hover:bg-sage-50"
+            >
               Cancel
             </Button>
-            <Button onClick={handleBookAppointment} disabled={isBooking}>
+            <Button 
+              onClick={handleBookAppointment} 
+              disabled={isBooking}
+              className="btn-primary"
+            >
               {isBooking ? 'Booking...' : 'Book Appointment'}
             </Button>
           </DialogFooter>

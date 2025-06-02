@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,11 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, MapPin, Star, Stethoscope, User } from "lucide-react";
+import { Calendar, Clock, MapPin, Star, Stethoscope, User, CalendarDays } from "lucide-react";
 import { useDoctors, useDoctorsBySpecialization } from '@/services/doctorService';
 import DoctorSlots from '@/components/appointments/DoctorSlots';
 import PatientAppointments from '@/components/appointments/PatientAppointments';
+import BookAppointmentDialog from '@/components/appointments/BookAppointmentDialog';
 
 const specializations = [
   "Cardiology",
@@ -35,6 +37,8 @@ const Appointments = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialization, setSelectedSpecialization] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('browse');
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
   
   const { doctors: allDoctors, loading: allLoading, findNearbyDoctors } = useDoctors();
   const { doctors: specializedDoctors, loading: specializedLoading } = useDoctorsBySpecialization(selectedSpecialization === 'all' ? '' : selectedSpecialization);
@@ -55,12 +59,17 @@ const Appointments = () => {
     }
   };
 
+  const handleBookAppointment = (doctor: any) => {
+    setSelectedDoctor(doctor);
+    setShowBookingDialog(true);
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex flex-col space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-blue-600">Book Appointments</h1>
-          <p className="text-slate-500">Find and book appointments with verified doctors</p>
+          <h1 className="text-3xl font-bold text-sage-700">Book Appointments</h1>
+          <p className="text-slate-custom">Find and book appointments with verified doctors</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -81,11 +90,12 @@ const Appointments = () => {
                   placeholder="Search doctors, specializations, or hospitals..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  className="border-sage-200 focus:ring-sage-500"
                 />
               </div>
               <div className="w-full md:w-64">
                 <Select value={selectedSpecialization} onValueChange={setSelectedSpecialization}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-sage-200 focus:ring-sage-500">
                     <SelectValue placeholder="All Specializations" />
                   </SelectTrigger>
                   <SelectContent>
@@ -100,27 +110,27 @@ const Appointments = () => {
 
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading doctors...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sage-500 mx-auto"></div>
+                <p className="mt-4 text-slate-custom">Loading doctors...</p>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredDoctors.map((doctor) => (
-                  <Card key={doctor.id} className="hover:shadow-lg transition-shadow">
+                  <Card key={doctor.id} className="card-modern">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="flex items-center gap-2">
-                            <User className="h-5 w-5" />
+                          <CardTitle className="flex items-center gap-2 text-slate-custom">
+                            <User className="h-5 w-5 text-sage-600" />
                             {doctor.name}
                           </CardTitle>
                           <CardDescription className="flex items-center gap-1 mt-1">
-                            <Stethoscope className="h-4 w-4" />
+                            <Stethoscope className="h-4 w-4 text-coral-500" />
                             {doctor.specialization}
                           </CardDescription>
                         </div>
                         {doctor.verified && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge className="bg-sage-100 text-sage-800 border-sage-200">
                             Verified
                           </Badge>
                         )}
@@ -129,26 +139,36 @@ const Appointments = () => {
                     
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-sm text-slate-custom">
+                          <MapPin className="h-4 w-4 text-sage-500" />
                           {doctor.hospital}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-sm text-slate-custom">
+                          <MapPin className="h-4 w-4 text-sage-500" />
                           {doctor.address}
                         </div>
                         {doctor.experience && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Clock className="h-4 w-4" />
+                          <div className="flex items-center gap-2 text-sm text-slate-custom">
+                            <Clock className="h-4 w-4 text-sage-500" />
                             {doctor.experience} years experience
                           </div>
                         )}
                         {doctor.rating && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="flex items-center gap-2 text-sm text-slate-custom">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             {doctor.rating}/5
                           </div>
                         )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => handleBookAppointment(doctor)}
+                          className="btn-primary flex-1"
+                        >
+                          <CalendarDays className="mr-2 h-4 w-4" />
+                          Book Appointment
+                        </Button>
                       </div>
 
                       <DoctorSlots doctor={doctor} />
@@ -160,21 +180,21 @@ const Appointments = () => {
 
             {!loading && filteredDoctors.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-500">No doctors found matching your criteria.</p>
+                <p className="text-slate-custom">No doctors found matching your criteria.</p>
               </div>
             )}
           </TabsContent>
           
           <TabsContent value="nearby" className="space-y-6">
-            <Card>
+            <Card className="card-modern">
               <CardHeader>
-                <CardTitle>Find Doctors Near You</CardTitle>
+                <CardTitle className="text-sage-700">Find Doctors Near You</CardTitle>
                 <CardDescription>
                   Allow location access to find doctors closest to your current location
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={handleFindNearbyDoctors} className="w-full">
+                <Button onClick={handleFindNearbyDoctors} className="btn-primary w-full">
                   <MapPin className="mr-2 h-4 w-4" />
                   Find Nearby Doctors
                 </Button>
@@ -182,6 +202,12 @@ const Appointments = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <BookAppointmentDialog 
+          doctor={selectedDoctor}
+          open={showBookingDialog}
+          onOpenChange={setShowBookingDialog}
+        />
       </div>
     </div>
   );

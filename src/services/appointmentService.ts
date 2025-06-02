@@ -6,10 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 export interface PatientAppointment {
   id: string;
   user_id: string;
-  doctor_id: string;
-  slot_id: string;
+  doctor_id?: string;
+  doctor_name: string;
+  doctor_specialty?: string;
+  slot_id?: string;
   date: string;
-  time: string;
+  time?: string;
+  preferred_time?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   reason?: string;
   notes?: string;
@@ -79,6 +82,58 @@ export const useAppointmentBooking = () => {
     }
   };
 
+  const bookDirectAppointment = async (appointmentData: {
+    doctor_id: string;
+    doctor_name: string;
+    doctor_specialty?: string;
+    date: string;
+    preferred_time: string;
+    reason?: string;
+    notes?: string;
+  }) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert([{
+          user_id: user.id,
+          doctor_name: appointmentData.doctor_name,
+          doctor_specialty: appointmentData.doctor_specialty,
+          date: appointmentData.date,
+          time: appointmentData.preferred_time,
+          reason: appointmentData.reason || 'General consultation',
+          notes: appointmentData.notes ? `Preferred time: ${appointmentData.preferred_time}. Notes: ${appointmentData.notes}` : `Preferred time: ${appointmentData.preferred_time}`,
+          status: 'pending'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Appointment request sent",
+        description: `Your appointment request has been sent to Dr. ${appointmentData.doctor_name}. They will confirm your preferred time.`,
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error booking appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send appointment request. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const getPatientAppointments = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -104,7 +159,7 @@ export const useAppointmentBooking = () => {
     }
   };
 
-  return { bookAppointment, getPatientAppointments };
+  return { bookAppointment, bookDirectAppointment, getPatientAppointments };
 };
 
 // Custom hook to get available slots for a doctor

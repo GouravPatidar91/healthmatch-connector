@@ -39,6 +39,7 @@ export interface DoctorAppointment {
   reason?: string;
   status: 'pending' | 'completed' | 'cancelled';
   date: string;
+  notes?: string;
 }
 
 // Custom hook to fetch all doctors
@@ -175,6 +176,18 @@ export const useDoctorAppointments = () => {
           throw new Error('User not authenticated');
         }
 
+        // Get the doctor's information first
+        const { data: doctorData, error: doctorError } = await supabase
+          .from('doctors')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+
+        if (doctorError) {
+          console.error('Error fetching doctor data:', doctorError);
+          return;
+        }
+
         // Fetch appointments from the appointments table where doctor matches
         const { data, error } = await supabase
           .from('appointments')
@@ -182,6 +195,7 @@ export const useDoctorAppointments = () => {
             *,
             profiles(first_name, last_name)
           `)
+          .eq('doctor_name', doctorData.name)
           .order('date', { ascending: true })
           .order('time', { ascending: true });
 
@@ -196,7 +210,8 @@ export const useDoctorAppointments = () => {
           time: apt.time,
           reason: apt.reason || 'General consultation',
           status: apt.status as 'pending' | 'completed' | 'cancelled',
-          date: apt.date
+          date: apt.date,
+          notes: apt.notes || undefined
         }));
         
         setAppointments(transformedAppointments);
@@ -227,8 +242,18 @@ export const useDoctorAppointments = () => {
           apt.id === appointmentId ? { ...apt, status: 'completed' as const } : apt
         )
       );
+
+      toast({
+        title: "Appointment completed",
+        description: "The appointment has been marked as completed.",
+      });
     } catch (error) {
       console.error('Error updating appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update appointment status.",
+        variant: "destructive",
+      });
       throw error;
     }
   };
@@ -249,8 +274,50 @@ export const useDoctorAppointments = () => {
           apt.id === appointmentId ? { ...apt, status: 'cancelled' as const } : apt
         )
       );
+
+      toast({
+        title: "Appointment cancelled",
+        description: "The appointment has been cancelled.",
+      });
     } catch (error) {
       console.error('Error updating appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel appointment.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const confirmAppointment = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'confirmed' })
+        .eq('id', appointmentId);
+
+      if (error) {
+        throw error;
+      }
+
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt.id === appointmentId ? { ...apt, status: 'confirmed' as const } : apt
+        )
+      );
+
+      toast({
+        title: "Appointment confirmed",
+        description: "The appointment has been confirmed.",
+      });
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to confirm appointment.",
+        variant: "destructive",
+      });
       throw error;
     }
   };
@@ -260,7 +327,8 @@ export const useDoctorAppointments = () => {
     loading, 
     error, 
     markAppointmentAsCompleted, 
-    cancelAppointment 
+    cancelAppointment,
+    confirmAppointment
   };
 };
 
