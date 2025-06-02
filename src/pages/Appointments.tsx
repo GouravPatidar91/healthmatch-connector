@@ -1,14 +1,31 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, MapPin, Phone, Stethoscope } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Clock, User, MapPin, Phone, Stethoscope, Star, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppointmentBooking } from "@/services/appointmentService";
 import { useDoctors } from "@/services/doctorService";
-import { PatientAppointments } from "@/components/appointments/PatientAppointments";
-import { DoctorSlots } from "@/components/appointments/DoctorSlots";
+import PatientAppointments from "@/components/appointments/PatientAppointments";
+import DoctorSlots from "@/components/appointments/DoctorSlots";
 import { BookAppointmentDialog } from "@/components/appointments/BookAppointmentDialog";
+
+const specializations = [
+  "Cardiology",
+  "Dermatology", 
+  "Endocrinology",
+  "Gastroenterology",
+  "General Medicine",
+  "Neurology",
+  "Orthopedics",
+  "Pediatrics",
+  "Psychiatry",
+  "Pulmonology"
+];
 
 const Appointments = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,17 +34,19 @@ const Appointments = () => {
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   
-  const { doctors: allDoctors, loading: allLoading, findNearbyDoctors } = useDoctors();
-  const { doctors: specializedDoctors, loading: specializedLoading } = useDoctorsBySpecialization(selectedSpecialization === 'all' ? '' : selectedSpecialization);
-
-  const doctors = selectedSpecialization === 'all' ? allDoctors : specializedDoctors;
-  const loading = selectedSpecialization === 'all' ? allLoading : specializedLoading;
+  const { doctors, loading, findNearbyDoctors } = useDoctors();
 
   const filteredDoctors = doctors.filter(doctor =>
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const specializedDoctors = selectedSpecialization === 'all' 
+    ? filteredDoctors 
+    : filteredDoctors.filter(doctor => 
+        doctor.specialization.toLowerCase() === selectedSpecialization.toLowerCase()
+      );
 
   const handleFindNearbyDoctors = async () => {
     const success = await findNearbyDoctors();
@@ -92,7 +111,7 @@ const Appointments = () => {
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredDoctors.map((doctor) => (
+                {specializedDoctors.map((doctor) => (
                   <Card key={doctor.id} className="card-modern">
                     <CardHeader>
                       <div className="flex items-start justify-between">
@@ -155,7 +174,7 @@ const Appointments = () => {
               </div>
             )}
 
-            {!loading && filteredDoctors.length === 0 && (
+            {!loading && specializedDoctors.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-slate-custom">No doctors found matching your criteria.</p>
               </div>
@@ -181,9 +200,9 @@ const Appointments = () => {
         </Tabs>
 
         <BookAppointmentDialog 
-          doctor={selectedDoctor}
           open={showBookingDialog}
           onOpenChange={setShowBookingDialog}
+          selectedDoctor={selectedDoctor}
         />
       </div>
     </div>

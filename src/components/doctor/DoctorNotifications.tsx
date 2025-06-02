@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,27 +54,14 @@ const DoctorNotifications = () => {
         throw new Error('User not authenticated');
       }
 
-      // Get doctor's information
-      const { data: doctorData, error: doctorError } = await supabase
-        .from('doctors')
-        .select('name')
-        .eq('id', user.id)
-        .single();
-
-      if (doctorError) {
-        console.error('Error fetching doctor data:', doctorError);
-        return;
-      }
-
-      // Fetch notifications with appointment and patient details
+      // Fetch notifications with appointment details
       const { data, error } = await supabase
         .from('doctor_notifications')
         .select(`
           *,
-          appointments(date, time),
-          profiles(first_name, last_name)
+          appointments(date, time)
         `)
-        .eq('doctor_id', 'placeholder-doctor') // This should be the actual doctor ID
+        .eq('doctor_id', 'placeholder-doctor')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -85,11 +71,10 @@ const DoctorNotifications = () => {
       // Transform the data to include patient names and appointment details
       const transformedNotifications = (data || []).map(notification => ({
         ...notification,
-        patient_name: notification.profiles 
-          ? `${notification.profiles.first_name || ''} ${notification.profiles.last_name || ''}`.trim() || 'Patient'
-          : 'Patient',
+        patient_name: 'Patient', // Default name since we can't get profile data directly
         appointment_date: notification.appointments?.date,
-        appointment_time: notification.appointments?.time
+        appointment_time: notification.appointments?.time,
+        status: notification.status as 'sent' | 'read' | 'acknowledged'
       }));
 
       setNotifications(transformedNotifications);
