@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppointmentCalendar from '@/components/doctor/AppointmentCalendar';
 import AppointmentSlots from '@/components/doctor/AppointmentSlots';
+import DoctorNotifications from '@/components/doctor/DoctorNotifications';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { checkDoctorAccess } from '@/services/doctorService';
@@ -86,13 +88,14 @@ const DoctorDashboard = () => {
       <div className="flex flex-col space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-blue-600">Doctor Dashboard</h1>
-          <p className="text-slate-500">Manage your appointments and schedule</p>
+          <p className="text-slate-500">Manage your appointments, schedule, and patient health checks</p>
         </div>
 
         <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="calendar">Calendar View</TabsTrigger>
             <TabsTrigger value="slots">Appointment Slots</TabsTrigger>
+            <TabsTrigger value="notifications">Patient Health Checks</TabsTrigger>
           </TabsList>
           
           <TabsContent value="calendar">
@@ -115,6 +118,18 @@ const DoctorDashboard = () => {
               </CardHeader>
               <CardContent>
                 <AppointmentSlots />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Patient Health Check Notifications</CardTitle>
+                <CardDescription>Review health check data shared by your patients for upcoming appointments</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DoctorNotifications />
               </CardContent>
             </Card>
           </TabsContent>

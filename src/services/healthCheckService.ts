@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { HealthCheck } from "./userDataService";
@@ -26,22 +27,22 @@ export const sendHealthCheckToDoctor = async (
       throw new Error('User not authenticated');
     }
 
-    // Prepare simplified symptom data for doctor
+    // Prepare simplified symptom data for doctor - convert to JSON-compatible format
     const symptomsDataForDoctor = {
-      symptoms: healthCheckData.symptoms,
-      severity: healthCheckData.severity,
-      duration: healthCheckData.duration,
-      previous_conditions: healthCheckData.previous_conditions,
-      medications: healthCheckData.medications,
-      notes: healthCheckData.notes,
-      analysis_results: healthCheckData.analysis_results,
-      urgency_level: healthCheckData.urgency_level,
-      overall_assessment: healthCheckData.overall_assessment,
-      comprehensive_analysis: healthCheckData.comprehensive_analysis,
+      symptoms: healthCheckData.symptoms || [],
+      severity: healthCheckData.severity || '',
+      duration: healthCheckData.duration || '',
+      previous_conditions: healthCheckData.previous_conditions || [],
+      medications: healthCheckData.medications || [],
+      notes: healthCheckData.notes || '',
+      analysis_results: healthCheckData.analysis_results ? JSON.parse(JSON.stringify(healthCheckData.analysis_results)) : null,
+      urgency_level: healthCheckData.urgency_level || '',
+      overall_assessment: healthCheckData.overall_assessment || '',
+      comprehensive_analysis: healthCheckData.comprehensive_analysis || false,
       check_date: healthCheckData.created_at || new Date().toISOString()
     };
 
-    // Store notification for doctor using direct insert
+    // Store notification for doctor using direct insert with type assertion
     const { error } = await supabase
       .from('doctor_notifications')
       .insert([{
@@ -49,7 +50,7 @@ export const sendHealthCheckToDoctor = async (
         patient_id: user.id,
         appointment_id: appointmentId,
         health_check_id: healthCheckData.id || '',
-        symptoms_data: symptomsDataForDoctor,
+        symptoms_data: symptomsDataForDoctor as any, // Type assertion for JSONB compatibility
         status: 'sent'
       }]);
 
