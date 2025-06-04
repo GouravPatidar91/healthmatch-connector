@@ -112,7 +112,7 @@
   }
 
   .btn-hover-text {
-    @apply relative overflow-hidden transition-all duration-300 group;
+    @apply relative overflow-hidden transition-all duration-300;
   }
 
   .btn-hover-text .btn-text {
