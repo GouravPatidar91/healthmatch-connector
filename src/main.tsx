@@ -55,12 +55,24 @@ if (!container) {
   throw new Error("Root element not found");
 }
 
-// Clear any existing content and create a fresh root
-container.innerHTML = '';
-const root = createRoot(container);
+// Check if there's already a React root attached to this container
+const existingRoot = (container as any)._reactRoot;
 
-root.render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-);
+if (existingRoot) {
+  // If root exists, just update the render
+  existingRoot.render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+} else {
+  // Create new root only if one doesn't exist
+  const root = createRoot(container);
+  (container as any)._reactRoot = root;
+  
+  root.render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
