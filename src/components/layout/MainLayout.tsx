@@ -125,19 +125,23 @@ const MainLayout = () => {
         </Link>
         
         <div className="flex items-center gap-4">
+          {/* Desktop: Show name and logout button */}
           {user && (
-            <div className="text-sm md:text-lg text-slate-700 font-semibold px-4 md:px-6 py-2 md:py-3 bg-white/60 rounded-2xl backdrop-blur-sm border border-white/40 shadow-lg">
-              Welcome, {getUserDisplayName()}
+            <div className="hidden md:flex items-center gap-4">
+              <div className="text-sm md:text-lg text-slate-700 font-semibold px-4 md:px-6 py-2 md:py-3 bg-white/60 rounded-2xl backdrop-blur-sm border border-white/40 shadow-lg">
+                Welcome, {getUserDisplayName()}
+              </div>
+              <Button 
+                className="bg-black hover:bg-gray-800 text-white rounded-2xl px-4 md:px-6 py-2 md:py-3 font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 md:h-5 md:w-5 md:mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </div>
           )}
-          <Button 
-            className="bg-black hover:bg-gray-800 text-white rounded-2xl px-4 md:px-6 py-2 md:py-3 font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4 md:h-5 md:w-5 md:mr-2" />
-            <span className="hidden sm:inline">Logout</span>
-          </Button>
           
+          {/* Mobile: Only show menu trigger */}
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
               <Button variant="ghost" size="icon" className="rounded-2xl hover:bg-white/20 p-3">
@@ -155,6 +159,7 @@ const MainLayout = () => {
                   </span>
                 </div>
                 
+                {/* Mobile: Show user info at top of sidebar */}
                 {user && (
                   <div className="px-6 py-4 mb-6 text-sm text-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-l-4 border-blue-500 shadow-lg">
                     <div className="font-semibold">Signed in as:</div>
@@ -162,7 +167,8 @@ const MainLayout = () => {
                   </div>
                 )}
                 
-                <nav className="flex flex-col gap-3">
+                {/* Navigation menu */}
+                <nav className="flex flex-col gap-3 flex-1">
                   {navigationItems.map((item) => (
                     <Link 
                       key={item.path}
@@ -186,6 +192,7 @@ const MainLayout = () => {
                   ))}
                 </nav>
                 
+                {/* Mobile: Logout button at bottom of sidebar */}
                 <Button 
                   className="mt-auto bg-black hover:bg-gray-800 text-white rounded-2xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                   onClick={handleLogout}
