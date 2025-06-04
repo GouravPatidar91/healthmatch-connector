@@ -1,10 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard, Shield, FileText } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -111,7 +108,6 @@ const MainLayout = () => {
   
   const handleLogout = async () => {
     await signOut();
-    // The navigation will happen automatically due to the auth state change
   };
   
   useEffect(() => {
@@ -119,133 +115,97 @@ const MainLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col gradient-bg">
-      {/* Top Navigation Bar */}
-      <header className="glass-effect shadow-2xl p-6 flex justify-between items-center border-b border-white/20 relative z-50">
-        <Link to="/dashboard" className="flex items-center space-x-4 group">
-          <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl group-hover:from-blue-700 group-hover:to-indigo-700 transition-all duration-300 shadow-xl group-hover:shadow-2xl transform group-hover:scale-110">
-            <Heart className="text-white h-8 w-8" />
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Simple Header */}
+      <header className="bg-white shadow-sm border-b p-4 flex justify-between items-center">
+        <Link to="/dashboard" className="flex items-center space-x-3">
+          <div className="p-2 bg-blue-600 rounded-lg">
+            <Heart className="text-white h-6 w-6" />
           </div>
-          <span className="font-black text-3xl bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-            HealthMatch
-          </span>
+          <span className="font-bold text-xl text-gray-900">HealthMatch</span>
         </Link>
         
         <div className="flex items-center gap-4">
-          {/* Desktop: Show name and logout button */}
           {user && (
             <div className="hidden md:flex items-center gap-4">
-              <div className="text-sm md:text-lg text-slate-700 font-semibold px-4 md:px-6 py-2 md:py-3 bg-white/60 rounded-2xl backdrop-blur-sm border border-white/40 shadow-lg">
+              <div className="text-sm text-gray-700 px-4 py-2 bg-gray-100 rounded-lg">
                 Welcome, {getUserDisplayName()}
               </div>
               <Button 
-                className="bg-black hover:bg-gray-800 text-white rounded-2xl px-4 md:px-6 py-2 md:py-3 font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                className="bg-gray-900 hover:bg-gray-800 text-white"
                 onClick={handleLogout}
               >
-                <LogOut className="h-4 w-4 md:h-5 md:w-5 md:mr-2" />
-                <span className="hidden sm:inline">Logout</span>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
               </Button>
             </div>
           )}
           
-          {/* Mobile: Only show menu trigger */}
-          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" className="rounded-2xl hover:bg-white/20 p-3">
-                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 bg-white/95 backdrop-blur-xl border-r border-white/30 p-0">
-              <ScrollArea className="h-full">
-                <div className="py-8 px-6 flex flex-col h-full min-h-screen">
-                  <div className="flex items-center gap-4 mb-10">
-                    <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl">
-                      <Heart className="text-white h-8 w-8" />
-                    </div>
-                    <span className="font-black text-2xl bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-                      HealthMatch
-                    </span>
-                  </div>
-                  
-                  {/* Mobile: Show user info at top of sidebar */}
-                  {user && (
-                    <div className="px-6 py-4 mb-6 text-sm text-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-l-4 border-blue-500 shadow-lg">
-                      <div className="font-semibold">Signed in as:</div>
-                      <div className="font-medium">{getUserDisplayName()}</div>
-                    </div>
-                  )}
-                  
-                  {/* Navigation menu */}
-                  <nav className="flex flex-col gap-3 flex-1">
-                    {navigationItems.map((item) => (
-                      <Link 
-                        key={item.path}
-                        to={item.path}
-                        className={`urban-nav-link ${
-                          isActive(item.path) 
-                            ? "active" 
-                            : item.name === "Doctor Application Pending" 
-                              ? "opacity-60 cursor-not-allowed text-slate-400"
-                              : "text-slate-700 hover:text-blue-700"
-                        }`}
-                        onClick={e => {
-                          if (item.name === "Doctor Application Pending") {
-                            e.preventDefault();
-                          }
-                        }}
-                      >
-                        <item.icon className="h-6 w-6" />
-                        <span className="font-semibold">{item.name}</span>
-                      </Link>
-                    ))}
-                  </nav>
-                  
-                  {/* Mobile: Logout button at bottom of sidebar */}
-                  <Button 
-                    className="mt-auto bg-black hover:bg-gray-800 text-white rounded-2xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 h-5 w-5" />
-                    Logout
-                  </Button>
-                </div>
-              </ScrollArea>
-            </SheetContent>
-          </Sheet>
+          {/* Mobile Menu Button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
         </div>
       </header>
       
-      {/* Main Content with Sidebar (on larger screens) */}
-      <div className="flex flex-1">
-        {/* Sidebar for desktop */}
-        <aside className="hidden md:block w-80 glass-effect border-r border-white/30 p-8">
-          <nav className="space-y-3">
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-white border-b shadow-sm">
+          <nav className="p-4 space-y-2">
             {navigationItems.map((item) => (
               <Link 
                 key={item.path}
                 to={item.path}
-                className={`urban-nav-link ${
+                className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
                   isActive(item.path) 
-                    ? "active transform scale-105" 
-                    : item.name === "Doctor Application Pending" 
-                      ? "opacity-60 cursor-not-allowed text-slate-400"
-                      : "text-slate-700 hover:text-blue-700"
+                    ? "bg-blue-50 text-blue-600" 
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
-                onClick={e => {
-                  if (item.name === "Doctor Application Pending") {
-                    e.preventDefault();
-                  }
-                }}
               >
-                <item.icon className="h-6 w-6" />
-                <span className="font-semibold text-lg">{item.name}</span>
+                <item.icon className="h-5 w-5" />
+                <span className="font-medium">{item.name}</span>
+              </Link>
+            ))}
+            <Button 
+              className="w-full mt-4 bg-gray-900 hover:bg-gray-800 text-white"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </nav>
+        </div>
+      )}
+      
+      {/* Main Content */}
+      <div className="flex flex-1">
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:block w-64 bg-white border-r p-6">
+          <nav className="space-y-2">
+            {navigationItems.map((item) => (
+              <Link 
+                key={item.path}
+                to={item.path}
+                className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                  isActive(item.path) 
+                    ? "bg-blue-50 text-blue-600 font-medium" 
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
               </Link>
             ))}
           </nav>
         </aside>
         
         {/* Main content */}
-        <main className="flex-1 p-8 overflow-auto">
+        <main className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
