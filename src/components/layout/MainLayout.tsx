@@ -5,6 +5,7 @@ import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import Footer from "./Footer";
 
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -219,8 +220,11 @@ const MainLayout = () => {
         </aside>
         
         {/* Main content */}
-        <main className="flex-1 p-6 overflow-auto">
-          <Outlet />
+        <main className="flex-1 flex flex-col">
+          <div className="flex-1 p-6 overflow-auto">
+            <Outlet />
+          </div>
+          <Footer />
         </main>
       </div>
     </div>
