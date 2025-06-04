@@ -2,7 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || "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";
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,10 +28,10 @@ serve(async (req) => {
       );
     }
 
-    if (!GROQ_API_KEY) {
-      console.error('Groq API key not found in environment variables');
+    if (!GEMINI_API_KEY) {
+      console.error('Gemini API key not found in environment variables');
       return new Response(
-        JSON.stringify({ error: 'Groq API key not configured. Please check your Supabase secrets.' }),
+        JSON.stringify({ error: 'Gemini API key not configured. Please check your Supabase secrets.' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -70,7 +70,7 @@ serve(async (req) => {
     
     ${fileType === 'application/pdf' 
       ? `Since this is a PDF file, provide a general analysis framework based on common medical report structures.`
-      : `This is an image file that contains medical report content.`
+      : `This is an image file that contains medical report content. Please analyze the visual content of the medical report.`
     }
     
     Please respond in JSON format with the following structure:
@@ -85,43 +85,70 @@ serve(async (req) => {
     Ensure the JSON is properly formatted without any additional text before or after.
     `;
 
-    console.log('Making request to Groq API...');
+    console.log('Making request to Gemini API...');
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    // Prepare the request body for Gemini API
+    let requestBody;
+    
+    if (fileType === 'application/pdf') {
+      // For PDF files, use text-only analysis
+      requestBody = {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2048,
+          responseMimeType: "application/json"
+        }
+      };
+    } else {
+      // For image files, include both text and image
+      const base64Data = file.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+      
+      requestBody = {
+        contents: [{
+          parts: [
+            {
+              text: prompt
+            },
+            {
+              inline_data: {
+                mime_type: fileType,
+                data: base64Data
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2048,
+          responseMimeType: "application/json"
+        }
+      };
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY.trim()}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'llama3-8b-8192',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a medical report analyzer. ${languageInstruction} Always return valid JSON format with no additional text.`
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 1500,
-        response_format: { type: "json_object" }
-      }),
+      body: JSON.stringify(requestBody),
     });
 
-    console.log('Groq API response status:', response.status);
+    console.log('Gemini API response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error(`Groq API error (${response.status}):`, errorData);
+      console.error(`Gemini API error (${response.status}):`, errorData);
       
       let errorMessage = 'Failed to analyze medical report';
       if (response.status === 401) {
-        errorMessage = 'Invalid Groq API key. Please check your API key configuration.';
+        errorMessage = 'Invalid Gemini API key. Please check your API key configuration.';
       } else if (response.status === 429) {
-        errorMessage = 'Groq API rate limit exceeded. Please try again later.';
+        errorMessage = 'Gemini API rate limit exceeded. Please try again later.';
       } else if (response.status === 400) {
         errorMessage = 'Invalid request format. Please check your file format.';
       }
@@ -136,20 +163,21 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Groq response received successfully');
+    console.log('Gemini response received successfully');
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       console.error("Unexpected response structure:", JSON.stringify(data));
-      throw new Error("Invalid response structure from Groq");
+      throw new Error("Invalid response structure from Gemini");
     }
 
     let analysisResult;
     try {
-      analysisResult = JSON.parse(data.choices[0].message.content);
+      const content = data.candidates[0].content.parts[0].text;
+      analysisResult = JSON.parse(content);
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
       // Fallback to a structured response
-      const content = data.choices[0].message.content;
+      const content = data.candidates[0].content.parts[0].text;
       analysisResult = {
         summary: content,
         keyFindings: ['Analysis completed - please review the summary for key points'],
