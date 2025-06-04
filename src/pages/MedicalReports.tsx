@@ -3,11 +3,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, FileText, Loader2, Download, Search } from "lucide-react";
+import { Upload, FileText, Loader2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface AnalysisResult {
   summary: string;
@@ -28,9 +40,9 @@ interface AnalysisResult {
 const MedicalReports = () => {
   const [file, setFile] = useState<File | null>(null);
   const [language, setLanguage] = useState('simple-english');
-  const [languageSearch, setLanguageSearch] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
   const supportedLanguages = [
@@ -95,18 +107,15 @@ const MedicalReports = () => {
     { value: 'finnish', label: 'Suomi (Finnish)', category: 'European Languages' },
   ];
 
-  const filteredLanguages = supportedLanguages.filter(lang =>
-    lang.label.toLowerCase().includes(languageSearch.toLowerCase()) ||
-    lang.category.toLowerCase().includes(languageSearch.toLowerCase())
-  );
-
-  const groupedLanguages = filteredLanguages.reduce((groups, lang) => {
+  const groupedLanguages = supportedLanguages.reduce((groups, lang) => {
     if (!groups[lang.category]) {
       groups[lang.category] = [];
     }
     groups[lang.category].push(lang);
     return groups;
   }, {} as Record<string, typeof supportedLanguages>);
+
+  const selectedLanguageLabel = supportedLanguages.find(lang => lang.value === language)?.label || 'Select language';
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -302,37 +311,42 @@ Generated on: ${new Date().toLocaleDateString()}
 
             <div>
               <Label htmlFor="language">Preferred Language</Label>
-              <div className="relative mt-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search languages..."
-                    value={languageSearch}
-                    onChange={(e) => setLanguageSearch(e.target.value)}
-                    className="pl-10 mb-2"
-                  />
-                </div>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-80">
-                    {Object.entries(groupedLanguages).map(([category, languages]) => (
-                      <div key={category}>
-                        <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50">
-                          {category}
-                        </div>
-                        {languages.map((lang) => (
-                          <SelectItem key={lang.value} value={lang.value}>
-                            {lang.label}
-                          </SelectItem>
-                        ))}
-                      </div>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between mt-1"
+                  >
+                    {selectedLanguageLabel}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search languages..." />
+                    <CommandList className="max-h-80">
+                      <CommandEmpty>No language found.</CommandEmpty>
+                      {Object.entries(groupedLanguages).map(([category, languages]) => (
+                        <CommandGroup key={category} heading={category}>
+                          {languages.map((lang) => (
+                            <CommandItem
+                              key={lang.value}
+                              value={lang.label}
+                              onSelect={() => {
+                                setLanguage(lang.value);
+                                setOpen(false);
+                              }}
+                            >
+                              {lang.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button
