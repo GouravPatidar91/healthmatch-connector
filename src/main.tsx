@@ -55,14 +55,9 @@ if (!container) {
   throw new Error("Root element not found");
 }
 
-// Check if root is already created to prevent multiple createRoot calls
-let root: ReturnType<typeof createRoot>;
-if (!(container as any)._reactRootContainer) {
-  root = createRoot(container);
-  (container as any)._reactRootContainer = root;
-} else {
-  root = (container as any)._reactRootContainer;
-}
+// Clear any existing content and create a fresh root
+container.innerHTML = '';
+const root = createRoot(container);
 
 root.render(
   <ErrorBoundary>
