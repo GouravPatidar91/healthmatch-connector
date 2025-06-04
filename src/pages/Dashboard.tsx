@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Activity, Calendar, Users, AlertTriangle, ArrowRight, Phone as PhoneIcon, Info, TrendingUp, Heart, Zap } from "lucide-react";
@@ -15,10 +14,19 @@ const Dashboard = () => {
   const { appointments, loading: appointmentsLoading } = useUserAppointments();
   const { healthChecks, loading: healthChecksLoading } = useUserHealthChecks();
   
-  // Get user's name from metadata if available, or use email as fallback
-  const userName = user?.user_metadata?.name || 
-                   user?.email?.split('@')[0] || 
-                   "User";
+  // Get user's display name with better fallback logic
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    }
+    if (user?.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return "User";
+  };
   
   // Find the most recent upcoming appointment using current date and time
   const now = new Date();
@@ -120,7 +128,7 @@ const Dashboard = () => {
       <div className="flex flex-wrap items-center justify-between gap-6">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-sage-700 to-sage-500 bg-clip-text text-transparent">
-            Welcome back, {userName}
+            Welcome back, {getUserDisplayName()}
           </h1>
           <p className="text-slate-custom text-lg">Here's an overview of your health journey</p>
         </div>

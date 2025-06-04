@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,20 @@ const MainLayout = () => {
   const { signOut, user } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
+  
+  // Get user's display name
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    }
+    if (user?.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return "User";
+  };
   
   // Check user roles
   useEffect(() => {
@@ -112,12 +127,11 @@ const MainLayout = () => {
         <div className="flex items-center gap-4">
           {user && (
             <div className="text-sm md:text-lg text-slate-700 font-semibold px-4 md:px-6 py-2 md:py-3 bg-white/60 rounded-2xl backdrop-blur-sm border border-white/40 shadow-lg">
-              Welcome, {user.user_metadata.name || user.email?.split('@')[0]}
+              Welcome, {getUserDisplayName()}
             </div>
           )}
           <Button 
-            variant="secondary" 
-            className="text-white hover:bg-slate-800 rounded-2xl px-4 md:px-6 py-2 md:py-3 font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+            className="bg-black hover:bg-gray-800 text-white rounded-2xl px-4 md:px-6 py-2 md:py-3 font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 md:h-5 md:w-5 md:mr-2" />
@@ -144,7 +158,7 @@ const MainLayout = () => {
                 {user && (
                   <div className="px-6 py-4 mb-6 text-sm text-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-l-4 border-blue-500 shadow-lg">
                     <div className="font-semibold">Signed in as:</div>
-                    <div className="font-medium">{user.user_metadata.name || user.email}</div>
+                    <div className="font-medium">{getUserDisplayName()}</div>
                   </div>
                 )}
                 
@@ -173,8 +187,7 @@ const MainLayout = () => {
                 </nav>
                 
                 <Button 
-                  variant="secondary" 
-                  className="mt-auto text-white hover:bg-slate-800 rounded-2xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                  className="mt-auto bg-black hover:bg-gray-800 text-white rounded-2xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                   onClick={handleLogout}
                 >
                   <LogOut className="mr-2 h-5 w-5" />
