@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard, Shield, FileText } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,26 +17,6 @@ const MainLayout = () => {
   const { signOut, user } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
-  
-  // Get user's display name
-  const getUserDisplayName = () => {
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name;
-    }
-    if (user?.user_metadata?.name) {
-      return user.user_metadata.name;
-    }
-    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
-    }
-    if (user?.user_metadata?.first_name) {
-      return user.user_metadata.first_name;
-    }
-    if (user?.email) {
-      return user.email.split('@')[0];
-    }
-    return "User";
-  };
   
   // Check user roles
   useEffect(() => {
@@ -108,6 +90,7 @@ const MainLayout = () => {
   
   const handleLogout = async () => {
     await signOut();
+    // The navigation will happen automatically due to the auth state change
   };
   
   useEffect(() => {
@@ -115,100 +98,128 @@ const MainLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Simple Header */}
-      <header className="bg-white shadow-sm border-b p-4 flex justify-between items-center">
-        <Link to="/dashboard" className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-600 rounded-lg">
+    <div className="min-h-screen flex flex-col gradient-bg">
+      {/* Top Navigation Bar */}
+      <header className="glass-effect shadow-soft p-4 flex justify-between items-center border-b border-sage-100">
+        <Link to="/dashboard" className="flex items-center space-x-3 group">
+          <div className="p-2 bg-sage-500 rounded-xl group-hover:bg-sage-600 transition-colors duration-200">
             <Heart className="text-white h-6 w-6" />
           </div>
-          <span className="font-bold text-xl text-gray-900">HealthMatch</span>
+          <span className="font-bold text-2xl bg-gradient-to-r from-sage-600 to-sage-700 bg-clip-text text-transparent">
+            HealthMatch
+          </span>
         </Link>
         
         <div className="flex items-center gap-4">
-          {user && (
-            <div className="hidden md:flex items-center gap-4">
-              <div className="text-sm text-gray-700 px-4 py-2 bg-gray-100 rounded-lg">
-                Welcome, {getUserDisplayName()}
+          <div className="hidden md:flex items-center space-x-4">
+            {user && (
+              <div className="mr-4 text-sm text-slate-custom font-medium">
+                Hi, {user.user_metadata.name || user.email}
               </div>
-              <Button 
-                className="bg-gray-900 hover:bg-gray-800 text-white"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          )}
-          
-          {/* Mobile Menu Button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="md:hidden"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-        </div>
-      </header>
-      
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-b shadow-sm">
-          <nav className="p-4 space-y-2">
-            {navigationItems.map((item) => (
-              <Link 
-                key={item.path}
-                to={item.path}
-                className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                  isActive(item.path) 
-                    ? "bg-blue-50 text-blue-600" 
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.name}</span>
-              </Link>
-            ))}
+            )}
             <Button 
-              className="w-full mt-4 bg-gray-900 hover:bg-gray-800 text-white"
+              variant="ghost" 
+              className="text-slate-custom hover:bg-sage-50 hover:text-sage-700 rounded-xl"
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </Button>
-          </nav>
+          </div>
+          
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild className="md:hidden">
+              <Button variant="ghost" size="icon" className="rounded-xl hover:bg-sage-50">
+                {isMobileMenuOpen ? <X /> : <Menu />}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 bg-white/95 backdrop-blur-md">
+              <div className="py-6 flex flex-col h-full">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-sage-500 rounded-xl">
+                    <Heart className="text-white h-6 w-6" />
+                  </div>
+                  <span className="font-bold text-xl bg-gradient-to-r from-sage-600 to-sage-700 bg-clip-text text-transparent">
+                    HealthMatch
+                  </span>
+                </div>
+                
+                {user && (
+                  <div className="px-4 py-3 mb-4 text-sm text-slate-custom bg-sage-50 rounded-xl border-l-4 border-sage-500">
+                    Signed in as: {user.user_metadata.name || user.email}
+                  </div>
+                )}
+                
+                <nav className="flex flex-col gap-2">
+                  {navigationItems.map((item) => (
+                    <Link 
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                        isActive(item.path) 
+                          ? "bg-sage-500 text-white shadow-medium" 
+                          : item.name === "Doctor Application Pending" 
+                            ? "opacity-60 cursor-not-allowed text-slate-400"
+                            : "hover:bg-sage-50 text-slate-custom hover:text-sage-700"
+                      }`}
+                      onClick={e => {
+                        if (item.name === "Doctor Application Pending") {
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.name}
+                    </Link>
+                  ))}
+                </nav>
+                
+                <Button 
+                  variant="ghost" 
+                  className="mt-auto text-slate-custom hover:bg-coral-50 hover:text-coral-700 rounded-xl"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-      )}
+      </header>
       
-      {/* Main Content */}
+      {/* Main Content with Sidebar (on larger screens) */}
       <div className="flex flex-1">
-        {/* Desktop Sidebar */}
-        <aside className="hidden md:block w-64 bg-white border-r p-6">
+        {/* Sidebar for desktop */}
+        <aside className="hidden md:block w-72 glass-effect border-r border-sage-100 p-6">
           <nav className="space-y-2">
             {navigationItems.map((item) => (
               <Link 
                 key={item.path}
                 to={item.path}
-                className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive(item.path) 
-                    ? "bg-blue-50 text-blue-600 font-medium" 
-                    : "text-gray-700 hover:bg-gray-50"
+                    ? "bg-sage-500 text-white shadow-medium transform scale-105" 
+                    : item.name === "Doctor Application Pending" 
+                      ? "opacity-60 cursor-not-allowed text-slate-400"
+                      : "hover:bg-sage-50 text-slate-custom hover:text-sage-700 hover:translate-x-1"
                 }`}
+                onClick={e => {
+                  if (item.name === "Doctor Application Pending") {
+                    e.preventDefault();
+                  }
+                }}
               >
                 <item.icon className="h-5 w-5" />
-                <span>{item.name}</span>
+                <span className="font-medium">{item.name}</span>
               </Link>
             ))}
           </nav>
         </aside>
         
         {/* Main content */}
-        <main className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
-          </div>
+        <main className="flex-1 p-6 overflow-auto">
+          <Outlet />
         </main>
       </div>
     </div>

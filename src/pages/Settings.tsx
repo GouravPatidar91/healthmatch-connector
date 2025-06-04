@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,11 +5,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { useTheme } from "@/contexts/ThemeContext";
+import { Bell, Lock, Layout, MonitorSmartphone, Moon } from "lucide-react";
 
 const Settings = () => {
   const { toast } = useToast();
-  const { isDarkMode, setDarkMode } = useTheme();
   
   // Fixed the typing issue in this section
   const [settings, setSettings] = useState({
@@ -20,6 +18,7 @@ const Settings = () => {
       sms: false,
     },
     appearance: {
+      darkMode: false,
       reducedMotion: false,
     },
     privacy: {
@@ -44,14 +43,6 @@ const Settings = () => {
         [setting]: value
       }
     }));
-  };
-
-  const handleDarkModeChange = (value: boolean) => {
-    setDarkMode(value);
-    toast({
-      title: "Theme Updated",
-      description: `Switched to ${value ? 'dark' : 'light'} mode.`
-    });
   };
   
   const handleSaveSettings = () => {
@@ -133,8 +124,8 @@ const Settings = () => {
             </div>
             <Switch 
               id="dark-mode"
-              checked={isDarkMode}
-              onCheckedChange={handleDarkModeChange}
+              checked={settings.appearance.darkMode}
+              onCheckedChange={value => handleSettingChange("appearance", "darkMode", value)}
             />
           </div>
           
