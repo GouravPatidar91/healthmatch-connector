@@ -68,7 +68,7 @@ serve(async (req) => {
       'bodo': 'Respond in Bodo (बर\'). Use simple medical terms and explain complex concepts clearly.',
       'dogri': 'Respond in Dogri (डोगरी). Use simple medical terms and explain complex concepts clearly.',
       
-      // Continental Languages
+      // Continental Languages  
       'spanish': 'Respond in Spanish (Español). Use simple medical terms and explain complex concepts clearly.',
       'french': 'Respond in French (Français). Use simple medical terms and explain complex concepts clearly.',
       'german': 'Respond in German (Deutsch). Use simple medical terms and explain complex concepts clearly.',
@@ -104,32 +104,7 @@ serve(async (req) => {
     const prompt = `
     You are an expert medical report analyzer with extensive clinical knowledge. ${languageInstruction}
     
-    Perform a comprehensive and detailed analysis of the medical report content. Provide:
-    
-    1. EXECUTIVE SUMMARY: A clear, comprehensive summary of what the report shows
-    
-    2. KEY FINDINGS: List 5-8 most important clinical findings with specific details
-    
-    3. DETAILED ANALYSIS BREAKDOWN:
-       - Vital Signs: Extract and analyze all vital signs (BP, HR, RR, temp, SpO2, etc.)
-       - Laboratory Results: Detailed breakdown of all lab values with normal ranges and interpretations
-       - Diagnostic Tests: Analysis of imaging, ECG, pathology, or other diagnostic test results
-       - Medications: Current medications, dosages, and their clinical significance
-       - Clinical Impression: Professional medical interpretation of findings
-       - Follow-up Required: Specific follow-up actions, tests, or appointments needed
-    
-    4. RECOMMENDATIONS: Provide 5-8 detailed, actionable recommendations for the patient
-    
-    5. URGENCY LEVEL: Classify as Low/Medium/High based on clinical significance
-    
-    ANALYSIS GUIDELINES:
-    - Be thorough and comprehensive in your analysis
-    - Explain medical terminology in simple terms
-    - Provide context for abnormal values
-    - Consider the clinical correlation between different findings
-    - Mention any red flags or concerning patterns
-    - Suggest appropriate follow-up care
-    - Include lifestyle recommendations when relevant
+    Perform a comprehensive and detailed analysis of the medical report content following this exact structure:
     
     The report file is: ${fileName} (${fileType})
     
@@ -140,46 +115,89 @@ serve(async (req) => {
     
     Please respond in JSON format with the following comprehensive structure:
     {
-      "summary": "Detailed executive summary of the medical report findings",
-      "keyFindings": [
-        "Specific clinical finding with details",
-        "Another important finding with context",
-        "Abnormal values with clinical significance"
-      ],
-      "detailedAnalysis": {
-        "vitalSigns": [
-          "Blood pressure: X/Y mmHg (interpretation)",
-          "Heart rate: X bpm (analysis)"
+      "summaryOfFindings": {
+        "diagnosis": "Clear explanation of the condition or disease identified (if any)",
+        "normalAbnormalValues": [
+          "Parameter name: value (normal/abnormal with reference range)",
+          "Another parameter with detailed explanation"
         ],
-        "labResults": [
-          "Hemoglobin: X g/dL (normal/abnormal with explanation)",
-          "Blood glucose: X mg/dL (interpretation and significance)"
+        "severityOrStage": "Stage/severity level if applicable (e.g., Stage 2 Hypertension)"
+      },
+      "interpretationOfResults": {
+        "significantResults": [
+          {
+            "parameter": "Parameter name",
+            "value": "Actual value",
+            "normalRange": "Reference range",
+            "interpretation": "What this result means in simple terms",
+            "clinicalSignificance": "How this relates to patient's health"
+          }
         ],
-        "diagnosticTests": [
-          "Chest X-ray: findings and interpretation",
-          "ECG: rhythm analysis and abnormalities"
+        "overallInterpretation": "Comprehensive explanation of all results combined"
+      },
+      "treatmentPlan": {
+        "medicationsPrescribed": [
+          {
+            "name": "Medication name",
+            "dosage": "Strength and frequency",
+            "duration": "How long to take",
+            "purpose": "Why this medication is prescribed"
+          }
         ],
-        "medications": [
-          "Medication name: dosage, frequency, indication",
-          "Drug interactions or concerns if any"
+        "therapiesRecommended": [
+          "Specific therapy or treatment recommendation"
         ],
-        "clinicalImpression": "Professional medical interpretation of the overall clinical picture",
-        "followUpRequired": [
-          "Specific follow-up test or appointment needed",
-          "Timeline for re-evaluation"
+        "lifestyleChanges": {
+          "diet": "Specific dietary recommendations",
+          "exercise": "Exercise recommendations", 
+          "sleep": "Sleep hygiene recommendations",
+          "other": "Other lifestyle modifications"
+        },
+        "preventiveMeasures": [
+          "Vaccines, screenings, or preventive care recommendations"
         ]
       },
-      "recommendations": [
-        "Detailed recommendation with rationale",
-        "Lifestyle modification with specific guidance",
-        "When to seek immediate medical attention"
-      ],
-      "urgencyLevel": "Low/Medium/High",
-      "language": "${language}"
+      "nextSteps": {
+        "additionalTestsRequired": [
+          {
+            "testName": "Name of test/imaging",
+            "reason": "Why this test is needed",
+            "urgency": "Timeline for completion"
+          }
+        ],
+        "specialistReferral": {
+          "required": true/false,
+          "specialistType": "Type of specialist if needed",
+          "reason": "Why referral is necessary"
+        },
+        "followUpAppointments": [
+          {
+            "timeframe": "When to follow up",
+            "purpose": "What will be checked/monitored"
+          }
+        ]
+      },
+      "documentationProvided": {
+        "reportType": "Type of medical report analyzed",
+        "keyDocuments": [
+          "List of important documents or sections found"
+        ],
+        "additionalNotes": "Any important notes or observations"
+      },
+      "urgencyLevel": "Low/Medium/High based on findings",
+      "language": "${language}",
+      "disclaimer": "This analysis is AI-generated and should be reviewed by a qualified healthcare professional"
     }
     
-    IMPORTANT: 
-    - Only include sections in detailedAnalysis that are actually present in the report
+    ANALYSIS GUIDELINES:
+    - Be thorough and comprehensive in your analysis
+    - Explain medical terminology in simple terms  
+    - Provide context for abnormal values
+    - Consider the clinical correlation between different findings
+    - Mention any red flags or concerning patterns
+    - Suggest appropriate follow-up care
+    - Include lifestyle recommendations when relevant
+    - Only include sections that have actual data from the report
     - If no data is available for a section, omit that section entirely
     - Be specific with numbers, values, and clinical details
     - Provide educational context to help patient understanding
@@ -282,29 +300,63 @@ serve(async (req) => {
       // Enhanced fallback to a structured response
       const content = data.candidates[0].content.parts[0].text;
       analysisResult = {
-        summary: content,
-        keyFindings: [
-          'Comprehensive analysis completed - please review the summary for detailed insights',
-          'Medical data has been evaluated according to clinical standards',
-          'Report contains important health information requiring attention'
-        ],
-        detailedAnalysis: {
-          clinicalImpression: 'Detailed medical analysis has been performed. Please consult with your healthcare provider for comprehensive interpretation of findings.'
+        summaryOfFindings: {
+          diagnosis: "Analysis completed - detailed review required",
+          normalAbnormalValues: ["Medical data analyzed according to clinical standards"],
+          severityOrStage: "Requires professional medical interpretation"
         },
-        recommendations: [
-          'Consult with your healthcare provider for detailed interpretation',
-          'Follow up on any abnormal findings as recommended',
-          'Maintain regular health monitoring as advised'
-        ],
+        interpretationOfResults: {
+          significantResults: [
+            {
+              parameter: "Overall Analysis",
+              value: "Completed",
+              normalRange: "Professional review recommended",
+              interpretation: content,
+              clinicalSignificance: "Consult healthcare provider for detailed interpretation"
+            }
+          ],
+          overallInterpretation: "Comprehensive medical analysis has been performed. Please consult with your healthcare provider for detailed interpretation of findings."
+        },
+        treatmentPlan: {
+          medicationsPrescribed: [],
+          therapiesRecommended: ["Consult with healthcare provider"],
+          lifestyleChanges: {
+            diet: "Follow healthcare provider recommendations",
+            exercise: "As recommended by your doctor",
+            sleep: "Maintain good sleep hygiene",
+            other: "Follow medical advice"
+          },
+          preventiveMeasures: ["Regular health monitoring as advised"]
+        },
+        nextSteps: {
+          additionalTestsRequired: [],
+          specialistReferral: {
+            required: false,
+            specialistType: "",
+            reason: ""
+          },
+          followUpAppointments: [
+            {
+              timeframe: "As recommended by healthcare provider",
+              purpose: "Review and discuss findings"
+            }
+          ]
+        },
+        documentationProvided: {
+          reportType: "Medical Report Analysis",
+          keyDocuments: ["AI-generated analysis completed"],
+          additionalNotes: "Professional medical review recommended"
+        },
         urgencyLevel: 'Medium',
-        language: language
+        language: language,
+        disclaimer: "This analysis is AI-generated and should be reviewed by a qualified healthcare professional"
       };
     }
 
     // Ensure the response has the correct language field
     analysisResult.language = language;
 
-    console.log('Comprehensive analysis completed successfully');
+    console.log('Comprehensive deep analysis completed successfully');
 
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
