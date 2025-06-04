@@ -267,20 +267,20 @@ Urgency Level: ${analysisResult.urgencyLevel}
 🩺 SUMMARY OF FINDINGS
 =====================
 
-Diagnosis: ${analysisResult.summaryOfFindings.diagnosis}
-Severity/Stage: ${analysisResult.summaryOfFindings.severityOrStage}
+Diagnosis: ${analysisResult.summaryOfFindings?.diagnosis || 'Not specified'}
+Severity/Stage: ${analysisResult.summaryOfFindings?.severityOrStage || 'Not specified'}
 
 Normal/Abnormal Values:
-${analysisResult.summaryOfFindings.normalAbnormalValues.map((value, index) => `${index + 1}. ${value}`).join('\n')}
+${(analysisResult.summaryOfFindings?.normalAbnormalValues || []).map((value, index) => `${index + 1}. ${value}`).join('\n')}
 
 📊 INTERPRETATION OF RESULTS
 ===========================
 
 Overall Interpretation:
-${analysisResult.interpretationOfResults.overallInterpretation}
+${analysisResult.interpretationOfResults?.overallInterpretation || 'Not available'}
 
 Significant Results:
-${analysisResult.interpretationOfResults.significantResults.map((result, index) => `
+${(analysisResult.interpretationOfResults?.significantResults || []).map((result, index) => `
 ${index + 1}. ${result.parameter}
    Value: ${result.value}
    Normal Range: ${result.normalRange}
@@ -292,8 +292,8 @@ ${index + 1}. ${result.parameter}
 ================
 
 Medications Prescribed:
-${analysisResult.treatmentPlan.medicationsPrescribed.length > 0 
-  ? analysisResult.treatmentPlan.medicationsPrescribed.map((med, index) => `
+${(analysisResult.treatmentPlan?.medicationsPrescribed || []).length > 0 
+  ? (analysisResult.treatmentPlan?.medicationsPrescribed || []).map((med, index) => `
 ${index + 1}. ${med.name}
    Dosage: ${med.dosage}
    Duration: ${med.duration}
@@ -302,23 +302,23 @@ ${index + 1}. ${med.name}
   : 'No medications prescribed or mentioned in the report.'}
 
 Therapies Recommended:
-${analysisResult.treatmentPlan.therapiesRecommended.map((therapy, index) => `${index + 1}. ${therapy}`).join('\n')}
+${(analysisResult.treatmentPlan?.therapiesRecommended || []).map((therapy, index) => `${index + 1}. ${therapy}`).join('\n')}
 
 Lifestyle Changes:
-- Diet: ${analysisResult.treatmentPlan.lifestyleChanges.diet}
-- Exercise: ${analysisResult.treatmentPlan.lifestyleChanges.exercise}
-- Sleep: ${analysisResult.treatmentPlan.lifestyleChanges.sleep}
-- Other: ${analysisResult.treatmentPlan.lifestyleChanges.other}
+- Diet: ${analysisResult.treatmentPlan?.lifestyleChanges?.diet || 'Not specified'}
+- Exercise: ${analysisResult.treatmentPlan?.lifestyleChanges?.exercise || 'Not specified'}
+- Sleep: ${analysisResult.treatmentPlan?.lifestyleChanges?.sleep || 'Not specified'}
+- Other: ${analysisResult.treatmentPlan?.lifestyleChanges?.other || 'Not specified'}
 
 Preventive Measures:
-${analysisResult.treatmentPlan.preventiveMeasures.map((measure, index) => `${index + 1}. ${measure}`).join('\n')}
+${(analysisResult.treatmentPlan?.preventiveMeasures || []).map((measure, index) => `${index + 1}. ${measure}`).join('\n')}
 
 🧭 NEXT STEPS / FOLLOW-UP
 ========================
 
 Additional Tests Required:
-${analysisResult.nextSteps.additionalTestsRequired.length > 0 
-  ? analysisResult.nextSteps.additionalTestsRequired.map((test, index) => `
+${(analysisResult.nextSteps?.additionalTestsRequired || []).length > 0 
+  ? (analysisResult.nextSteps?.additionalTestsRequired || []).map((test, index) => `
 ${index + 1}. ${test.testName}
    Reason: ${test.reason}
    Urgency: ${test.urgency}
@@ -326,13 +326,13 @@ ${index + 1}. ${test.testName}
   : 'No additional tests mentioned.'}
 
 Specialist Referral:
-${analysisResult.nextSteps.specialistReferral.required 
+${analysisResult.nextSteps?.specialistReferral?.required 
   ? `Required: ${analysisResult.nextSteps.specialistReferral.specialistType}
   Reason: ${analysisResult.nextSteps.specialistReferral.reason}`
   : 'No specialist referral required at this time.'}
 
 Follow-up Appointments:
-${analysisResult.nextSteps.followUpAppointments.map((appointment, index) => `
+${(analysisResult.nextSteps?.followUpAppointments || []).map((appointment, index) => `
 ${index + 1}. Timeframe: ${appointment.timeframe}
    Purpose: ${appointment.purpose}
 `).join('\n')}
@@ -340,16 +340,16 @@ ${index + 1}. Timeframe: ${appointment.timeframe}
 📁 DOCUMENTATION PROVIDED
 ========================
 
-Report Type: ${analysisResult.documentationProvided.reportType}
+Report Type: ${analysisResult.documentationProvided?.reportType || 'Not specified'}
 
 Key Documents:
-${analysisResult.documentationProvided.keyDocuments.map((doc, index) => `${index + 1}. ${doc}`).join('\n')}
+${(analysisResult.documentationProvided?.keyDocuments || []).map((doc, index) => `${index + 1}. ${doc}`).join('\n')}
 
-Additional Notes: ${analysisResult.documentationProvided.additionalNotes}
+Additional Notes: ${analysisResult.documentationProvided?.additionalNotes || 'None'}
 
 ⚠️ DISCLAIMER
 =============
-${analysisResult.disclaimer}
+${analysisResult.disclaimer || 'This analysis is AI-generated and should be reviewed by a qualified healthcare professional'}
 
 This comprehensive analysis was generated on ${new Date().toLocaleString()}.
     `;
@@ -515,10 +515,10 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                     <div className="grid gap-4">
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-medium text-blue-800 mb-2">Diagnosis</h4>
-                        <p className="text-blue-700">{analysisResult.summaryOfFindings.diagnosis}</p>
+                        <p className="text-blue-700">{analysisResult.summaryOfFindings?.diagnosis || 'No diagnosis provided'}</p>
                       </div>
                       
-                      {analysisResult.summaryOfFindings.severityOrStage && (
+                      {analysisResult.summaryOfFindings?.severityOrStage && (
                         <div className="bg-orange-50 p-4 rounded-lg">
                           <h4 className="font-medium text-orange-800 mb-2">Severity/Stage</h4>
                           <p className="text-orange-700">{analysisResult.summaryOfFindings.severityOrStage}</p>
@@ -528,7 +528,7 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <h4 className="font-medium text-gray-800 mb-2">Normal/Abnormal Values</h4>
                         <div className="space-y-2">
-                          {analysisResult.summaryOfFindings.normalAbnormalValues.map((value, index) => (
+                          {(analysisResult.summaryOfFindings?.normalAbnormalValues || []).map((value, index) => (
                             <div key={index} className="flex items-start gap-2">
                               <span className="bg-gray-200 text-gray-800 text-xs font-medium px-2 py-1 rounded min-w-[24px] text-center">
                                 {index + 1}
@@ -558,13 +558,13 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                   <AccordionContent className="space-y-4 pt-4">
                     <div className="bg-green-50 p-4 rounded-lg">
                       <h4 className="font-medium text-green-800 mb-2">Overall Interpretation</h4>
-                      <p className="text-green-700">{analysisResult.interpretationOfResults.overallInterpretation}</p>
+                      <p className="text-green-700">{analysisResult.interpretationOfResults?.overallInterpretation || 'No overall interpretation available'}</p>
                     </div>
                     
-                    {analysisResult.interpretationOfResults.significantResults.length > 0 && (
+                    {(analysisResult.interpretationOfResults?.significantResults || []).length > 0 && (
                       <div className="space-y-3">
                         <h4 className="font-medium text-gray-800">Significant Results</h4>
-                        {analysisResult.interpretationOfResults.significantResults.map((result, index) => (
+                        {(analysisResult.interpretationOfResults?.significantResults || []).map((result, index) => (
                           <Card key={index} className="border-l-4 border-l-green-500">
                             <CardContent className="p-4">
                               <h5 className="font-medium text-gray-900 mb-2">{result.parameter}</h5>
@@ -611,11 +611,11 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                   </AccordionTrigger>
                   <AccordionContent className="space-y-4 pt-4">
                     {/* Medications */}
-                    {analysisResult.treatmentPlan.medicationsPrescribed.length > 0 && (
+                    {(analysisResult.treatmentPlan?.medicationsPrescribed || []).length > 0 && (
                       <div className="bg-purple-50 p-4 rounded-lg">
                         <h4 className="font-medium text-purple-800 mb-3">Medications Prescribed</h4>
                         <div className="space-y-3">
-                          {analysisResult.treatmentPlan.medicationsPrescribed.map((med, index) => (
+                          {(analysisResult.treatmentPlan?.medicationsPrescribed || []).map((med, index) => (
                             <div key={index} className="bg-white p-3 rounded border">
                               <h5 className="font-medium text-gray-900">{med.name}</h5>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-700 mt-2">
@@ -630,11 +630,11 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                     )}
 
                     {/* Therapies */}
-                    {analysisResult.treatmentPlan.therapiesRecommended.length > 0 && (
+                    {(analysisResult.treatmentPlan?.therapiesRecommended || []).length > 0 && (
                       <div className="bg-indigo-50 p-4 rounded-lg">
                         <h4 className="font-medium text-indigo-800 mb-2">Therapies Recommended</h4>
                         <div className="space-y-2">
-                          {analysisResult.treatmentPlan.therapiesRecommended.map((therapy, index) => (
+                          {(analysisResult.treatmentPlan?.therapiesRecommended || []).map((therapy, index) => (
                             <div key={index} className="flex items-start gap-2">
                               <span className="bg-indigo-200 text-indigo-800 text-xs font-medium px-2 py-1 rounded min-w-[24px] text-center">
                                 {index + 1}
@@ -647,34 +647,36 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                     )}
 
                     {/* Lifestyle Changes */}
-                    <div className="bg-teal-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-teal-800 mb-3">Lifestyle Changes</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h5 className="font-medium text-teal-700 mb-1">Diet</h5>
-                          <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.diet}</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-teal-700 mb-1">Exercise</h5>
-                          <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.exercise}</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-teal-700 mb-1">Sleep</h5>
-                          <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.sleep}</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-teal-700 mb-1">Other</h5>
-                          <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.other}</p>
+                    {analysisResult.treatmentPlan?.lifestyleChanges && (
+                      <div className="bg-teal-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-teal-800 mb-3">Lifestyle Changes</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h5 className="font-medium text-teal-700 mb-1">Diet</h5>
+                            <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.diet || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-teal-700 mb-1">Exercise</h5>
+                            <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.exercise || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-teal-700 mb-1">Sleep</h5>
+                            <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.sleep || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-teal-700 mb-1">Other</h5>
+                            <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.other || 'Not specified'}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Preventive Measures */}
-                    {analysisResult.treatmentPlan.preventiveMeasures.length > 0 && (
+                    {(analysisResult.treatmentPlan?.preventiveMeasures || []).length > 0 && (
                       <div className="bg-cyan-50 p-4 rounded-lg">
                         <h4 className="font-medium text-cyan-800 mb-2">Preventive Measures</h4>
                         <div className="space-y-2">
-                          {analysisResult.treatmentPlan.preventiveMeasures.map((measure, index) => (
+                          {(analysisResult.treatmentPlan?.preventiveMeasures || []).map((measure, index) => (
                             <div key={index} className="flex items-start gap-2">
                               <span className="bg-cyan-200 text-cyan-800 text-xs font-medium px-2 py-1 rounded min-w-[24px] text-center">
                                 {index + 1}
@@ -703,11 +705,11 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                   </AccordionTrigger>
                   <AccordionContent className="space-y-4 pt-4">
                     {/* Additional Tests */}
-                    {analysisResult.nextSteps.additionalTestsRequired.length > 0 && (
+                    {(analysisResult.nextSteps?.additionalTestsRequired || []).length > 0 && (
                       <div className="bg-red-50 p-4 rounded-lg">
                         <h4 className="font-medium text-red-800 mb-3">Additional Tests Required</h4>
                         <div className="space-y-3">
-                          {analysisResult.nextSteps.additionalTestsRequired.map((test, index) => (
+                          {(analysisResult.nextSteps?.additionalTestsRequired || []).map((test, index) => (
                             <div key={index} className="bg-white p-3 rounded border">
                               <h5 className="font-medium text-gray-900">{test.testName}</h5>
                               <div className="text-sm text-gray-700 mt-2 space-y-1">
@@ -721,22 +723,22 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                     )}
 
                     {/* Specialist Referral */}
-                    {analysisResult.nextSteps.specialistReferral.required && (
+                    {analysisResult.nextSteps?.specialistReferral?.required && (
                       <div className="bg-yellow-50 p-4 rounded-lg">
                         <h4 className="font-medium text-yellow-800 mb-2">Specialist Referral Required</h4>
                         <div className="text-sm text-yellow-700 space-y-1">
-                          <div><span className="font-medium">Specialist Type:</span> {analysisResult.nextSteps.specialistReferral.specialistType}</div>
-                          <div><span className="font-medium">Reason:</span> {analysisResult.nextSteps.specialistReferral.reason}</div>
+                          <div><span className="font-medium">Specialist Type:</span> {analysisResult.nextSteps.specialistReferral.specialistType || 'Not specified'}</div>
+                          <div><span className="font-medium">Reason:</span> {analysisResult.nextSteps.specialistReferral.reason || 'Not specified'}</div>
                         </div>
                       </div>
                     )}
 
                     {/* Follow-up Appointments */}
-                    {analysisResult.nextSteps.followUpAppointments.length > 0 && (
+                    {(analysisResult.nextSteps?.followUpAppointments || []).length > 0 && (
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-medium text-blue-800 mb-3">Follow-up Appointments</h4>
                         <div className="space-y-2">
-                          {analysisResult.nextSteps.followUpAppointments.map((appointment, index) => (
+                          {(analysisResult.nextSteps?.followUpAppointments || []).map((appointment, index) => (
                             <div key={index} className="bg-white p-3 rounded border">
                               <div className="text-sm text-gray-700 space-y-1">
                                 <div><span className="font-medium">Timeframe:</span> {appointment.timeframe}</div>
@@ -767,14 +769,14 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                     <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                       <div>
                         <h4 className="font-medium text-gray-800 mb-2">Report Type</h4>
-                        <p className="text-gray-700">{analysisResult.documentationProvided.reportType}</p>
+                        <p className="text-gray-700">{analysisResult.documentationProvided?.reportType || 'Not specified'}</p>
                       </div>
                       
-                      {analysisResult.documentationProvided.keyDocuments.length > 0 && (
+                      {(analysisResult.documentationProvided?.keyDocuments || []).length > 0 && (
                         <div>
                           <h4 className="font-medium text-gray-800 mb-2">Key Documents</h4>
                           <div className="space-y-1">
-                            {analysisResult.documentationProvided.keyDocuments.map((doc, index) => (
+                            {(analysisResult.documentationProvided?.keyDocuments || []).map((doc, index) => (
                               <div key={index} className="flex items-start gap-2">
                                 <span className="bg-gray-200 text-gray-800 text-xs font-medium px-2 py-1 rounded min-w-[24px] text-center">
                                   {index + 1}
@@ -788,7 +790,7 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                       
                       <div>
                         <h4 className="font-medium text-gray-800 mb-2">Additional Notes</h4>
-                        <p className="text-gray-700">{analysisResult.documentationProvided.additionalNotes}</p>
+                        <p className="text-gray-700">{analysisResult.documentationProvided?.additionalNotes || 'None'}</p>
                       </div>
                     </div>
                   </AccordionContent>
@@ -805,7 +807,7 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-amber-700 text-sm">{analysisResult.disclaimer}</p>
+                <p className="text-amber-700 text-sm">{analysisResult.disclaimer || 'This analysis is AI-generated and should be reviewed by a qualified healthcare professional'}</p>
               </CardContent>
             </Card>
           </>
