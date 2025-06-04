@@ -100,67 +100,68 @@ const MainLayout = () => {
   return (
     <div className="min-h-screen flex flex-col gradient-bg">
       {/* Top Navigation Bar */}
-      <header className="glass-effect shadow-soft p-4 flex justify-between items-center border-b border-sage-100">
-        <Link to="/dashboard" className="flex items-center space-x-3 group">
-          <div className="p-2 bg-sage-500 rounded-xl group-hover:bg-sage-600 transition-colors duration-200">
-            <Heart className="text-white h-6 w-6" />
+      <header className="glass-effect shadow-2xl p-6 flex justify-between items-center border-b border-white/20 relative z-50">
+        <Link to="/dashboard" className="flex items-center space-x-4 group">
+          <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl group-hover:from-blue-700 group-hover:to-indigo-700 transition-all duration-300 shadow-xl group-hover:shadow-2xl transform group-hover:scale-110">
+            <Heart className="text-white h-8 w-8" />
           </div>
-          <span className="font-bold text-2xl bg-gradient-to-r from-sage-600 to-sage-700 bg-clip-text text-transparent">
+          <span className="font-black text-3xl bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
             HealthMatch
           </span>
         </Link>
         
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center space-x-4">
+        <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center space-x-6">
             {user && (
-              <div className="mr-4 text-sm text-slate-custom font-medium">
-                Hi, {user.user_metadata.name || user.email}
+              <div className="mr-6 text-lg text-slate-700 font-semibold px-6 py-3 bg-white/60 rounded-2xl backdrop-blur-sm border border-white/40 shadow-lg">
+                Welcome, {user.user_metadata.name || user.email?.split('@')[0]}
               </div>
             )}
             <Button 
-              variant="ghost" 
-              className="text-slate-custom hover:bg-sage-50 hover:text-sage-700 rounded-xl"
+              variant="secondary" 
+              className="text-white hover:bg-slate-800 rounded-2xl px-6 py-3 font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
               onClick={handleLogout}
             >
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOut className="mr-2 h-5 w-5" />
               Logout
             </Button>
           </div>
           
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" className="rounded-xl hover:bg-sage-50">
-                {isMobileMenuOpen ? <X /> : <Menu />}
+              <Button variant="ghost" size="icon" className="rounded-2xl hover:bg-white/20 p-3">
+                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 bg-white/95 backdrop-blur-md">
-              <div className="py-6 flex flex-col h-full">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="p-2 bg-sage-500 rounded-xl">
-                    <Heart className="text-white h-6 w-6" />
+            <SheetContent side="left" className="w-80 bg-white/95 backdrop-blur-xl border-r border-white/30">
+              <div className="py-8 flex flex-col h-full">
+                <div className="flex items-center gap-4 mb-10">
+                  <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl">
+                    <Heart className="text-white h-8 w-8" />
                   </div>
-                  <span className="font-bold text-xl bg-gradient-to-r from-sage-600 to-sage-700 bg-clip-text text-transparent">
+                  <span className="font-black text-2xl bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
                     HealthMatch
                   </span>
                 </div>
                 
                 {user && (
-                  <div className="px-4 py-3 mb-4 text-sm text-slate-custom bg-sage-50 rounded-xl border-l-4 border-sage-500">
-                    Signed in as: {user.user_metadata.name || user.email}
+                  <div className="px-6 py-4 mb-6 text-sm text-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-l-4 border-blue-500 shadow-lg">
+                    <div className="font-semibold">Signed in as:</div>
+                    <div className="font-medium">{user.user_metadata.name || user.email}</div>
                   </div>
                 )}
                 
-                <nav className="flex flex-col gap-2">
+                <nav className="flex flex-col gap-3">
                   {navigationItems.map((item) => (
                     <Link 
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                      className={`urban-nav-link ${
                         isActive(item.path) 
-                          ? "bg-sage-500 text-white shadow-medium" 
+                          ? "active" 
                           : item.name === "Doctor Application Pending" 
                             ? "opacity-60 cursor-not-allowed text-slate-400"
-                            : "hover:bg-sage-50 text-slate-custom hover:text-sage-700"
+                            : "text-slate-700 hover:text-blue-700"
                       }`}
                       onClick={e => {
                         if (item.name === "Doctor Application Pending") {
@@ -168,18 +169,18 @@ const MainLayout = () => {
                         }
                       }}
                     >
-                      <item.icon className="h-5 w-5" />
-                      {item.name}
+                      <item.icon className="h-6 w-6" />
+                      <span className="font-semibold">{item.name}</span>
                     </Link>
                   ))}
                 </nav>
                 
                 <Button 
-                  variant="ghost" 
-                  className="mt-auto text-slate-custom hover:bg-coral-50 hover:text-coral-700 rounded-xl"
+                  variant="secondary" 
+                  className="mt-auto text-white hover:bg-slate-800 rounded-2xl font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                   onClick={handleLogout}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-2 h-5 w-5" />
                   Logout
                 </Button>
               </div>
@@ -191,18 +192,18 @@ const MainLayout = () => {
       {/* Main Content with Sidebar (on larger screens) */}
       <div className="flex flex-1">
         {/* Sidebar for desktop */}
-        <aside className="hidden md:block w-72 glass-effect border-r border-sage-100 p-6">
-          <nav className="space-y-2">
+        <aside className="hidden md:block w-80 glass-effect border-r border-white/30 p-8">
+          <nav className="space-y-3">
             {navigationItems.map((item) => (
               <Link 
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                className={`urban-nav-link ${
                   isActive(item.path) 
-                    ? "bg-sage-500 text-white shadow-medium transform scale-105" 
+                    ? "active transform scale-105" 
                     : item.name === "Doctor Application Pending" 
                       ? "opacity-60 cursor-not-allowed text-slate-400"
-                      : "hover:bg-sage-50 text-slate-custom hover:text-sage-700 hover:translate-x-1"
+                      : "text-slate-700 hover:text-blue-700"
                 }`}
                 onClick={e => {
                   if (item.name === "Doctor Application Pending") {
@@ -210,16 +211,18 @@ const MainLayout = () => {
                   }
                 }}
               >
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.name}</span>
+                <item.icon className="h-6 w-6" />
+                <span className="font-semibold text-lg">{item.name}</span>
               </Link>
             ))}
           </nav>
         </aside>
         
         {/* Main content */}
-        <main className="flex-1 p-6 overflow-auto">
-          <Outlet />
+        <main className="flex-1 p-8 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
