@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -69,7 +68,7 @@ const Homepage = () => {
                 Contact
               </a>
               <Link 
-                to="/" 
+                to="/login" 
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
                 Sign In
@@ -97,7 +96,7 @@ const Homepage = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/">
+                <Link to="/login">
                   <Button 
                     size="lg" 
                     className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
@@ -219,7 +218,7 @@ const Homepage = () => {
           <p className="text-xl text-gray-600 mb-8">
             Join thousands of users who trust HealthMatch for their healthcare needs.
           </p>
-          <Link to="/">
+          <Link to="/login">
             <Button 
               size="lg" 
               className="bg-blue-500 hover:bg-blue-600 text-white px-12 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
