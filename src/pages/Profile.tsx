@@ -11,10 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile, Profile as ProfileType } from "@/services/userDataService";
 import { getWorldCities } from "@/utils/geolocation";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Profile = () => {
   const { toast } = useToast();
   const { profile, loading, error, updateProfile } = useUserProfile();
+  const isMobile = useIsMobile();
   const [formData, setFormData] = useState<Partial<ProfileType>>({
     first_name: "",
     last_name: "",
@@ -112,59 +114,77 @@ const Profile = () => {
   }
   
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+    <div className="container mx-auto px-3 py-4 md:px-6 md:py-6">
+      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">My Profile</h1>
       
       <Tabs defaultValue="personal">
-        <TabsList className="mb-6">
-          <TabsTrigger value="personal">Personal Information</TabsTrigger>
-          <TabsTrigger value="medical">Medical History</TabsTrigger>
-          <TabsTrigger value="emergency">Emergency Contacts</TabsTrigger>
+        <TabsList className={`${isMobile ? 'grid grid-cols-1 h-auto space-y-1 bg-white/60 p-1' : 'grid grid-cols-3'} mb-4 md:mb-6`}>
+          <TabsTrigger 
+            value="personal"
+            className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
+          >
+            Personal Information
+          </TabsTrigger>
+          <TabsTrigger 
+            value="medical"
+            className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
+          >
+            Medical History
+          </TabsTrigger>
+          <TabsTrigger 
+            value="emergency"
+            className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
+          >
+            Emergency Contacts
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="personal">
-          <Card>
+          <Card className="modern-card">
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
+              <CardTitle className="text-lg md:text-xl">Personal Information</CardTitle>
+              <CardDescription className="text-sm md:text-base">Update your personal details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="first_name">First Name</Label>
+                  <Label htmlFor="first_name" className="text-sm md:text-base">First Name</Label>
                   <Input
                     id="first_name"
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleChange}
+                    className="text-sm md:text-base"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="last_name">Last Name</Label>
+                  <Label htmlFor="last_name" className="text-sm md:text-base">Last Name</Label>
                   <Input
                     id="last_name"
                     name="last_name"
                     value={formData.last_name}
                     onChange={handleChange}
+                    className="text-sm md:text-base"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="date_of_birth">Date of Birth</Label>
+                  <Label htmlFor="date_of_birth" className="text-sm md:text-base">Date of Birth</Label>
                   <Input
                     id="date_of_birth"
                     name="date_of_birth"
                     type="date"
                     value={formData.date_of_birth}
                     onChange={handleChange}
+                    className="text-sm md:text-base"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
+                  <Label htmlFor="gender" className="text-sm md:text-base">Gender</Label>
                   <Select 
                     value={formData.gender} 
                     onValueChange={value => setFormData(prev => ({ ...prev, gender: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm md:text-base">
                       <SelectValue placeholder="Select your gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -176,30 +196,32 @@ const Profile = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone" className="text-sm md:text-base">Phone Number</Label>
                   <Input
                     id="phone"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    className="text-sm md:text-base"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address" className="text-sm md:text-base">Address</Label>
                   <Input
                     id="address"
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
+                    className="text-sm md:text-base"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="city" className="text-sm md:text-base">City</Label>
                   <Select 
                     value={formData.city} 
                     onValueChange={value => setFormData(prev => ({ ...prev, city: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm md:text-base">
                       <SelectValue placeholder="Select your city" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px]">
@@ -213,31 +235,35 @@ const Profile = () => {
               
               <Separator />
               
-              <div className="space-y-2">
-                <Label htmlFor="password">Change Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Enter new password"
-                  value={passwordForm.password}
-                  onChange={handlePasswordChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={passwordForm.confirmPassword}
-                  onChange={handlePasswordChange}
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm md:text-base">Change Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter new password"
+                    value={passwordForm.password}
+                    onChange={handlePasswordChange}
+                    className="text-sm md:text-base"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm md:text-base">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={passwordForm.confirmPassword}
+                    onChange={handlePasswordChange}
+                    className="text-sm md:text-base"
+                  />
+                </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveProfile} disabled={isSaving}>
+              <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full md:w-auto text-sm md:text-base">
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </CardFooter>
@@ -245,14 +271,14 @@ const Profile = () => {
         </TabsContent>
         
         <TabsContent value="medical">
-          <Card>
+          <Card className="modern-card">
             <CardHeader>
-              <CardTitle>Medical History</CardTitle>
-              <CardDescription>Your health information helps doctors provide better care</CardDescription>
+              <CardTitle className="text-lg md:text-xl">Medical History</CardTitle>
+              <CardDescription className="text-sm md:text-base">Your health information helps doctors provide better care</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="medical_history">Medical History</Label>
+                <Label htmlFor="medical_history" className="text-sm md:text-base">Medical History</Label>
                 <Textarea
                   id="medical_history"
                   name="medical_history"
@@ -260,11 +286,12 @@ const Profile = () => {
                   value={formData.medical_history}
                   onChange={handleChange}
                   rows={4}
+                  className="text-sm md:text-base"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="allergies">Allergies</Label>
+                <Label htmlFor="allergies" className="text-sm md:text-base">Allergies</Label>
                 <Textarea
                   id="allergies"
                   name="allergies"
@@ -272,11 +299,12 @@ const Profile = () => {
                   value={formData.allergies}
                   onChange={handleChange}
                   rows={3}
+                  className="text-sm md:text-base"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="medications">Current Medications</Label>
+                <Label htmlFor="medications" className="text-sm md:text-base">Current Medications</Label>
                 <Textarea
                   id="medications"
                   name="medications"
@@ -284,18 +312,19 @@ const Profile = () => {
                   value={formData.medications}
                   onChange={handleChange}
                   rows={3}
+                  className="text-sm md:text-base"
                 />
               </div>
               
               <div className="bg-medical-blue/10 p-4 rounded-md">
-                <p className="text-sm text-medical-neutral-dark">
+                <p className="text-xs md:text-sm text-medical-neutral-dark">
                   Your medical information is protected and will only be shared with healthcare providers
                   you choose to consult with. You can update this information at any time.
                 </p>
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveProfile} disabled={isSaving}>
+              <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full md:w-auto text-sm md:text-base">
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </CardFooter>
@@ -303,50 +332,53 @@ const Profile = () => {
         </TabsContent>
         
         <TabsContent value="emergency">
-          <Card>
+          <Card className="modern-card">
             <CardHeader>
-              <CardTitle>Emergency Contacts</CardTitle>
-              <CardDescription>People to contact in case of emergency</CardDescription>
+              <CardTitle className="text-lg md:text-xl">Emergency Contacts</CardTitle>
+              <CardDescription className="text-sm md:text-base">People to contact in case of emergency</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="emergency_contact_name">Contact Name</Label>
+                  <Label htmlFor="emergency_contact_name" className="text-sm md:text-base">Contact Name</Label>
                   <Input
                     id="emergency_contact_name"
                     name="emergency_contact_name"
                     value={formData.emergency_contact_name}
                     onChange={handleChange}
+                    className="text-sm md:text-base"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                  <Label htmlFor="emergency_contact_relationship" className="text-sm md:text-base">Relationship</Label>
                   <Input
                     id="emergency_contact_relationship"
                     name="emergency_contact_relationship"
                     value={formData.emergency_contact_relationship}
                     onChange={handleChange}
+                    className="text-sm md:text-base"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="emergency_contact_phone">Phone Number</Label>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="emergency_contact_phone" className="text-sm md:text-base">Phone Number</Label>
                   <Input
                     id="emergency_contact_phone"
                     name="emergency_contact_phone"
                     value={formData.emergency_contact_phone}
                     onChange={handleChange}
+                    className="text-sm md:text-base"
                   />
                 </div>
               </div>
               
               <div className="mt-4 pt-4 border-t">
-                <Button variant="outline" className="w-full" disabled>
+                <Button variant="outline" className="w-full text-sm md:text-base" disabled>
                   + Add Another Emergency Contact
                 </Button>
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveProfile} disabled={isSaving}>
+              <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full md:w-auto text-sm md:text-base">
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </CardFooter>

@@ -10,11 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { checkDoctorAccess } from '@/services/doctorService';
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const DoctorDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("calendar");
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -84,25 +86,40 @@ const DoctorDashboard = () => {
   }
   
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex flex-col space-y-6">
+    <div className="container mx-auto px-3 py-4 md:px-6 md:py-6">
+      <div className="flex flex-col space-y-4 md:space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-blue-600">Doctor Dashboard</h1>
-          <p className="text-slate-500">Manage your appointments, schedule, and patient health checks</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-blue-600">Doctor Dashboard</h1>
+          <p className="text-slate-500 text-sm md:text-base">Manage your appointments, schedule, and patient health checks</p>
         </div>
 
         <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-            <TabsTrigger value="slots">Appointment Slots</TabsTrigger>
-            <TabsTrigger value="notifications">Patient Health Checks</TabsTrigger>
+          <TabsList className={`${isMobile ? 'grid grid-cols-1 h-auto space-y-1 bg-white/60 p-1' : 'grid grid-cols-3'} w-full max-w-2xl`}>
+            <TabsTrigger 
+              value="calendar"
+              className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
+            >
+              Calendar View
+            </TabsTrigger>
+            <TabsTrigger 
+              value="slots"
+              className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
+            >
+              Appointment Slots
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notifications"
+              className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
+            >
+              Patient Health Checks
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="calendar">
-            <Card>
+            <Card className="modern-card">
               <CardHeader>
-                <CardTitle>Appointment Calendar</CardTitle>
-                <CardDescription>View and manage your scheduled appointments</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Appointment Calendar</CardTitle>
+                <CardDescription className="text-sm md:text-base">View and manage your scheduled appointments</CardDescription>
               </CardHeader>
               <CardContent>
                 <AppointmentCalendar />
@@ -111,10 +128,10 @@ const DoctorDashboard = () => {
           </TabsContent>
           
           <TabsContent value="slots">
-            <Card>
+            <Card className="modern-card">
               <CardHeader>
-                <CardTitle>Appointment Slots</CardTitle>
-                <CardDescription>Create and manage your available appointment slots</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Appointment Slots</CardTitle>
+                <CardDescription className="text-sm md:text-base">Create and manage your available appointment slots</CardDescription>
               </CardHeader>
               <CardContent>
                 <AppointmentSlots />
@@ -123,10 +140,10 @@ const DoctorDashboard = () => {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <Card>
+            <Card className="modern-card">
               <CardHeader>
-                <CardTitle>Patient Health Check Notifications</CardTitle>
-                <CardDescription>Review health check data shared by your patients for upcoming appointments</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Patient Health Check Notifications</CardTitle>
+                <CardDescription className="text-sm md:text-base">Review health check data shared by your patients for upcoming appointments</CardDescription>
               </CardHeader>
               <CardContent>
                 <DoctorNotifications />
