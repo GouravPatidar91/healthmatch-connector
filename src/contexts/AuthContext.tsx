@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -35,11 +36,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             title: "Signed in successfully",
             description: "Welcome to HealthMatch!"
           });
+          // Navigate to dashboard after successful sign in
+          navigate('/dashboard');
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: "Signed out",
             description: "You have been signed out successfully."
           });
+          // Navigate to homepage after sign out
+          navigate('/');
         }
       }
     );
@@ -52,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, [toast]);
+  }, [toast, navigate]);
 
   const signUp = async (email: string, password: string, userData?: { name: string }) => {
     const { error } = await supabase.auth.signUp({
