@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Clock, MapPin, User, FileText } from "lucide-react";
 import { format, parseISO, isBefore } from 'date-fns';
 import { useAppointmentBooking } from '@/services/appointmentService';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PatientAppointment {
   id: string;
@@ -24,7 +25,7 @@ interface PatientAppointment {
   date: string;
   time: string;
   reason?: string;
-  status: string; // Changed from union type to string to match database
+  status: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -34,6 +35,7 @@ const PatientAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<PatientAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const { getPatientAppointments } = useAppointmentBooking();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -82,73 +84,115 @@ const PatientAppointments: React.FC = () => {
     );
   }
 
+  const AppointmentMobileCard = ({ appointment }: { appointment: PatientAppointment }) => (
+    <div className="bg-white/80 backdrop-blur-sm border border-blue-100/50 rounded-xl p-4 shadow-sm space-y-3">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2 flex-1">
+          <User className="h-4 w-4 text-blue-600" />
+          <span className="font-medium text-gray-900">{appointment.doctor_name}</span>
+        </div>
+        <Badge className={getStatusColor(appointment.status)}>
+          {appointment.status}
+        </Badge>
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Calendar className="h-4 w-4 text-blue-500" />
+          {format(parseISO(appointment.date), 'MMM d, yyyy')}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Clock className="h-4 w-4 text-blue-500" />
+          {appointment.time}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <FileText className="h-4 w-4 text-blue-500" />
+          {appointment.reason || 'General consultation'}
+        </div>
+      </div>
+    </div>
+  );
+
   const AppointmentTable = ({ appointments }: { appointments: PatientAppointment[] }) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Doctor</TableHead>
-          <TableHead>Date & Time</TableHead>
-          <TableHead>Reason</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {appointments.map((appointment) => (
-          <TableRow key={appointment.id}>
-            <TableCell>
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {appointment.doctor_name}
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  {format(parseISO(appointment.date), 'MMM d, yyyy')}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  {appointment.time}
-                </div>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-1">
-                <FileText className="h-4 w-4" />
-                {appointment.reason || 'General consultation'}
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge className={getStatusColor(appointment.status)}>
-                {appointment.status}
-              </Badge>
-            </TableCell>
+    <div className="hidden md:block">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Doctor</TableHead>
+            <TableHead>Date & Time</TableHead>
+            <TableHead>Reason</TableHead>
+            <TableHead>Status</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {appointments.map((appointment) => (
+            <TableRow key={appointment.id}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {appointment.doctor_name}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {format(parseISO(appointment.date), 'MMM d, yyyy')}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {appointment.time}
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <FileText className="h-4 w-4" />
+                  {appointment.reason || 'General consultation'}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={getStatusColor(appointment.status)}>
+                  {appointment.status}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  const AppointmentMobileList = ({ appointments }: { appointments: PatientAppointment[] }) => (
+    <div className="md:hidden space-y-3">
+      {appointments.map((appointment) => (
+        <AppointmentMobileCard key={appointment.id} appointment={appointment} />
+      ))}
+    </div>
   );
 
   return (
-    <Card>
+    <Card className="modern-card">
       <CardHeader>
-        <CardTitle>My Appointments</CardTitle>
+        <CardTitle className="text-gray-900">My Appointments</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="upcoming" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upcoming">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="upcoming" className="text-sm">
               Upcoming ({upcomingAppointments.length})
             </TabsTrigger>
-            <TabsTrigger value="past">
+            <TabsTrigger value="past" className="text-sm">
               Past ({pastAppointments.length})
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="upcoming" className="mt-6">
             {upcomingAppointments.length > 0 ? (
-              <AppointmentTable appointments={upcomingAppointments} />
+              <>
+                <AppointmentTable appointments={upcomingAppointments} />
+                <AppointmentMobileList appointments={upcomingAppointments} />
+              </>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -159,7 +203,10 @@ const PatientAppointments: React.FC = () => {
           
           <TabsContent value="past" className="mt-6">
             {pastAppointments.length > 0 ? (
-              <AppointmentTable appointments={pastAppointments} />
+              <>
+                <AppointmentTable appointments={pastAppointments} />
+                <AppointmentMobileList appointments={pastAppointments} />
+              </>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
