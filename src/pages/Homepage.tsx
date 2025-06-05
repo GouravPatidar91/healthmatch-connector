@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,49 +11,51 @@ import {
   Users, 
   Clock,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  Sparkles,
+  Star
 } from "lucide-react";
 
 const Homepage = () => {
   const features = [
     {
       icon: Heart,
-      title: "Health Monitoring",
-      description: "Track your vital signs and health metrics with our advanced monitoring system.",
+      title: "AI Health Analysis",
+      description: "Advanced symptom analysis powered by machine learning for accurate health insights.",
       color: "bg-blue-50 text-blue-600"
     },
     {
       icon: Calendar,
-      title: "Easy Appointments",
-      description: "Schedule appointments with healthcare professionals at your convenience.",
-      color: "bg-green-50 text-green-600"
+      title: "Smart Scheduling",
+      description: "Effortlessly book appointments with top healthcare professionals in your area.",
+      color: "bg-emerald-50 text-emerald-600"
     },
     {
       icon: FileText,
-      title: "Medical Records",
-      description: "Secure access to your complete medical history and test results.",
-      color: "bg-blue-50 text-blue-600"
+      title: "Digital Health Records",
+      description: "Secure, encrypted access to your complete medical history and test results.",
+      color: "bg-purple-50 text-purple-600"
     }
   ];
 
   const benefits = [
-    "24/7 Emergency Support",
+    "24/7 AI Health Assistant",
     "HIPAA Compliant Security",
-    "Expert Healthcare Team",
-    "Comprehensive Health Reports"
+    "Expert Healthcare Network",
+    "Comprehensive Analytics"
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b border-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      {/* Modern Floating Navigation */}
+      <nav className="bg-white/80 backdrop-blur-md shadow-sm border-b border-blue-100/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-20">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-500 rounded-xl">
+              <div className="p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
                 <Heart className="text-white h-6 w-6" />
               </div>
-              <span className="font-bold text-xl text-gray-800">
+              <span className="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                 HealthMatch
               </span>
             </div>
@@ -69,7 +72,7 @@ const Homepage = () => {
               </a>
               <Link 
                 to="/login" 
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg hover:shadow-xl"
               >
                 Sign In
               </Link>
@@ -78,104 +81,116 @@ const Homepage = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-green-50 py-20">
+      {/* Hero Section with Modern Design */}
+      <section className="py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 leading-tight">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-10">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <Sparkles className="h-8 w-8 text-blue-500" />
+                  <span className="text-blue-600 font-semibold text-lg">AI-Powered Healthcare</span>
+                </div>
+                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
                   Your Health,
-                  <span className="text-blue-500"> Our Priority</span>
+                  <span className="bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent"> Reimagined</span>
                 </h1>
-                <p className="text-xl text-gray-600 leading-relaxed">
-                  Experience personalized healthcare with our comprehensive platform. 
-                  Monitor your health, book appointments, and access medical records 
-                  all in one secure place.
+                <p className="text-xl text-gray-600 leading-relaxed max-w-xl">
+                  Experience next-generation healthcare with AI-powered symptom analysis, 
+                  smart appointment booking, and comprehensive health monitoring.
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-6">
                 <Link to="/login">
                   <Button 
-                    size="lg" 
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+                    size="xl" 
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-10 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
                   >
                     Get Started Today
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-3 h-6 w-6" />
                   </Button>
                 </Link>
                 <Button 
                   variant="outline" 
-                  size="lg"
-                  className="border-2 border-green-400 text-green-600 hover:bg-green-50 px-8 py-4 rounded-xl text-lg font-semibold"
+                  size="xl"
+                  className="border-2 border-blue-200 text-blue-600 hover:bg-blue-50 px-10 py-6 rounded-2xl text-lg font-semibold hover:border-blue-300 transition-all"
                 >
                   Learn More
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4">
+              <div className="grid grid-cols-2 gap-6 pt-8">
                 {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span className="text-gray-600 font-medium">{benefit}</span>
+                  <div key={index} className="flex items-center space-x-3">
+                    <CheckCircle className="h-6 w-6 text-emerald-500" />
+                    <span className="text-gray-700 font-medium">{benefit}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="relative">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 transform rotate-2">
-                <div className="bg-gradient-to-br from-blue-500 to-green-400 rounded-xl p-6 text-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Health Dashboard</h3>
-                    <Heart className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span>Heart Rate</span>
-                      <span className="font-bold">72 BPM</span>
+              <div className="relative z-10">
+                <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl p-8 border border-blue-100/50">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-8 text-white">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-semibold">Health Dashboard</h3>
+                      <div className="flex gap-1">
+                        <Star className="h-5 w-5 text-yellow-300 fill-current" />
+                        <Star className="h-5 w-5 text-yellow-300 fill-current" />
+                        <Star className="h-5 w-5 text-yellow-300 fill-current" />
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Blood Pressure</span>
-                      <span className="font-bold">120/80</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Next Appointment</span>
-                      <span className="font-bold">Today 2:00 PM</span>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center bg-white/10 rounded-xl p-4">
+                        <span>Heart Rate</span>
+                        <span className="font-bold text-emerald-300">72 BPM</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-white/10 rounded-xl p-4">
+                        <span>Blood Pressure</span>
+                        <span className="font-bold text-blue-200">120/80</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-white/10 rounded-xl p-4">
+                        <span>Next Appointment</span>
+                        <span className="font-bold text-purple-200">Today 2:00 PM</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+              {/* Floating decorative elements */}
+              <div className="absolute -top-8 -right-8 w-32 h-32 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-xl"></div>
+              <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-gradient-to-r from-emerald-400/20 to-blue-400/20 rounded-full blur-xl"></div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="services" className="py-20 bg-white">
+      <section id="services" className="py-24 bg-white/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-              Comprehensive Healthcare Services
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Intelligent Healthcare Solutions
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Everything you need to manage your health effectively, 
-              from monitoring to appointments and records.
+              Harness the power of AI and modern technology to transform 
+              your healthcare experience with personalized insights.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden group">
-                <CardContent className="p-8">
-                  <div className={`inline-flex p-4 rounded-2xl ${feature.color} mb-6 group-hover:scale-110 transition-transform`}>
-                    <feature.icon className="h-8 w-8" />
+              <Card key={index} className="bg-white/70 backdrop-blur-md border border-blue-100/50 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 group overflow-hidden">
+                <CardContent className="p-10">
+                  <div className={`inline-flex p-4 rounded-2xl ${feature.color} mb-8 group-hover:scale-110 transition-transform duration-300`}>
+                    <feature.icon className="h-10 w-10" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-600 leading-relaxed text-lg">
                     {feature.description}
                   </p>
                 </CardContent>
@@ -186,45 +201,46 @@ const Homepage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-500 to-green-400">
+      <section className="py-24 bg-gradient-to-r from-blue-500 to-blue-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center text-white">
-            <div className="space-y-2">
-              <div className="text-4xl font-bold">10K+</div>
-              <div className="text-xl opacity-90">Happy Patients</div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 text-center text-white">
+            <div className="space-y-4">
+              <div className="text-5xl font-bold">50K+</div>
+              <div className="text-xl text-blue-100">Happy Patients</div>
             </div>
-            <div className="space-y-2">
-              <div className="text-4xl font-bold">500+</div>
-              <div className="text-xl opacity-90">Healthcare Providers</div>
+            <div className="space-y-4">
+              <div className="text-5xl font-bold">1K+</div>
+              <div className="text-xl text-blue-100">Healthcare Providers</div>
             </div>
-            <div className="space-y-2">
-              <div className="text-4xl font-bold">24/7</div>
-              <div className="text-xl opacity-90">Emergency Support</div>
+            <div className="space-y-4">
+              <div className="text-5xl font-bold">24/7</div>
+              <div className="text-xl text-blue-100">AI Assistant</div>
             </div>
-            <div className="space-y-2">
-              <div className="text-4xl font-bold">99.9%</div>
-              <div className="text-xl opacity-90">Uptime Guarantee</div>
+            <div className="space-y-4">
+              <div className="text-5xl font-bold">99.9%</div>
+              <div className="text-xl text-blue-100">Uptime Guarantee</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
-            Ready to Take Control of Your Health?
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">
+            Ready to Transform Your Healthcare?
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join thousands of users who trust HealthMatch for their healthcare needs.
+          <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+            Join thousands of users who trust HealthMatch for intelligent, 
+            personalized healthcare management.
           </p>
           <Link to="/login">
             <Button 
-              size="lg" 
-              className="bg-blue-500 hover:bg-blue-600 text-white px-12 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+              size="xl" 
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-16 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
             >
               Start Your Journey
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <ArrowRight className="ml-3 h-6 w-6" />
             </Button>
           </Link>
         </div>

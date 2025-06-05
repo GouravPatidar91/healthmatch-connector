@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -98,15 +99,15 @@ const MainLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* Modern Header */}
-      <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="flex justify-between items-center px-6 py-4">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-blue-50/30">
+      {/* Modern Floating Header */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-blue-100/50 shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
           <Link to="/dashboard" className="flex items-center space-x-3 group">
-            <div className="p-2 bg-blue-600 rounded-lg group-hover:bg-blue-700 transition-colors">
+            <div className="p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl group-hover:from-blue-600 group-hover:to-blue-700 transition-all duration-200 shadow-lg">
               <Heart className="text-white h-6 w-6" />
             </div>
-            <span className="font-bold text-xl text-slate-900">
+            <span className="font-bold text-xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
               HealthMatch
             </span>
           </Link>
@@ -114,13 +115,13 @@ const MainLayout = () => {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center space-x-4">
               {user && (
-                <div className="text-sm text-slate-600 font-medium px-3 py-1 bg-slate-100 rounded-lg">
+                <div className="text-sm text-gray-600 font-medium px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-blue-100">
                   {user.user_metadata.name || user.email}
                 </div>
               )}
               <Button 
                 variant="ghost" 
-                className="text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-full px-4"
                 onClick={handleLogout}
               >
                 <LogOut className="mr-2 h-4 w-4" />
@@ -130,38 +131,38 @@ const MainLayout = () => {
             
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon" className="rounded-lg hover:bg-slate-100">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blue-50">
                   {isMobileMenuOpen ? <X /> : <Menu />}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 bg-white">
+              <SheetContent side="left" className="w-72 bg-white/95 backdrop-blur-md">
                 <div className="py-6 flex flex-col h-full">
                   <div className="flex items-center gap-3 mb-8">
-                    <div className="p-2 bg-blue-600 rounded-lg">
+                    <div className="p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
                       <Heart className="text-white h-6 w-6" />
                     </div>
-                    <span className="font-bold text-xl text-slate-900">
+                    <span className="font-bold text-xl text-gray-900">
                       HealthMatch
                     </span>
                   </div>
                   
                   {user && (
-                    <div className="px-4 py-3 mb-4 text-sm text-slate-600 bg-slate-50 rounded-lg">
+                    <div className="px-4 py-3 mb-6 text-sm text-gray-600 bg-blue-50/50 rounded-xl border border-blue-100">
                       {user.user_metadata.name || user.email}
                     </div>
                   )}
                   
-                  <nav className="flex flex-col gap-1">
+                  <nav className="flex flex-col gap-2">
                     {navigationItems.map((item) => (
                       <Link 
                         key={item.path}
                         to={item.path}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                           isActive(item.path) 
-                            ? "bg-blue-600 text-white" 
+                            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg" 
                             : item.name === "Doctor Application Pending" 
-                              ? "opacity-60 cursor-not-allowed text-slate-400"
-                              : "hover:bg-slate-100 text-slate-700"
+                              ? "opacity-60 cursor-not-allowed text-gray-400"
+                              : "hover:bg-blue-50 text-gray-700 hover:text-blue-600"
                         }`}
                         onClick={e => {
                           if (item.name === "Doctor Application Pending") {
@@ -177,7 +178,7 @@ const MainLayout = () => {
                   
                   <Button 
                     variant="ghost" 
-                    className="mt-auto text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg"
+                    className="mt-auto text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl"
                     onClick={handleLogout}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -190,39 +191,43 @@ const MainLayout = () => {
         </div>
       </header>
       
-      {/* Modern Sidebar */}
+      {/* Modern Layout with Floating Sidebar */}
       <div className="flex flex-1">
-        {/* Sidebar for desktop */}
-        <aside className="hidden md:block w-64 sidebar-modern">
-          <nav className="p-4 space-y-1">
-            {navigationItems.map((item) => (
-              <Link 
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive(item.path) 
-                    ? "bg-blue-600 text-white shadow-sm" 
-                    : item.name === "Doctor Application Pending" 
-                      ? "opacity-60 cursor-not-allowed text-slate-400"
-                      : "hover:bg-slate-100 text-slate-700"
-                }`}
-                onClick={e => {
-                  if (item.name === "Doctor Application Pending") {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.name}</span>
-              </Link>
-            ))}
-          </nav>
+        {/* Floating Sidebar for desktop */}
+        <aside className="hidden md:block w-72 p-4">
+          <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-blue-100/50 shadow-lg p-4 sticky top-24">
+            <nav className="space-y-2">
+              {navigationItems.map((item) => (
+                <Link 
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                    isActive(item.path) 
+                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg" 
+                      : item.name === "Doctor Application Pending" 
+                        ? "opacity-60 cursor-not-allowed text-gray-400"
+                        : "hover:bg-blue-50 text-gray-700 hover:text-blue-600"
+                  }`}
+                  onClick={e => {
+                    if (item.name === "Doctor Application Pending") {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
         </aside>
         
-        {/* Main content */}
+        {/* Main content with modern styling */}
         <main className="flex-1 flex flex-col">
           <div className="flex-1 p-6 overflow-auto">
-            <Outlet />
+            <div className="max-w-6xl mx-auto">
+              <Outlet />
+            </div>
           </div>
           <Footer />
         </main>
