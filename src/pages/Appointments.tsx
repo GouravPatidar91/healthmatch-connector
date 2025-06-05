@@ -167,9 +167,7 @@ const Appointments = () => {
                         Book Appointment
                       </Button>
 
-                      <div className="hidden md:block">
-                        <DoctorSlots doctor={doctor} />
-                      </div>
+                      <DoctorSlots doctor={doctor} />
                     </CardContent>
                   </Card>
                 ))}

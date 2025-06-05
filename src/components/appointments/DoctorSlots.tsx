@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DoctorSlotsProps {
   doctor: Doctor;
@@ -29,6 +30,7 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
   const [reason, setReason] = useState('');
   const [isBooking, setIsBooking] = useState(false);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleSlotSelect = (slot: any) => {
     setSelectedSlot(slot);
@@ -60,16 +62,16 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
 
   if (loading) {
     return (
-      <div className="mt-4 p-4 border border-sage-200 rounded-xl bg-sage-50">
-        <p className="text-sm text-slate-custom">Loading available slots...</p>
+      <div className="mt-3 md:mt-4 p-3 md:p-4 border border-sage-200 rounded-xl bg-sage-50">
+        <p className="text-xs md:text-sm text-slate-custom">Loading available slots...</p>
       </div>
     );
   }
 
   if (slots.length === 0) {
     return (
-      <div className="mt-4 p-4 border border-sage-200 rounded-xl bg-sage-50">
-        <p className="text-sm text-slate-custom">No available slots at the moment</p>
+      <div className="mt-3 md:mt-4 p-3 md:p-4 border border-sage-200 rounded-xl bg-sage-50">
+        <p className="text-xs md:text-sm text-slate-custom">No available slots at the moment</p>
       </div>
     );
   }
@@ -84,77 +86,86 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
   }, {} as Record<string, any[]>);
 
   return (
-    <div className="mt-4">
-      <h4 className="font-medium mb-3 flex items-center text-slate-custom">
-        <Calendar className="h-4 w-4 mr-2 text-sage-600" />
+    <div className="mt-3 md:mt-4">
+      <h4 className="font-medium mb-2 md:mb-3 flex items-center text-slate-custom text-sm md:text-base">
+        <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 text-sage-600" />
         Available Slots
       </h4>
       
-      <div className="space-y-3">
-        {Object.entries(slotsByDate).slice(0, 3).map(([date, dateSlots]) => (
-          <div key={date} className="border border-sage-200 rounded-xl p-3 bg-sage-50">
-            <p className="text-sm font-medium mb-2 text-slate-custom">
-              {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
+      <div className="space-y-2 md:space-y-3">
+        {Object.entries(slotsByDate).slice(0, isMobile ? 2 : 3).map(([date, dateSlots]) => (
+          <div key={date} className="border border-sage-200 rounded-lg md:rounded-xl p-2 md:p-3 bg-sage-50">
+            <p className="text-xs md:text-sm font-medium mb-1 md:mb-2 text-slate-custom">
+              {format(parseISO(date), isMobile ? 'MMM d, yyyy' : 'EEEE, MMMM d, yyyy')}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {(dateSlots as any[]).slice(0, 4).map((slot) => (
+            <div className="flex flex-wrap gap-1 md:gap-2">
+              {(dateSlots as any[]).slice(0, isMobile ? 3 : 4).map((slot) => (
                 <Button
                   key={slot.id}
                   variant="outline"
                   size="sm"
                   onClick={() => handleSlotSelect(slot)}
-                  className="text-xs border-sage-300 hover:bg-sage-100 hover:border-sage-400"
+                  className="text-xs border-sage-300 hover:bg-sage-100 hover:border-sage-400 px-2 py-1 h-auto"
                 >
-                  <Clock className="h-3 w-3 mr-1" />
+                  <Clock className="h-2 w-2 md:h-3 md:w-3 mr-1" />
                   {slot.start_time}
                 </Button>
               ))}
-              {(dateSlots as any[]).length > 4 && (
-                <Badge variant="secondary" className="text-xs bg-coral-100 text-coral-700">
-                  +{(dateSlots as any[]).length - 4} more
+              {(dateSlots as any[]).length > (isMobile ? 3 : 4) && (
+                <Badge variant="secondary" className="text-xs bg-coral-100 text-coral-700 px-1 py-0.5 h-auto">
+                  +{(dateSlots as any[]).length - (isMobile ? 3 : 4)} more
                 </Badge>
               )}
             </div>
           </div>
         ))}
+        
+        {Object.keys(slotsByDate).length > (isMobile ? 2 : 3) && (
+          <div className="text-center">
+            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+              +{Object.keys(slotsByDate).length - (isMobile ? 2 : 3)} more days available
+            </Badge>
+          </div>
+        )}
       </div>
 
       <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-        <DialogContent className="glass-effect">
+        <DialogContent className="glass-effect w-[95vw] max-w-md mx-auto">
           <DialogHeader>
-            <DialogTitle className="text-sage-700">Book Appointment</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-sage-700 text-base md:text-lg">Book Appointment</DialogTitle>
+            <DialogDescription className="text-xs md:text-sm">
               Book an appointment with {doctor.name} on{' '}
               {selectedSlot && format(parseISO(selectedSlot.date), 'MMMM d, yyyy')} at{' '}
               {selectedSlot?.start_time}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             <div>
-              <Label htmlFor="reason" className="text-slate-custom">Reason for visit (optional)</Label>
+              <Label htmlFor="reason" className="text-slate-custom text-sm">Reason for visit (optional)</Label>
               <Textarea
                 id="reason"
                 placeholder="Describe your symptoms or reason for the appointment..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="mt-1 border-sage-200 focus:ring-sage-500"
+                className="mt-1 border-sage-200 focus:ring-sage-500 text-sm"
+                rows={3}
               />
             </div>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button 
               variant="outline" 
               onClick={() => setShowBookingDialog(false)}
-              className="border-sage-200 text-slate-custom hover:bg-sage-50"
+              className="border-sage-200 text-slate-custom hover:bg-sage-50 w-full sm:w-auto order-2 sm:order-1"
             >
               Cancel
             </Button>
             <Button 
               onClick={handleBookAppointment} 
               disabled={isBooking}
-              className="btn-primary"
+              className="btn-primary w-full sm:w-auto order-1 sm:order-2"
             >
               {isBooking ? 'Booking...' : 'Book Appointment'}
             </Button>
