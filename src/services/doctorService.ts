@@ -81,8 +81,15 @@ export const useDoctors = () => {
 
   const findNearbyDoctors = async () => {
     try {
+      setLoading(true);
+      
       if (!navigator.geolocation) {
-        throw new Error('Geolocation not supported');
+        toast({
+          title: "Location not supported",
+          description: "Your browser doesn't support location services",
+          variant: "destructive"
+        });
+        return false;
       }
 
       return new Promise<boolean>((resolve) => {
@@ -90,23 +97,73 @@ export const useDoctors = () => {
           async (position) => {
             try {
               const { latitude, longitude } = position.coords;
+              
+              // Show success toast for location access
+              toast({
+                title: "Location found",
+                description: "Finding doctors near your location...",
+              });
+              
               const nearbyDoctors = await findNearestDoctors(latitude, longitude);
               const formattedDoctors = nearbyDoctors.map((doctor: any) => ({
                 ...doctor,
                 region: doctor.region || 'Unknown',
               }));
+              
               setDoctors(formattedDoctors);
+              
+              toast({
+                title: "Nearby doctors found",
+                description: `Found ${formattedDoctors.length} doctors near you`,
+              });
+              
               resolve(true);
             } catch (error) {
               console.error('Error finding nearby doctors:', error);
+              toast({
+                title: "Error",
+                description: "Failed to find nearby doctors",
+                variant: "destructive"
+              });
               resolve(false);
+            } finally {
+              setLoading(false);
             }
           },
-          () => resolve(false)
+          (error) => {
+            setLoading(false);
+            let errorMessage = 'Location access denied';
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = 'Please allow location access to find nearby doctors';
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = 'Your location is not available';
+                break;
+              case error.TIMEOUT:
+                errorMessage = 'Location request timed out';
+                break;
+            }
+            
+            toast({
+              title: "Location error",
+              description: errorMessage,
+              variant: "destructive"
+            });
+            
+            resolve(false);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
         );
       });
     } catch (error) {
+      setLoading(false);
       console.error('Error accessing location:', error);
+      toast({
+        title: "Error",
+        description: "Failed to access location services",
+        variant: "destructive"
+      });
       return false;
     }
   };

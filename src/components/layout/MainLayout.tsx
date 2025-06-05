@@ -104,7 +104,6 @@ const MainLayout = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-blue-50/30">
       {/* Modern Floating Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-blue-100/50 shadow-sm sticky top-0 z-50">
-        {/* ... keep existing code (header content) */}
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
           <Link to="/dashboard" className="flex items-center space-x-3 group">
             <div className="p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl group-hover:from-blue-600 group-hover:to-blue-700 transition-all duration-200 shadow-lg">
@@ -138,7 +137,7 @@ const MainLayout = () => {
                   {isMobileMenuOpen ? <X /> : <Menu />}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 bg-white/95 backdrop-blur-md">
+              <SheetContent side="left" className="w-72 bg-white/95 backdrop-blur-md z-[100]">
                 <div className="py-6 flex flex-col h-full">
                   <div className="flex items-center gap-3 mb-8">
                     <div className="p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
@@ -198,7 +197,6 @@ const MainLayout = () => {
       <div className="flex flex-1">
         {/* Floating Sidebar for desktop */}
         <aside className="hidden md:block w-72 p-4">
-          {/* ... keep existing code (sidebar content) */}
           <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-blue-100/50 shadow-lg p-4 sticky top-24">
             <nav className="space-y-2">
               {navigationItems.map((item) => (
