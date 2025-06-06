@@ -3,3 +3,6 @@ project_id = "bpflebtklgnivcanhlbp"
 
 [functions.analyze-symptoms]
 verify_jwt = false
+
+[functions.groq-chat]
+verify_jwt = false
