@@ -38,10 +38,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             title: "Signed in successfully",
             description: "Welcome to HealthMatch!"
           });
-          // Always navigate to dashboard on successful sign in
+          // Navigate to dashboard on successful sign in, with a small delay to ensure state is updated
           setTimeout(() => {
             navigate('/dashboard', { replace: true });
-          }, 100);
+          }, 200);
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: "Signed out",
@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
       
       // If user is already authenticated and on login page, redirect to dashboard
-      if (session?.user && window.location.pathname === '/login') {
+      if (session?.user && (window.location.pathname === '/login' || window.location.pathname === '/')) {
         navigate('/dashboard', { replace: true });
       }
     });
@@ -103,7 +103,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
+      // Use the current origin for the redirect
       const redirectTo = `${window.location.origin}/dashboard`;
+      console.log('Google OAuth redirect URL:', redirectTo);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
