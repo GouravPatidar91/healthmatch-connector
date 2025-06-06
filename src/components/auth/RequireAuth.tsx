@@ -15,18 +15,23 @@ const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
   useEffect(() => {
     // If user is not authenticated after loading is complete, redirect to login
     if (!loading && !user) {
-      navigate('/', { state: { from: location }, replace: true });
+      console.log('User not authenticated, redirecting to login');
+      navigate('/login', { state: { from: location }, replace: true });
     }
   }, [user, loading, navigate, location]);
 
   if (loading) {
-    // You could render a loading spinner here
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    // Show loading spinner
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   if (!user) {
     // Redirect to the login page if not authenticated
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return children;

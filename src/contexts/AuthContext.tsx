@@ -38,15 +38,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             title: "Signed in successfully",
             description: "Welcome to HealthMatch!"
           });
-          // Navigate to dashboard after successful sign in
-          navigate('/dashboard');
+          // Always navigate to dashboard on successful sign in
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 100);
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: "Signed out",
             description: "You have been signed out successfully."
           });
           // Navigate to homepage after sign out
-          navigate('/');
+          navigate('/', { replace: true });
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('Token refreshed successfully');
         }
@@ -59,6 +61,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // If user is already authenticated and on login page, redirect to dashboard
+      if (session?.user && window.location.pathname === '/login') {
+        navigate('/dashboard', { replace: true });
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -96,16 +103,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
+      const redirectTo = `${window.location.origin}/dashboard`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
           },
         }
       });
+      
+      if (error) {
+        console.error('Google OAuth error:', error);
+        toast({
+          title: "Google sign-in failed",
+          description: error.message || "Failed to sign in with Google. Please try again.",
+          variant: "destructive",
+        });
+      }
+      
       return { error };
     } catch (error) {
       console.error('Google SignIn error:', error);
