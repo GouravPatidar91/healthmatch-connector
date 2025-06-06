@@ -10,6 +10,7 @@ interface AuthContextProps {
   session: Session | null;
   signUp: (email: string, password: string, userData?: { name: string }) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -26,7 +27,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state change:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -45,12 +47,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
           // Navigate to homepage after sign out
           navigate('/');
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
         }
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -60,30 +65,64 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [toast, navigate]);
 
   const signUp = async (email: string, password: string, userData?: { name: string }) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData
-      }
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData,
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      return { error };
+    } catch (error) {
+      console.error('SignUp error:', error);
+      return { error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      return { error };
+    } catch (error) {
+      console.error('SignIn error:', error);
+      return { error };
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
+      return { error };
+    } catch (error) {
+      console.error('Google SignIn error:', error);
+      return { error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('SignOut error:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signUp, signIn, signOut, loading }}>
+    <AuthContext.Provider value={{ user, session, signUp, signIn, signInWithGoogle, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   );
