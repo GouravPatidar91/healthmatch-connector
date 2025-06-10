@@ -58,8 +58,19 @@ const Appointments = () => {
   };
 
   const handleBookAppointment = (doctor: any) => {
+    // Only open dialog if we're in the main appointments flow (not from health check)
     setSelectedDoctor(doctor);
     setShowBookingDialog(true);
+  };
+
+  const handleCloseBookingDialog = (open: boolean) => {
+    setShowBookingDialog(open);
+    if (!open) {
+      // Clear selected doctor after dialog closes
+      setTimeout(() => {
+        setSelectedDoctor(null);
+      }, 300);
+    }
   };
 
   return (
@@ -199,9 +210,10 @@ const Appointments = () => {
           </TabsContent>
         </Tabs>
 
+        {/* Main Appointments BookAppointmentDialog - only for regular appointments flow */}
         <BookAppointmentDialog 
           open={showBookingDialog}
-          onOpenChange={setShowBookingDialog}
+          onOpenChange={handleCloseBookingDialog}
           selectedDoctor={selectedDoctor}
         />
       </div>

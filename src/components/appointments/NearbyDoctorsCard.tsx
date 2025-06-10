@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,12 +62,27 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
   const handleSelectDoctor = (doctor: any) => {
     console.log('Selected doctor for booking:', doctor);
     setSelectedDoctor(doctor);
-    setShowBookingDialog(true);
     // Set default date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setSelectedDate(tomorrow);
     setSelectedTime("10:00");
+    setNotes("");
+    // Use setTimeout to ensure state is set before opening dialog
+    setTimeout(() => {
+      setShowBookingDialog(true);
+    }, 100);
+  };
+
+  const handleCloseDialog = () => {
+    setShowBookingDialog(false);
+    // Clear state after dialog closes
+    setTimeout(() => {
+      setSelectedDoctor(null);
+      setSelectedDate(undefined);
+      setSelectedTime("");
+      setNotes("");
+    }, 300);
   };
 
   const handleBookAppointment = async () => {
@@ -139,11 +155,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         });
       }
 
-      setShowBookingDialog(false);
-      setSelectedDoctor(null);
-      setSelectedDate(undefined);
-      setSelectedTime("");
-      setNotes("");
+      handleCloseDialog();
       onAppointmentBooked?.();
       
     } catch (error) {
@@ -342,8 +354,8 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         ))}
       </div>
 
-      {/* Enhanced Booking Dialog */}
-      <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
+      {/* Enhanced Booking Dialog with better state management */}
+      <Dialog open={showBookingDialog} onOpenChange={handleCloseDialog}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Book Appointment with Dr. {selectedDoctor?.name}</DialogTitle>
@@ -432,7 +444,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setShowBookingDialog(false)}
+                onClick={handleCloseDialog}
                 className="flex-1 h-12"
               >
                 Cancel
