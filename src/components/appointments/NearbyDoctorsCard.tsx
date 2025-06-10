@@ -40,27 +40,39 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    const tryFindNearby = async () => {
-      console.log('Attempting to find nearby doctors...');
-      const success = await findNearbyDoctors();
-      console.log('Find nearby doctors result:', success);
-      setLocationAccess(success);
-      
-      if (!success) {
-        toast({
-          title: "Location Access",
-          description: "Unable to access location. Showing all available doctors.",
-        });
-      }
-    };
+    // Only run once on mount to prevent infinite loops
+    if (!hasInitialized) {
+      const tryFindNearby = async () => {
+        console.log('Attempting to find nearby doctors...');
+        const success = await findNearbyDoctors();
+        console.log('Find nearby doctors result:', success);
+        setLocationAccess(success);
+        setHasInitialized(true);
+        
+        if (!success) {
+          toast({
+            title: "Location Access",
+            description: "Unable to access location. Showing all available doctors.",
+          });
+        }
+      };
 
-    tryFindNearby();
-  }, [findNearbyDoctors, toast]);
+      tryFindNearby();
+    }
+  }, [findNearbyDoctors, toast, hasInitialized]);
 
   const handleSelectDoctor = (doctor: any) => {
-    console.log('Selected doctor for booking:', doctor);
+    console.log('NearbyDoctorsCard: Selected doctor for booking:', doctor);
+    
+    // Prevent multiple dialogs by checking if one is already open
+    if (showBookingDialog) {
+      console.log('Dialog already open, ignoring click');
+      return;
+    }
+    
     setSelectedDoctor(doctor);
     // Set default date to tomorrow
     const tomorrow = new Date();
@@ -68,13 +80,15 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
     setSelectedDate(tomorrow);
     setSelectedTime("10:00");
     setNotes("");
-    // Use setTimeout to ensure state is set before opening dialog
-    setTimeout(() => {
+    
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
       setShowBookingDialog(true);
-    }, 100);
+    });
   };
 
   const handleCloseDialog = () => {
+    console.log('NearbyDoctorsCard: Closing dialog');
     setShowBookingDialog(false);
     // Clear state after dialog closes
     setTimeout(() => {
@@ -82,7 +96,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
       setSelectedDate(undefined);
       setSelectedTime("");
       setNotes("");
-    }, 300);
+    }, 200);
   };
 
   const handleBookAppointment = async () => {
@@ -95,7 +109,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
       return;
     }
 
-    console.log('Booking appointment with:', {
+    console.log('NearbyDoctorsCard: Booking appointment with:', {
       doctor: selectedDoctor,
       date: selectedDate,
       time: selectedTime,
@@ -170,7 +184,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
     }
   };
 
-  console.log('Current state:', { loading, error, doctorsCount: doctors?.length, locationAccess });
+  console.log('NearbyDoctorsCard: Current state:', { loading, error, doctorsCount: doctors?.length, locationAccess, showBookingDialog });
 
   if (loading) {
     return (
@@ -198,7 +212,10 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
           </CardHeader>
           <CardContent>
             <Button 
-              onClick={() => findNearbyDoctors()} 
+              onClick={() => {
+                setHasInitialized(false);
+                findNearbyDoctors();
+              }} 
               variant="outline"
               className="border-red-300 text-red-700 hover:bg-red-100"
             >
@@ -229,7 +246,10 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
             </p>
             <div className="flex gap-3">
               <Button 
-                onClick={() => findNearbyDoctors()} 
+                onClick={() => {
+                  setHasInitialized(false);
+                  findNearbyDoctors();
+                }} 
                 variant="outline"
               >
                 Try Again
@@ -332,7 +352,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
                 
                 <Button
                   onClick={() => handleSelectDoctor(doctor)}
-                  disabled={bookingDoctor === doctor.id}
+                  disabled={bookingDoctor === doctor.id || showBookingDialog}
                   size="sm"
                   className="ml-2"
                 >
@@ -354,119 +374,133 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         ))}
       </div>
 
-      {/* Enhanced Booking Dialog with better state management */}
-      <Dialog open={showBookingDialog} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Book Appointment with Dr. {selectedDoctor?.name}</DialogTitle>
-            <DialogDescription>
-              Select your preferred date and time for the appointment.
-              {healthCheckData && " Your health check data will be automatically shared."}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Health Check Specific Booking Dialog - completely isolated */}
+      {showBookingDialog && selectedDoctor && (
+        <Dialog 
+          open={showBookingDialog} 
+          onOpenChange={(open) => {
+            console.log('NearbyDoctorsCard: Dialog onOpenChange called with:', open);
+            if (!open) {
+              handleCloseDialog();
+            }
+          }}
+        >
+          <DialogContent 
+            className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto"
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onEscapeKeyDown={handleCloseDialog}
+          >
+            <DialogHeader>
+              <DialogTitle>Book Appointment with Dr. {selectedDoctor?.name}</DialogTitle>
+              <DialogDescription>
+                Select your preferred date and time for the appointment.
+                {healthCheckData && " Your health check data will be automatically shared."}
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-6 py-4">
-            {/* Date Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Select Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-12",
-                      !selectedDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-5 w-5" />
-                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                    className="p-3"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Time Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Select Time *</Label>
-              <Select value={selectedTime} onValueChange={setSelectedTime}>
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Select preferred time" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Additional Notes */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Additional Notes (Optional)</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any specific concerns or additional information..."
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-
-            {/* Health Check Summary */}
-            {healthCheckData && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-3">Health Check Data to Share</h4>
-                <div className="text-sm text-blue-700 space-y-2">
-                  <p><span className="font-medium">Symptoms:</span> {healthCheckData.symptoms?.join(', ')}</p>
-                  {healthCheckData.urgency_level && (
-                    <p><span className="font-medium">Urgency:</span> {healthCheckData.urgency_level.toUpperCase()}</p>
-                  )}
-                  {healthCheckData.overall_assessment && (
-                    <p><span className="font-medium">Assessment:</span> {healthCheckData.overall_assessment}</p>
-                  )}
-                </div>
+            <div className="space-y-6 py-4">
+              {/* Date Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Select Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-12",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-5 w-5" />
+                      {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      className="p-3"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-            )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={handleCloseDialog}
-                className="flex-1 h-12"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleBookAppointment}
-                disabled={!selectedDate || !selectedTime || bookingDoctor === selectedDoctor?.id}
-                className="flex-1 h-12"
-              >
-                {bookingDoctor === selectedDoctor?.id ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Booking...
-                  </>
-                ) : (
-                  'Confirm Booking'
-                )}
-              </Button>
+              {/* Time Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Select Time *</Label>
+                <Select value={selectedTime} onValueChange={setSelectedTime}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select preferred time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeSlots.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Additional Notes */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Additional Notes (Optional)</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Any specific concerns or additional information..."
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
+
+              {/* Health Check Summary */}
+              {healthCheckData && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-medium text-blue-800 mb-3">Health Check Data to Share</h4>
+                  <div className="text-sm text-blue-700 space-y-2">
+                    <p><span className="font-medium">Symptoms:</span> {healthCheckData.symptoms?.join(', ')}</p>
+                    {healthCheckData.urgency_level && (
+                      <p><span className="font-medium">Urgency:</span> {healthCheckData.urgency_level.toUpperCase()}</p>
+                    )}
+                    {healthCheckData.overall_assessment && (
+                      <p><span className="font-medium">Assessment:</span> {healthCheckData.overall_assessment}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseDialog}
+                  className="flex-1 h-12"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleBookAppointment}
+                  disabled={!selectedDate || !selectedTime || bookingDoctor === selectedDoctor?.id}
+                  className="flex-1 h-12"
+                >
+                  {bookingDoctor === selectedDoctor?.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Booking...
+                    </>
+                  ) : (
+                    'Confirm Booking'
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

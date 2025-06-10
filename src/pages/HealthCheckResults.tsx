@@ -150,6 +150,8 @@ const HealthCheckResults = () => {
   };
 
   const handleBookAppointment = async () => {
+    console.log('HealthCheckResults: handleBookAppointment called');
+    
     // First save the health check if not already saved
     if (!savedHealthCheck) {
       setSaving(true);
@@ -180,17 +182,26 @@ const HealthCheckResults = () => {
       }
     }
     
-    // Show the doctors dialog
-    setShowDoctorsDialog(true);
+    // Show the doctors dialog with a small delay to ensure state is ready
+    setTimeout(() => {
+      console.log('HealthCheckResults: Opening doctors dialog');
+      setShowDoctorsDialog(true);
+    }, 100);
   };
 
   const handleAppointmentBooked = () => {
+    console.log('HealthCheckResults: handleAppointmentBooked called');
     setShowDoctorsDialog(false);
     toast({
       title: "Success",
       description: "Your appointment has been booked and health data shared!",
     });
     navigate('/appointments');
+  };
+
+  const handleCloseDoctorsDialog = () => {
+    console.log('HealthCheckResults: Closing doctors dialog');
+    setShowDoctorsDialog(false);
   };
 
   const handleSendToDoctor = async () => {
@@ -584,7 +595,7 @@ const HealthCheckResults = () => {
             variant="outline"
             className="flex-1"
             onClick={handleBookAppointment}
-            disabled={saving}
+            disabled={saving || showDoctorsDialog}
           >
             <Calendar className="mr-2 h-4 w-4" />
             Book Appointment
@@ -638,9 +649,26 @@ const HealthCheckResults = () => {
         </Card>
       )}
 
-      {/* Enhanced Nearby Doctors Dialog */}
-      <Dialog open={showDoctorsDialog} onOpenChange={setShowDoctorsDialog}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+      {/* Enhanced Nearby Doctors Dialog - Isolated from other dialogs */}
+      <Dialog 
+        open={showDoctorsDialog} 
+        onOpenChange={(open) => {
+          console.log('HealthCheckResults: Main dialog onOpenChange:', open);
+          if (!open) {
+            handleCloseDoctorsDialog();
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col"
+          onPointerDownOutside={(e) => {
+            // Prevent closing when clicking inside nested dialogs
+            const target = e.target as Element;
+            if (target.closest('[role="dialog"]')) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-xl font-semibold">Book Appointment with Nearby Doctors</DialogTitle>
             <DialogDescription>
