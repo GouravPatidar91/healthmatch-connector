@@ -211,7 +211,7 @@ const HealthCheckResults = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate('/health-check');
   };
 
   return (
@@ -222,7 +222,7 @@ const HealthCheckResults = () => {
         </h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleBack}>
-            Back to Form
+            Back to Health Check
           </Button>
           <Button variant="outline" onClick={() => navigate('/health-check-history')}>
             View History

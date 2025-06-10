@@ -38,10 +38,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             title: "Signed in successfully",
             description: "Welcome to HealthMatch!"
           });
-          // Navigate to dashboard on successful sign in, with a small delay to ensure state is updated
-          setTimeout(() => {
-            navigate('/dashboard', { replace: true });
-          }, 200);
+          
+          // Check if we're coming from Google OAuth redirect
+          const currentPath = window.location.pathname;
+          const isOAuthRedirect = window.location.search.includes('access_token') || 
+                                 window.location.search.includes('refresh_token');
+          
+          if (isOAuthRedirect || currentPath === '/login' || currentPath === '/') {
+            // Navigate to dashboard with a delay to ensure state is properly updated
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 300);
+          }
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: "Signed out",
@@ -103,7 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      // Use the current origin for the redirect
+      // Use the current origin for the redirect, but ensure it goes to the right place
       const redirectTo = `${window.location.origin}/dashboard`;
       console.log('Google OAuth redirect URL:', redirectTo);
       
