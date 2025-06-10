@@ -113,7 +113,7 @@ const HealthCheckResults = () => {
         analysis_results: healthCheckData.analysis_results
       };
       
-      console.log("Saving health check with data:", dataToSave);
+      console.log("Saving enhanced health check with data:", dataToSave);
       
       const savedCheck = await saveHealthCheck(dataToSave);
       setSavedHealthCheck(savedCheck);
@@ -180,6 +180,7 @@ const HealthCheckResults = () => {
       }
     }
     
+    // Show the doctors dialog
     setShowDoctorsDialog(true);
   };
 
@@ -637,20 +638,22 @@ const HealthCheckResults = () => {
         </Card>
       )}
 
-      {/* Nearby Doctors Dialog */}
+      {/* Enhanced Nearby Doctors Dialog */}
       <Dialog open={showDoctorsDialog} onOpenChange={setShowDoctorsDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Book Appointment with Nearby Doctors</DialogTitle>
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-xl font-semibold">Book Appointment with Nearby Doctors</DialogTitle>
             <DialogDescription>
               Select a doctor to book an appointment. Your health check data will be automatically shared.
             </DialogDescription>
           </DialogHeader>
           
-          <NearbyDoctorsCard
-            healthCheckData={savedHealthCheck}
-            onAppointmentBooked={handleAppointmentBooked}
-          />
+          <div className="flex-1 overflow-y-auto p-1">
+            <NearbyDoctorsCard
+              healthCheckData={savedHealthCheck}
+              onAppointmentBooked={handleAppointmentBooked}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
