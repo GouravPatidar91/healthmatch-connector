@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -182,7 +181,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
           <CardHeader>
             <CardTitle className="text-red-800">Error Loading Doctors</CardTitle>
             <CardDescription className="text-red-600">
-              There was an error loading the doctors list: {error}
+              There was an error loading the doctors list: {error instanceof Error ? error.message : String(error)}
             </CardDescription>
           </CardHeader>
           <CardContent>
