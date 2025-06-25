@@ -100,157 +100,119 @@ serve(async (req) => {
     const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || 
                                languageInstructions['simple-english'];
 
-    // Enhanced comprehensive prompt for detailed medical report analysis with deep AI insights
+    // Enhanced comprehensive prompt for detailed medical report analysis
     const prompt = `
-    You are an expert medical report analyzer with extensive clinical knowledge and advanced AI diagnostic capabilities. ${languageInstruction}
+    You are an expert medical report analyzer with extensive clinical knowledge. ${languageInstruction}
     
-    Perform a comprehensive and DEEP analysis of the medical report content following this exact structure:
+    Perform a comprehensive and detailed analysis of the medical report content following this exact structure:
     
     The report file is: ${fileName} (${fileType})
     
     ${fileType === 'application/pdf' 
-      ? `This is a PDF medical report. Analyze the content thoroughly using advanced pattern recognition and provide detailed insights based on clinical correlations, statistical analysis, and evidence-based medicine.`
-      : `This is an image file containing medical report content. Use advanced computer vision analysis to examine all visible text, numbers, charts, graphs, medical data, and visual patterns in the image. Apply deep learning techniques for pattern recognition and anomaly detection.`
+      ? `This is a PDF medical report. Analyze the content thoroughly and provide detailed insights based on common medical report structures and clinical patterns.`
+      : `This is an image file containing medical report content. Carefully examine all visible text, numbers, charts, graphs, and medical data in the image.`
     }
     
     Please respond in JSON format with the following comprehensive structure:
     {
       "summaryOfFindings": {
-        "diagnosis": "Clear explanation of the condition or disease identified with confidence level and differential diagnoses",
+        "diagnosis": "Clear explanation of the condition or disease identified (if any)",
         "normalAbnormalValues": [
-          "Parameter name: value (normal/abnormal with reference range and statistical significance)",
-          "Another parameter with detailed clinical correlation and prognostic implications"
+          "Parameter name: value (normal/abnormal with reference range)",
+          "Another parameter with detailed explanation"
         ],
-        "severityOrStage": "Detailed staging with progression risk assessment and treatment urgency level",
-        "clinicalSignificance": "Deep analysis of what these findings mean for patient's overall health trajectory"
+        "severityOrStage": "Stage/severity level if applicable (e.g., Stage 2 Hypertension)"
       },
       "interpretationOfResults": {
         "significantResults": [
           {
             "parameter": "Parameter name",
-            "value": "Actual value with units",
-            "normalRange": "Reference range with population specifics",
-            "interpretation": "Detailed pathophysiological explanation in simple terms",
-            "clinicalSignificance": "Impact on organ systems and disease progression",
-            "trendAnalysis": "Historical comparison if data suggests patterns",
-            "riskAssessment": "Associated health risks and complications"
+            "value": "Actual value",
+            "normalRange": "Reference range",
+            "interpretation": "What this result means in simple terms",
+            "clinicalSignificance": "How this relates to patient's health"
           }
         ],
-        "overallInterpretation": "Comprehensive medical synthesis with systems-based analysis",
-        "prognosticIndicators": "Key markers that indicate future health outcomes",
-        "correlationAnalysis": "How different parameters interact and influence each other"
+        "overallInterpretation": "Comprehensive explanation of all results combined"
       },
       "treatmentPlan": {
         "medicationsPrescribed": [
           {
-            "name": "Medication name with generic/brand alternatives",
-            "dosage": "Detailed dosing with titration schedule",
-            "duration": "Treatment duration with monitoring schedule",
-            "purpose": "Mechanism of action and therapeutic target",
-            "sideEffects": "Common and serious adverse effects to monitor",
-            "interactions": "Drug-drug and drug-food interactions"
+            "name": "Medication name",
+            "dosage": "Strength and frequency",
+            "duration": "How long to take",
+            "purpose": "Why this medication is prescribed"
           }
         ],
         "therapiesRecommended": [
-          "Specific evidence-based therapy with expected outcomes and timeline"
+          "Specific therapy or treatment recommendation"
         ],
         "lifestyleChanges": {
-          "diet": "Detailed nutritional recommendations with specific foods and portions",
-          "exercise": "Structured exercise prescription with intensity and frequency", 
-          "sleep": "Sleep optimization strategies with sleep hygiene protocols",
-          "stressManagement": "Evidence-based stress reduction techniques",
-          "other": "Additional lifestyle modifications with measurable goals"
+          "diet": "Specific dietary recommendations",
+          "exercise": "Exercise recommendations", 
+          "sleep": "Sleep hygiene recommendations",
+          "other": "Other lifestyle modifications"
         },
         "preventiveMeasures": [
-          "Vaccines, screenings, or preventive care with optimal timing and frequency"
-        ],
-        "monitoringPlan": "Specific parameters to track with recommended intervals"
+          "Vaccines, screenings, or preventive care recommendations"
+        ]
       },
       "nextSteps": {
         "additionalTestsRequired": [
           {
-            "testName": "Specific test with methodology",
-            "reason": "Clinical indication and expected information gain",
-            "urgency": "Timeline with risk stratification",
-            "preparationRequired": "Patient preparation instructions"
+            "testName": "Name of test/imaging",
+            "reason": "Why this test is needed",
+            "urgency": "Timeline for completion"
           }
         ],
         "specialistReferral": {
           "required": true/false,
-          "specialistType": "Specific subspecialty with reasoning",
-          "reason": "Clinical indication and expected intervention",
-          "urgency": "Referral timeline based on condition severity"
+          "specialistType": "Type of specialist if needed",
+          "reason": "Why referral is necessary"
         },
         "followUpAppointments": [
           {
-            "timeframe": "Specific timing with clinical rationale",
-            "purpose": "Parameters to monitor and treatment adjustments",
-            "expectedOutcomes": "What improvement or changes to expect"
+            "timeframe": "When to follow up",
+            "purpose": "What will be checked/monitored"
           }
         ]
       },
-      "riskStratification": {
-        "immediateRisks": "Acute complications requiring urgent attention",
-        "shortTermRisks": "Potential complications in next 1-6 months",
-        "longTermRisks": "Chronic disease progression and life-long management needs",
-        "preventableRisks": "Modifiable risk factors with intervention strategies"
-      },
-      "patientEducation": {
-        "keyPoints": "Most important information patient needs to understand",
-        "warningSignsToWatch": "Specific symptoms requiring immediate medical attention",
-        "selfCareInstructions": "Daily management tasks and self-monitoring techniques",
-        "questionsToAskDoctor": "Suggested questions for next medical appointment"
-      },
       "documentationProvided": {
-        "reportType": "Detailed classification of medical report analyzed",
+        "reportType": "Type of medical report analyzed",
         "keyDocuments": [
-          "List of important documents or sections with clinical relevance"
+          "List of important documents or sections found"
         ],
-        "dataQuality": "Assessment of report completeness and reliability",
-        "additionalNotes": "Important observations about data presentation or gaps"
+        "additionalNotes": "Any important notes or observations"
       },
-      "aiAnalysisInsights": {
-        "patternRecognition": "Advanced patterns detected in the data using AI analysis",
-        "anomalyDetection": "Unusual findings or outliers that require attention",
-        "predictiveIndicators": "Data points that suggest future health trends",
-        "correlationInsights": "Hidden relationships between different health parameters discovered through deep analysis"
-      },
-      "urgencyLevel": "Critical/High/Medium/Low with detailed justification",
-      "confidenceLevel": "AI analysis confidence score with uncertainty factors",
+      "urgencyLevel": "Low/Medium/High based on findings",
       "language": "${language}",
-      "disclaimer": "This comprehensive AI analysis should be reviewed by qualified healthcare professionals for clinical decision-making"
+      "disclaimer": "This analysis is AI-generated and should be reviewed by a qualified healthcare professional"
     }
     
-    DEEP ANALYSIS GUIDELINES:
-    - Apply advanced pattern recognition and statistical analysis
-    - Use evidence-based medicine principles and latest clinical guidelines
-    - Provide detailed pathophysiological explanations in accessible language
-    - Consider multiple organ systems and potential systemic effects
-    - Include risk stratification and prognostic indicators
-    - Suggest personalized monitoring and management strategies
-    - Identify potential complications and preventive measures
-    - Provide actionable patient education and self-care guidance
-    - Use AI capabilities to detect subtle patterns and correlations
-    - Include confidence levels and uncertainty analysis
-    - Consider population-specific reference ranges and genetic factors
-    - Provide comprehensive treatment rationale and evidence basis
-    - Include detailed medication information with safety considerations
-    - Suggest optimal follow-up and monitoring strategies
+    ANALYSIS GUIDELINES:
+    - Be thorough and comprehensive in your analysis
+    - Explain medical terminology in simple terms  
+    - Provide context for abnormal values
+    - Consider the clinical correlation between different findings
+    - Mention any red flags or concerning patterns
+    - Suggest appropriate follow-up care
+    - Include lifestyle recommendations when relevant
     - Only include sections that have actual data from the report
     - If no data is available for a section, omit that section entirely
-    - Be specific with clinical details, values, and evidence-based recommendations
-    - Ensure all medical advice meets current clinical practice standards
+    - Be specific with numbers, values, and clinical details
+    - Provide educational context to help patient understanding
+    - Ensure all medical advice is appropriate and safe
     
     Ensure the JSON is properly formatted without any additional text before or after.
     `;
 
-    console.log('Making request to Gemini API for deep analysis...');
+    console.log('Making request to Gemini API...');
 
-    // Prepare the request body for Gemini API with enhanced configuration
+    // Prepare the request body for Gemini API
     let requestBody;
     
     if (fileType === 'application/pdf') {
-      // For PDF files, use text-only analysis with enhanced prompting
+      // For PDF files, use text-only analysis
       requestBody = {
         contents: [{
           parts: [{
@@ -258,19 +220,13 @@ serve(async (req) => {
           }]
         }],
         generationConfig: {
-          temperature: 0.1, // Lower temperature for more consistent medical analysis
-          maxOutputTokens: 8192, // Increased for comprehensive analysis
+          temperature: 0.2,
+          maxOutputTokens: 4096,
           responseMimeType: "application/json"
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_MEDICAL",
-            threshold: "BLOCK_NONE" // Allow medical content analysis
-          }
-        ]
+        }
       };
     } else {
-      // For image files, include both text and image with enhanced analysis
+      // For image files, include both text and image
       const base64Data = file.split(',')[1]; // Remove data:image/jpeg;base64, prefix
       
       requestBody = {
@@ -288,20 +244,14 @@ serve(async (req) => {
           ]
         }],
         generationConfig: {
-          temperature: 0.1, // Lower temperature for more consistent analysis
-          maxOutputTokens: 8192, // Increased for comprehensive analysis
+          temperature: 0.2,
+          maxOutputTokens: 4096,
           responseMimeType: "application/json"
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_MEDICAL",
-            threshold: "BLOCK_NONE" // Allow medical content analysis
-          }
-        ]
+        }
       };
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -315,7 +265,7 @@ serve(async (req) => {
       const errorData = await response.text();
       console.error(`Gemini API error (${response.status}):`, errorData);
       
-      let errorMessage = 'Failed to analyze medical report with deep AI analysis';
+      let errorMessage = 'Failed to analyze medical report';
       if (response.status === 401) {
         errorMessage = 'Invalid Gemini API key. Please check your API key configuration.';
       } else if (response.status === 429) {
@@ -334,7 +284,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Gemini deep analysis response received successfully');
+    console.log('Gemini response received successfully');
 
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       console.error("Unexpected response structure:", JSON.stringify(data));
@@ -347,101 +297,66 @@ serve(async (req) => {
       analysisResult = JSON.parse(content);
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
-      // Enhanced fallback with comprehensive structure
+      // Enhanced fallback to a structured response
       const content = data.candidates[0].content.parts[0].text;
       analysisResult = {
         summaryOfFindings: {
-          diagnosis: "Deep AI analysis completed - comprehensive review required",
-          normalAbnormalValues: ["Medical data analyzed using advanced AI pattern recognition"],
-          severityOrStage: "Requires professional medical interpretation with AI insights",
-          clinicalSignificance: "Advanced analysis detected patterns for clinical correlation"
+          diagnosis: "Analysis completed - detailed review required",
+          normalAbnormalValues: ["Medical data analyzed according to clinical standards"],
+          severityOrStage: "Requires professional medical interpretation"
         },
         interpretationOfResults: {
           significantResults: [
             {
-              parameter: "Comprehensive AI Analysis",
-              value: "Completed with deep learning insights",
-              normalRange: "Professional review recommended for clinical correlation",
+              parameter: "Overall Analysis",
+              value: "Completed",
+              normalRange: "Professional review recommended",
               interpretation: content,
-              clinicalSignificance: "Consult healthcare provider for detailed interpretation of AI findings",
-              trendAnalysis: "Pattern analysis completed",
-              riskAssessment: "Risk stratification requires clinical validation"
+              clinicalSignificance: "Consult healthcare provider for detailed interpretation"
             }
           ],
-          overallInterpretation: "Advanced AI medical analysis has been performed with pattern recognition and anomaly detection. Please consult with your healthcare provider for detailed clinical interpretation.",
-          prognosticIndicators: "AI analysis identified key health indicators for professional review",
-          correlationAnalysis: "Advanced correlation analysis completed using machine learning algorithms"
+          overallInterpretation: "Comprehensive medical analysis has been performed. Please consult with your healthcare provider for detailed interpretation of findings."
         },
         treatmentPlan: {
           medicationsPrescribed: [],
-          therapiesRecommended: ["Consult with healthcare provider for AI-informed treatment planning"],
+          therapiesRecommended: ["Consult with healthcare provider"],
           lifestyleChanges: {
-            diet: "Follow healthcare provider recommendations based on AI analysis",
-            exercise: "As recommended by your doctor with AI insights",
-            sleep: "Maintain good sleep hygiene as per AI health optimization suggestions",
-            stressManagement: "Implement stress reduction based on AI wellness analysis",
-            other: "Follow comprehensive medical advice informed by AI analysis"
+            diet: "Follow healthcare provider recommendations",
+            exercise: "As recommended by your doctor",
+            sleep: "Maintain good sleep hygiene",
+            other: "Follow medical advice"
           },
-          preventiveMeasures: ["Regular health monitoring as advised with AI-enhanced tracking"],
-          monitoringPlan: "AI-suggested monitoring parameters for healthcare provider review"
+          preventiveMeasures: ["Regular health monitoring as advised"]
         },
         nextSteps: {
           additionalTestsRequired: [],
           specialistReferral: {
             required: false,
             specialistType: "",
-            reason: "",
-            urgency: ""
+            reason: ""
           },
           followUpAppointments: [
             {
               timeframe: "As recommended by healthcare provider",
-              purpose: "Review and discuss AI analysis findings",
-              expectedOutcomes: "Clinical validation of AI insights"
+              purpose: "Review and discuss findings"
             }
           ]
         },
-        riskStratification: {
-          immediateRisks: "Professional assessment required for AI-detected patterns",
-          shortTermRisks: "Clinical correlation needed for AI risk analysis",
-          longTermRisks: "Long-term health planning with AI insights",
-          preventableRisks: "AI-identified modifiable risk factors for clinical review"
-        },
-        patientEducation: {
-          keyPoints: "AI analysis provides comprehensive health insights for professional review",
-          warningSignsToWatch: "Consult healthcare provider for specific warning signs based on AI analysis",
-          selfCareInstructions: "Follow personalized care plan developed with AI insights",
-          questionsToAskDoctor: "Discuss AI analysis findings and recommended next steps"
-        },
         documentationProvided: {
-          reportType: "AI-Enhanced Medical Report Analysis",
-          keyDocuments: ["Advanced AI analysis completed with pattern recognition"],
-          dataQuality: "AI assessment of data completeness and reliability performed",
-          additionalNotes: "Professional medical review recommended for AI findings validation"
+          reportType: "Medical Report Analysis",
+          keyDocuments: ["AI-generated analysis completed"],
+          additionalNotes: "Professional medical review recommended"
         },
-        aiAnalysisInsights: {
-          patternRecognition: "Advanced AI pattern analysis completed",
-          anomalyDetection: "AI anomaly detection algorithms applied",
-          predictiveIndicators: "Machine learning predictive analysis performed",
-          correlationInsights: "Deep correlation analysis using AI algorithms completed"
-        },
-        urgencyLevel: 'Medium - AI analysis suggests professional review',
-        confidenceLevel: 'AI analysis completed with statistical confidence metrics',
+        urgencyLevel: 'Medium',
         language: language,
-        disclaimer: "This comprehensive AI analysis should be reviewed by qualified healthcare professionals for clinical decision-making"
+        disclaimer: "This analysis is AI-generated and should be reviewed by a qualified healthcare professional"
       };
     }
 
-    // Ensure the response has the correct language field and enhanced AI insights
+    // Ensure the response has the correct language field
     analysisResult.language = language;
-    analysisResult.aiAnalysisInsights = analysisResult.aiAnalysisInsights || {
-      patternRecognition: "Advanced AI pattern recognition applied to medical data",
-      anomalyDetection: "AI-powered anomaly detection completed",
-      predictiveIndicators: "Machine learning analysis for health trend prediction",
-      correlationInsights: "Deep AI correlation analysis performed"
-    };
 
-    console.log('Comprehensive deep AI analysis completed successfully');
+    console.log('Comprehensive deep analysis completed successfully');
 
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -451,7 +366,7 @@ serve(async (req) => {
     console.error('Error in analyze-medical-report function:', error);
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to analyze medical report with deep AI analysis',
+        error: 'Failed to analyze medical report',
         details: error.message 
       }),
       {
