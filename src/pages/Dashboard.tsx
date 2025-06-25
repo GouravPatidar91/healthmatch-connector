@@ -102,6 +102,13 @@ const Dashboard = () => {
   const healthStatus = determineHealthStatus();
   const alertCount = countAlerts();
 
+  // Function to navigate to appointments with my-appointments tab
+  const navigateToMyAppointments = () => {
+    navigate('/appointments');
+    // We'll need to update the appointments page to handle URL hash for tab navigation
+    window.location.hash = '#my-appointments';
+  };
+
   return (
     <div className="space-y-8">
       {/* Modern Welcome Header */}
@@ -289,7 +296,7 @@ const Dashboard = () => {
                 <Button 
                   variant="outline" 
                   className="w-full border-2 border-emerald-200 text-emerald-600 hover:bg-emerald-50 rounded-xl py-3 hover:border-emerald-300 transition-all"
-                  onClick={() => navigate('/appointments')}
+                  onClick={navigateToMyAppointments}
                 >
                   View Details
                 </Button>

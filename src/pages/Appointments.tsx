@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,16 @@ const Appointments = () => {
   const isMobile = useIsMobile();
   
   const { doctors, loading, findNearbyDoctors } = useDoctors();
+
+  // Check for URL hash to set active tab
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#my-appointments') {
+      setActiveTab('my-appointments');
+      // Clear the hash after setting the tab
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   const filteredDoctors = doctors.filter(doctor =>
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
