@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,24 +55,32 @@ const DoctorNotifications = () => {
         throw new Error('User not authenticated');
       }
 
-      // Fetch notifications with appointment details
+      console.log('Fetching notification for doctor:', user.id);
+
+      // Fetch notifications with appointment details using the actual doctor's user ID
       const { data, error } = await supabase
         .from('doctor_notifications')
         .select(`
           *,
-          appointments(date, time)
+          appointments(date, time),
+          profiles!doctor_notifications_patient_id_fkey(first_name, last_name)
         `)
-        .eq('doctor_id', 'placeholder-doctor')
+        .eq('doctor_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
+        console.error('Error fetching notifications:', error);
         throw error;
       }
+
+      console.log('Fetched notifications:', data);
 
       // Transform the data to include patient names and appointment details
       const transformedNotifications = (data || []).map(notification => ({
         ...notification,
-        patient_name: 'Patient', // Default name since we can't get profile data directly
+        patient_name: notification.profiles 
+          ? `${notification.profiles.first_name || ''} ${notification.profiles.last_name || ''}`.trim() || 'Unknown Patient'
+          : 'Unknown Patient',
         appointment_date: notification.appointments?.date,
         appointment_time: notification.appointments?.time,
         status: notification.status as 'sent' | 'read' | 'acknowledged'
