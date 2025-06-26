@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Form,
@@ -234,7 +233,9 @@ const DoctorRegistration = () => {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>
+                      Full Name <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="Dr. Jane Doe" {...field} />
                     </FormControl>
@@ -248,7 +249,9 @@ const DoctorRegistration = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>
+                      Email Address <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="doctor@example.com" {...field} />
                     </FormControl>
@@ -262,7 +265,9 @@ const DoctorRegistration = () => {
                 name="specialization"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Specialization</FormLabel>
+                    <FormLabel>
+                      Specialization <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="Cardiology" {...field} />
                     </FormControl>
@@ -277,7 +282,9 @@ const DoctorRegistration = () => {
                   name="degrees"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Degrees/Qualifications</FormLabel>
+                      <FormLabel>
+                        Degrees/Qualifications <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="MBBS, MD, etc." {...field} />
                       </FormControl>
@@ -291,7 +298,9 @@ const DoctorRegistration = () => {
                   name="experience"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Years of Experience</FormLabel>
+                      <FormLabel>
+                        Years of Experience <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
@@ -311,7 +320,9 @@ const DoctorRegistration = () => {
                 name="registration_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Medical Registration Number</FormLabel>
+                    <FormLabel>
+                      Medical Registration Number <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="123456" {...field} />
                     </FormControl>
@@ -325,7 +336,9 @@ const DoctorRegistration = () => {
                 name="degree_verification_photo"
                 render={({ field: { onChange, value, ...fieldProps } }) => (
                   <FormItem>
-                    <FormLabel>Degree Verification Photo/Document</FormLabel>
+                    <FormLabel>
+                      Degree Verification Photo/Document <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <div className="flex flex-col items-center">
                         {uploadedImage ? (
@@ -378,7 +391,9 @@ const DoctorRegistration = () => {
                 name="hospital"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Hospital/Clinic</FormLabel>
+                    <FormLabel>
+                      Hospital/Clinic <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="City Medical Center" {...field} />
                     </FormControl>
@@ -393,7 +408,9 @@ const DoctorRegistration = () => {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <FormLabel>
+                        Address <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="123 Medical Drive" {...field} />
                       </FormControl>
@@ -407,7 +424,9 @@ const DoctorRegistration = () => {
                   name="region"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Region/City</FormLabel>
+                      <FormLabel>
+                        Region/City <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="New York" {...field} />
                       </FormControl>
@@ -415,6 +434,14 @@ const DoctorRegistration = () => {
                     </FormItem>
                   )}
                 />
+              </div>
+              
+              {/* Required Fields Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mt-6">
+                <p className="text-sm text-blue-800 flex items-center">
+                  <span className="text-red-500 mr-1">*</span>
+                  Fields marked with an asterisk are required and must be filled out to submit your registration application.
+                </p>
               </div>
               
               <Button type="submit" className="w-full" disabled={uploading}>
