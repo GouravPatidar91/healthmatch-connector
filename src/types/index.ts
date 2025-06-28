@@ -68,8 +68,6 @@ export interface AppointmentSlot {
   duration: number;
   maxPatients: number;
   status: 'available' | 'booked' | 'cancelled';
-  patient_name?: string;
-  reason?: string;
 }
 
 export type SymptomCategory = {

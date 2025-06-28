@@ -18,8 +18,6 @@ export type Database = {
           end_time: string
           id: string
           max_patients: number
-          patient_name: string | null
-          reason: string | null
           start_time: string
           status: string
           updated_at: string
@@ -32,8 +30,6 @@ export type Database = {
           end_time: string
           id?: string
           max_patients?: number
-          patient_name?: string | null
-          reason?: string | null
           start_time: string
           status?: string
           updated_at?: string
@@ -46,8 +42,6 @@ export type Database = {
           end_time?: string
           id?: string
           max_patients?: number
-          patient_name?: string | null
-          reason?: string | null
           start_time?: string
           status?: string
           updated_at?: string
