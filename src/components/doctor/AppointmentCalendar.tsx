@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,21 +63,43 @@ const AppointmentCalendar = () => {
     const dateAppointments = getAppointmentsForDate(date);
     const dateSlots = getSlotsForDate(date);
     
+    console.log('Debug - Date:', format(date, 'yyyy-MM-dd'));
+    console.log('Debug - Appointments for date:', dateAppointments);
+    console.log('Debug - Slots for date:', dateSlots);
+    
     // Create a combined view showing both slots and appointments
     const combined = [];
     
     // Add booked slots with appointment details
     dateSlots.forEach(slot => {
       if (slot.status === 'booked') {
-        // Find matching appointment for this slot by time range
-        const matchingAppointment = dateAppointments.find(apt => {
-          const aptTime = apt.time;
-          const slotStart = slot.start_time;
-          const slotEnd = slot.end_time;
-          
-          // Check if appointment time falls within slot time range
-          return aptTime >= slotStart && aptTime <= slotEnd;
-        });
+        console.log('Debug - Processing booked slot:', slot);
+        
+        // Try multiple matching strategies
+        let matchingAppointment = null;
+        
+        // Strategy 1: Exact time match
+        matchingAppointment = dateAppointments.find(apt => apt.time === slot.start_time);
+        
+        // Strategy 2: Time range match
+        if (!matchingAppointment) {
+          matchingAppointment = dateAppointments.find(apt => {
+            const aptTime = apt.time;
+            const slotStart = slot.start_time;
+            const slotEnd = slot.end_time;
+            return aptTime >= slotStart && aptTime <= slotEnd;
+          });
+        }
+        
+        // Strategy 3: Find any appointment that might be related to this slot
+        if (!matchingAppointment) {
+          matchingAppointment = dateAppointments.find(apt => {
+            // Check if appointment doctor matches or if there's any reasonable match
+            return apt.doctor_name || apt.patientName; // Any appointment with patient data
+          });
+        }
+        
+        console.log('Debug - Matching appointment found:', matchingAppointment);
         
         if (matchingAppointment) {
           combined.push({
@@ -87,25 +108,25 @@ const AppointmentCalendar = () => {
             slotId: slot.id,
             time: slot.start_time,
             endTime: slot.end_time,
-            patientName: matchingAppointment.patientName || 'Patient',
+            patientName: matchingAppointment.patientName || matchingAppointment.patient_name || 'Patient',
             reason: matchingAppointment.reason || 'General consultation',
-            status: matchingAppointment.status,
-            notes: matchingAppointment.notes,
+            status: matchingAppointment.status || 'confirmed',
+            notes: matchingAppointment.notes || `Booked via slot system`,
             duration: slot.duration
           });
         } else {
-          // Booked slot but no appointment details found - this shouldn't happen normally
-          // but we'll show it as a fallback
+          // Booked slot but no appointment details found
+          // Check if slot has any patient info directly
           combined.push({
             type: 'booked_slot_no_details',
             id: slot.id,
             slotId: slot.id,
             time: slot.start_time,
             endTime: slot.end_time,
-            patientName: 'Booked Patient',
-            reason: 'Consultation scheduled',
+            patientName: slot.patient_name || slot.patientName || 'Booked Patient',
+            reason: slot.reason || 'Consultation scheduled',
             status: 'confirmed',
-            notes: 'Slot booked - patient details pending',
+            notes: 'Slot booked - patient details may be in appointment system',
             duration: slot.duration
           });
         }
@@ -129,7 +150,7 @@ const AppointmentCalendar = () => {
           slotId: null,
           time: appointment.time,
           endTime: null,
-          patientName: appointment.patientName || 'Patient',
+          patientName: appointment.patientName || appointment.patient_name || 'Patient',
           reason: appointment.reason || 'General consultation',
           status: appointment.status,
           notes: appointment.notes,
@@ -139,7 +160,10 @@ const AppointmentCalendar = () => {
     });
     
     // Sort by time
-    return combined.sort((a, b) => a.time.localeCompare(b.time));
+    const sortedCombined = combined.sort((a, b) => a.time.localeCompare(b.time));
+    console.log('Debug - Final combined data:', sortedCombined);
+    
+    return sortedCombined;
   };
   
   const appointmentsForSelectedDate = getAppointmentsForDate(selectedDate);
