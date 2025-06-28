@@ -27,7 +27,7 @@ import { format, addDays, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useDoctorAppointments, useDoctorSlots } from "@/services/doctorService";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, CheckCircle, Clock, Edit, X, Check } from "lucide-react";
+import { CalendarIcon, CheckCircle, Clock, Edit, X, Check, User } from "lucide-react";
 
 const AppointmentCalendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -58,9 +58,86 @@ const AppointmentCalendar = () => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return slots.filter(slot => slot.date === dateStr);
   };
+
+  // Enhanced function to get combined slot and appointment data
+  const getCombinedDataForDate = (date: Date) => {
+    const dateAppointments = getAppointmentsForDate(date);
+    const dateSlots = getSlotsForDate(date);
+    
+    // Create a combined view showing both slots and appointments
+    const combined = [];
+    
+    // Add booked slots with appointment details
+    dateSlots.forEach(slot => {
+      if (slot.status === 'booked') {
+        // Find matching appointment for this slot
+        const matchingAppointment = dateAppointments.find(apt => 
+          apt.time === slot.start_time || 
+          (apt.time >= slot.start_time && apt.time <= slot.end_time)
+        );
+        
+        if (matchingAppointment) {
+          combined.push({
+            type: 'booked_appointment',
+            id: matchingAppointment.id,
+            slotId: slot.id,
+            time: slot.start_time,
+            endTime: slot.end_time,
+            patientName: matchingAppointment.patientName || 'Patient',
+            reason: matchingAppointment.reason || 'General consultation',
+            status: matchingAppointment.status,
+            notes: matchingAppointment.notes,
+            duration: slot.duration
+          });
+        } else {
+          // Booked slot but no appointment details found
+          combined.push({
+            type: 'booked_slot',
+            id: slot.id,
+            slotId: slot.id,
+            time: slot.start_time,
+            endTime: slot.end_time,
+            patientName: 'Booked Patient',
+            reason: 'Consultation',
+            status: 'confirmed',
+            notes: 'Slot booked via appointment system',
+            duration: slot.duration
+          });
+        }
+      }
+    });
+    
+    // Add direct appointments (not through slots)
+    dateAppointments.forEach(appointment => {
+      const hasMatchingSlot = dateSlots.some(slot => 
+        slot.status === 'booked' && 
+        (appointment.time === slot.start_time || 
+         (appointment.time >= slot.start_time && appointment.time <= slot.end_time))
+      );
+      
+      if (!hasMatchingSlot) {
+        combined.push({
+          type: 'direct_appointment',
+          id: appointment.id,
+          slotId: null,
+          time: appointment.time,
+          endTime: null,
+          patientName: appointment.patientName || 'Patient',
+          reason: appointment.reason || 'General consultation',
+          status: appointment.status,
+          notes: appointment.notes,
+          duration: 30 // Default duration for direct appointments
+        });
+      }
+    });
+    
+    // Sort by time
+    return combined.sort((a, b) => a.time.localeCompare(b.time));
+  };
   
   const appointmentsForSelectedDate = getAppointmentsForDate(selectedDate);
   const slotsForSelectedDate = getSlotsForDate(selectedDate);
+  const combinedDataForSelectedDate = getCombinedDataForDate(selectedDate);
   
   const handleStatusChange = async (appointmentId: string, status: string) => {
     try {
@@ -160,24 +237,20 @@ const AppointmentCalendar = () => {
               <div className="p-4 border-b border-sage-200 bg-sage-50">
                 <h3 className="font-medium text-sage-700">Available Slots</h3>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {slotsForSelectedDate.length > 0 ? (
-                    slotsForSelectedDate.map((slot) => (
-                      <Badge 
-                        key={slot.id} 
-                        variant={slot.status === 'available' ? 'default' : 
-                                slot.status === 'booked' ? 'outline' : 
-                                'destructive'}
-                        className={`px-3 py-1 ${
-                          slot.status === 'available' ? 'bg-sage-100 text-sage-800' : 
-                          slot.status === 'booked' ? 'bg-coral-100 text-coral-800' : 
-                          'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {slot.start_time} - {slot.end_time} ({slot.status})
-                      </Badge>
-                    ))
+                  {slotsForSelectedDate.filter(slot => slot.status === 'available').length > 0 ? (
+                    slotsForSelectedDate
+                      .filter(slot => slot.status === 'available')
+                      .map((slot) => (
+                        <Badge 
+                          key={slot.id} 
+                          variant="default"
+                          className="px-3 py-1 bg-sage-100 text-sage-800"
+                        >
+                          {slot.start_time} - {slot.end_time} (Available)
+                        </Badge>
+                      ))
                   ) : (
-                    <p className="text-sm text-slate-500">No slots available for this day</p>
+                    <p className="text-sm text-slate-500">No available slots for this day</p>
                   )}
                 </div>
               </div>
@@ -187,44 +260,61 @@ const AppointmentCalendar = () => {
                   <TableRow className="border-sage-200">
                     <TableHead className="text-slate-custom">Time</TableHead>
                     <TableHead className="text-slate-custom">Patient</TableHead>
+                    <TableHead className="text-slate-custom">Type</TableHead>
                     <TableHead className="text-slate-custom">Reason</TableHead>
                     <TableHead className="text-slate-custom">Status</TableHead>
                     <TableHead className="w-[120px] text-slate-custom">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {appointmentsForSelectedDate.length > 0 ? (
-                    appointmentsForSelectedDate.map((appointment) => (
-                      <TableRow key={appointment.id} className="border-sage-200">
+                  {combinedDataForSelectedDate.length > 0 ? (
+                    combinedDataForSelectedDate.map((item) => (
+                      <TableRow key={`${item.type}-${item.id}`} className="border-sage-200">
                         <TableCell className="font-medium text-slate-custom">
-                          {appointment.time}
+                          <div className="flex items-center">
+                            <Clock className="h-4 w-4 mr-2 text-sage-500" />
+                            {item.time}
+                            {item.endTime && ` - ${item.endTime}`}
+                            <span className="text-xs text-slate-400 ml-2">
+                              ({item.duration}min)
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-slate-custom">
-                          {appointment.patientName || 'Patient Name'}
+                          <div className="flex items-center">
+                            <User className="h-4 w-4 mr-2 text-sage-500" />
+                            {item.patientName}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-slate-custom">
+                          <Badge variant="outline" className="text-xs">
+                            {item.type === 'booked_appointment' ? 'Slot Booking' : 
+                             item.type === 'booked_slot' ? 'Booked Slot' : 'Direct Booking'}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-slate-custom">
                           <div>
-                            <p>{appointment.reason || 'Consultation'}</p>
-                            {appointment.notes && (
-                              <p className="text-xs text-slate-400 mt-1">{appointment.notes}</p>
+                            <p>{item.reason}</p>
+                            {item.notes && (
+                              <p className="text-xs text-slate-400 mt-1">{item.notes}</p>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            variant={getStatusBadgeVariant(appointment.status)}
-                            className={getStatusColor(appointment.status)}
+                            variant={getStatusBadgeVariant(item.status)}
+                            className={getStatusColor(item.status)}
                           >
-                            {appointment.status}
+                            {item.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex space-x-1">
-                            {appointment.status === 'pending' && (
+                            {item.status === 'pending' && (
                               <Button 
                                 variant="ghost" 
                                 size="icon"
-                                onClick={() => handleStatusChange(appointment.id, 'confirmed')}
+                                onClick={() => handleStatusChange(item.id, 'confirmed')}
                                 title="Confirm appointment"
                                 className="h-8 w-8 hover:bg-sage-100"
                               >
@@ -234,8 +324,8 @@ const AppointmentCalendar = () => {
                             <Button 
                               variant="ghost" 
                               size="icon"
-                              disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
-                              onClick={() => handleStatusChange(appointment.id, 'completed')}
+                              disabled={item.status === 'completed' || item.status === 'cancelled'}
+                              onClick={() => handleStatusChange(item.id, 'completed')}
                               title="Mark as completed"
                               className="h-8 w-8 hover:bg-sage-100"
                             >
@@ -244,8 +334,8 @@ const AppointmentCalendar = () => {
                             <Button 
                               variant="ghost" 
                               size="icon"
-                              disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
-                              onClick={() => handleStatusChange(appointment.id, 'cancelled')}
+                              disabled={item.status === 'completed' || item.status === 'cancelled'}
+                              onClick={() => handleStatusChange(item.id, 'cancelled')}
                               title="Cancel appointment"
                               className="h-8 w-8 hover:bg-sage-100"
                             >
@@ -257,8 +347,8 @@ const AppointmentCalendar = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center text-slate-custom">
-                        No appointments for this day
+                      <TableCell colSpan={6} className="h-24 text-center text-slate-custom">
+                        No appointments or booked slots for this day
                       </TableCell>
                     </TableRow>
                   )}
@@ -273,6 +363,7 @@ const AppointmentCalendar = () => {
                 const date = addDays(selectedDate, i - selectedDate.getDay());
                 const dayAppointments = getAppointmentsForDate(date);
                 const daySlots = getSlotsForDate(date);
+                const dayCombinedData = getCombinedDataForDate(date);
                 
                 return (
                   <Card key={i} className={`border-sage-200 ${format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'border-sage-500' : ''}`}>
@@ -282,16 +373,16 @@ const AppointmentCalendar = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="py-2 px-3">
-                      {daySlots.length > 0 && (
+                      {daySlots.filter(slot => slot.status === 'available').length > 0 && (
                         <div className="mb-2">
-                          <p className="text-xs font-medium mb-1 text-slate-custom">Slots:</p>
-                          <div className="space-y-1 max-h-20 overflow-y-auto">
-                            {daySlots.map(slot => (
+                          <p className="text-xs font-medium mb-1 text-slate-custom">Available:</p>
+                          <div className="space-y-1 max-h-16 overflow-y-auto">
+                            {daySlots.filter(slot => slot.status === 'available').map(slot => (
                               <div key={slot.id} className="p-1 text-xs border border-sage-200 rounded flex items-center bg-sage-50">
                                 <Clock className="h-3 w-3 mr-1" />
                                 <span className="text-slate-custom">{slot.start_time}</span>
                                 <Badge variant="outline" className="ml-auto text-[10px] border-sage-200">
-                                  {slot.status}
+                                  Available
                                 </Badge>
                               </div>
                             ))}
@@ -299,19 +390,21 @@ const AppointmentCalendar = () => {
                         </div>
                       )}
                       
-                      {dayAppointments.length > 0 ? (
+                      {dayCombinedData.length > 0 ? (
                         <div>
                           <p className="text-xs font-medium mb-1 text-slate-custom">Appointments:</p>
                           <div className="space-y-1 max-h-20 overflow-y-auto">
-                            {dayAppointments.map(appointment => (
-                              <div key={appointment.id} className="p-1 text-xs border border-sage-200 rounded flex items-center bg-white">
-                                <Clock className="h-3 w-3 mr-1" />
-                                <span className="text-slate-custom">{appointment.time}</span>
+                            {dayCombinedData.map(item => (
+                              <div key={`${item.type}-${item.id}`} className="p-1 text-xs border border-sage-200 rounded flex items-center bg-white">
+                                <User className="h-3 w-3 mr-1" />
+                                <span className="text-slate-custom flex-1 truncate">
+                                  {item.time} - {item.patientName}
+                                </span>
                                 <Badge 
                                   variant="outline" 
-                                  className={`ml-auto text-[10px] ${getStatusColor(appointment.status)} border-0`}
+                                  className={`ml-auto text-[10px] ${getStatusColor(item.status)} border-0`}
                                 >
-                                  {appointment.status}
+                                  {item.status}
                                 </Badge>
                               </div>
                             ))}
