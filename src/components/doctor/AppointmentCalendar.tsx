@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,12 +71,12 @@ const AppointmentCalendar = () => {
     // Create a combined view showing both slots and appointments
     const combined = [];
     
-    // Add booked slots with appointment details
+    // Add booked slots with patient details from slot data
     dateSlots.forEach(slot => {
       if (slot.status === 'booked') {
         console.log('Debug - Processing booked slot:', slot);
         
-        // Try multiple matching strategies
+        // Try to find matching appointment for additional details
         let matchingAppointment = null;
         
         // Strategy 1: Exact time match
@@ -91,44 +92,21 @@ const AppointmentCalendar = () => {
           });
         }
         
-        // Strategy 3: Find any appointment that might be related to this slot
-        if (!matchingAppointment) {
-          matchingAppointment = dateAppointments.find(apt => {
-            // Check if appointment has patient data
-            return apt.patientName; // Use correct property name
-          });
-        }
-        
         console.log('Debug - Matching appointment found:', matchingAppointment);
         
-        if (matchingAppointment) {
-          combined.push({
-            type: 'slot_appointment',
-            id: matchingAppointment.id,
-            slotId: slot.id,
-            time: slot.start_time,
-            endTime: slot.end_time,
-            patientName: matchingAppointment.patientName || 'Patient',
-            reason: matchingAppointment.reason || 'General consultation',
-            status: matchingAppointment.status || 'confirmed',
-            notes: matchingAppointment.notes || `Booked via slot system`,
-            duration: slot.duration
-          });
-        } else {
-          // Booked slot but no appointment details found
-          combined.push({
-            type: 'booked_slot_no_details',
-            id: slot.id,
-            slotId: slot.id,
-            time: slot.start_time,
-            endTime: slot.end_time,
-            patientName: 'Booked Patient', // Fallback since slot doesn't have patient info
-            reason: 'Consultation scheduled', // Fallback since slot doesn't have reason
-            status: 'confirmed',
-            notes: 'Slot booked - patient details may be in appointment system',
-            duration: slot.duration
-          });
-        }
+        // Use slot data as primary source, with appointment data as enhancement
+        combined.push({
+          type: 'slot_appointment',
+          id: matchingAppointment ? matchingAppointment.id : slot.id,
+          slotId: slot.id,
+          time: slot.start_time,
+          endTime: slot.end_time,
+          patientName: slot.patient_name || (matchingAppointment?.patientName) || 'Booked Patient',
+          reason: slot.reason || (matchingAppointment?.reason) || 'General consultation',
+          status: matchingAppointment?.status || 'confirmed',
+          notes: matchingAppointment?.notes || `Booked via slot system`,
+          duration: slot.duration
+        });
       }
     });
     
@@ -149,7 +127,7 @@ const AppointmentCalendar = () => {
           slotId: null,
           time: appointment.time,
           endTime: null,
-          patientName: appointment.patientName || 'Patient', // Use correct property name
+          patientName: appointment.patientName || 'Patient',
           reason: appointment.reason || 'General consultation',
           status: appointment.status,
           notes: appointment.notes,
@@ -318,8 +296,7 @@ const AppointmentCalendar = () => {
                         </TableCell>
                         <TableCell className="text-slate-custom">
                           <Badge variant="outline" className="text-xs">
-                            {item.type === 'slot_appointment' ? 'Slot Booking' : 
-                             item.type === 'booked_slot_no_details' ? 'Booked Slot' : 'Direct Booking'}
+                            {item.type === 'slot_appointment' ? 'Slot Booking' : 'Direct Booking'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-slate-custom">
