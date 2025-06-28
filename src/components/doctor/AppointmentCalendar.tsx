@@ -70,15 +70,19 @@ const AppointmentCalendar = () => {
     // Add booked slots with appointment details
     dateSlots.forEach(slot => {
       if (slot.status === 'booked') {
-        // Find matching appointment for this slot
-        const matchingAppointment = dateAppointments.find(apt => 
-          apt.time === slot.start_time || 
-          (apt.time >= slot.start_time && apt.time <= slot.end_time)
-        );
+        // Find matching appointment for this slot by time range
+        const matchingAppointment = dateAppointments.find(apt => {
+          const aptTime = apt.time;
+          const slotStart = slot.start_time;
+          const slotEnd = slot.end_time;
+          
+          // Check if appointment time falls within slot time range
+          return aptTime >= slotStart && aptTime <= slotEnd;
+        });
         
         if (matchingAppointment) {
           combined.push({
-            type: 'booked_appointment',
+            type: 'slot_appointment',
             id: matchingAppointment.id,
             slotId: slot.id,
             time: slot.start_time,
@@ -90,30 +94,33 @@ const AppointmentCalendar = () => {
             duration: slot.duration
           });
         } else {
-          // Booked slot but no appointment details found
+          // Booked slot but no appointment details found - this shouldn't happen normally
+          // but we'll show it as a fallback
           combined.push({
-            type: 'booked_slot',
+            type: 'booked_slot_no_details',
             id: slot.id,
             slotId: slot.id,
             time: slot.start_time,
             endTime: slot.end_time,
             patientName: 'Booked Patient',
-            reason: 'Consultation',
+            reason: 'Consultation scheduled',
             status: 'confirmed',
-            notes: 'Slot booked via appointment system',
+            notes: 'Slot booked - patient details pending',
             duration: slot.duration
           });
         }
       }
     });
     
-    // Add direct appointments (not through slots)
+    // Add direct appointments (not through slots) - appointments that don't match any slot time
     dateAppointments.forEach(appointment => {
-      const hasMatchingSlot = dateSlots.some(slot => 
-        slot.status === 'booked' && 
-        (appointment.time === slot.start_time || 
-         (appointment.time >= slot.start_time && appointment.time <= slot.end_time))
-      );
+      const hasMatchingSlot = dateSlots.some(slot => {
+        if (slot.status !== 'booked') return false;
+        const aptTime = appointment.time;
+        const slotStart = slot.start_time;
+        const slotEnd = slot.end_time;
+        return aptTime >= slotStart && aptTime <= slotEnd;
+      });
       
       if (!hasMatchingSlot) {
         combined.push({
@@ -283,18 +290,18 @@ const AppointmentCalendar = () => {
                         <TableCell className="text-slate-custom">
                           <div className="flex items-center">
                             <User className="h-4 w-4 mr-2 text-sage-500" />
-                            {item.patientName}
+                            <span className="font-medium">{item.patientName}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-slate-custom">
                           <Badge variant="outline" className="text-xs">
-                            {item.type === 'booked_appointment' ? 'Slot Booking' : 
-                             item.type === 'booked_slot' ? 'Booked Slot' : 'Direct Booking'}
+                            {item.type === 'slot_appointment' ? 'Slot Booking' : 
+                             item.type === 'booked_slot_no_details' ? 'Booked Slot' : 'Direct Booking'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-slate-custom">
                           <div>
-                            <p>{item.reason}</p>
+                            <p className="font-medium">{item.reason}</p>
                             {item.notes && (
                               <p className="text-xs text-slate-400 mt-1">{item.notes}</p>
                             )}
