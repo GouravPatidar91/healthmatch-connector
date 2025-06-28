@@ -94,8 +94,8 @@ const AppointmentCalendar = () => {
         // Strategy 3: Find any appointment that might be related to this slot
         if (!matchingAppointment) {
           matchingAppointment = dateAppointments.find(apt => {
-            // Check if appointment doctor matches or if there's any reasonable match
-            return apt.doctor_name || apt.patientName; // Any appointment with patient data
+            // Check if appointment has patient data
+            return apt.patientName; // Use correct property name
           });
         }
         
@@ -108,7 +108,7 @@ const AppointmentCalendar = () => {
             slotId: slot.id,
             time: slot.start_time,
             endTime: slot.end_time,
-            patientName: matchingAppointment.patientName || matchingAppointment.patient_name || 'Patient',
+            patientName: matchingAppointment.patientName || 'Patient',
             reason: matchingAppointment.reason || 'General consultation',
             status: matchingAppointment.status || 'confirmed',
             notes: matchingAppointment.notes || `Booked via slot system`,
@@ -116,15 +116,14 @@ const AppointmentCalendar = () => {
           });
         } else {
           // Booked slot but no appointment details found
-          // Check if slot has any patient info directly
           combined.push({
             type: 'booked_slot_no_details',
             id: slot.id,
             slotId: slot.id,
             time: slot.start_time,
             endTime: slot.end_time,
-            patientName: slot.patient_name || slot.patientName || 'Booked Patient',
-            reason: slot.reason || 'Consultation scheduled',
+            patientName: 'Booked Patient', // Fallback since slot doesn't have patient info
+            reason: 'Consultation scheduled', // Fallback since slot doesn't have reason
             status: 'confirmed',
             notes: 'Slot booked - patient details may be in appointment system',
             duration: slot.duration
@@ -150,7 +149,7 @@ const AppointmentCalendar = () => {
           slotId: null,
           time: appointment.time,
           endTime: null,
-          patientName: appointment.patientName || appointment.patient_name || 'Patient',
+          patientName: appointment.patientName || 'Patient', // Use correct property name
           reason: appointment.reason || 'General consultation',
           status: appointment.status,
           notes: appointment.notes,
