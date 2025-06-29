@@ -37,32 +37,30 @@ export const useAppointmentBooking = () => {
         throw new Error('User not authenticated');
       }
 
-      // First, update the slot status to 'booked'
+      // Get user profile for patient name
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single();
+
+      const patientName = userProfile 
+        ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Unknown Patient'
+        : 'Unknown Patient';
+
+      // Update the slot with patient information
       const { error: slotError } = await supabase
         .from('appointment_slots')
-        .update({ status: 'booked' })
+        .update({ 
+          status: 'booked',
+          user_id: user.id,
+          patient_name: patientName,
+          reason: appointmentData.reason || 'General consultation'
+        })
         .eq('id', appointmentData.slot_id);
 
       if (slotError) {
         throw slotError;
-      }
-
-      // Then create the appointment record
-      const { data, error } = await supabase
-        .from('appointments')
-        .insert([{
-          user_id: user.id,
-          doctor_name: 'Doctor', // This will be updated with actual doctor name
-          date: appointmentData.date,
-          time: appointmentData.time,
-          reason: appointmentData.reason || 'General consultation',
-          status: 'pending'
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
       }
 
       toast({
@@ -70,7 +68,7 @@ export const useAppointmentBooking = () => {
         description: "Your appointment has been successfully booked.",
       });
 
-      return data;
+      return { success: true };
     } catch (error) {
       console.error('Error booking appointment:', error);
       toast({
@@ -142,17 +140,52 @@ export const useAppointmentBooking = () => {
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase
+      // Fetch direct appointments
+      const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
         .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: true });
 
-      if (error) {
-        throw error;
+      if (directError) {
+        throw directError;
       }
 
-      return data || [];
+      // Fetch slot-based appointments
+      const { data: slotAppointments, error: slotError } = await supabase
+        .from('appointment_slots')
+        .select(`
+          *,
+          doctors!appointment_slots_doctor_id_fkey(name, specialization)
+        `)
+        .eq('user_id', user.id)
+        .order('date', { ascending: true });
+
+      if (slotError) {
+        throw slotError;
+      }
+
+      // Combine and transform the data
+      const allAppointments = [
+        ...(directAppointments || []).map(apt => ({
+          ...apt,
+          type: 'direct' as const
+        })),
+        ...(slotAppointments || []).map(slot => ({
+          id: slot.id,
+          user_id: slot.user_id,
+          doctor_name: slot.doctors?.name || 'Unknown Doctor',
+          doctor_specialty: slot.doctors?.specialization,
+          date: slot.date,
+          time: slot.start_time,
+          reason: slot.reason,
+          status: slot.status === 'booked' ? 'confirmed' : slot.status,
+          created_at: slot.created_at,
+          type: 'slot' as const
+        }))
+      ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      return allAppointments;
     } catch (error) {
       console.error('Error fetching patient appointments:', error);
       throw error;

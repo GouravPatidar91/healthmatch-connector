@@ -18,9 +18,12 @@ export type Database = {
           end_time: string
           id: string
           max_patients: number
+          patient_name: string | null
+          reason: string | null
           start_time: string
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -30,9 +33,12 @@ export type Database = {
           end_time: string
           id?: string
           max_patients?: number
+          patient_name?: string | null
+          reason?: string | null
           start_time: string
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -42,9 +48,12 @@ export type Database = {
           end_time?: string
           id?: string
           max_patients?: number
+          patient_name?: string | null
+          reason?: string | null
           start_time?: string
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -52,6 +61,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_slots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

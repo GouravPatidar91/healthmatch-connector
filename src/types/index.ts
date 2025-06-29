@@ -68,6 +68,25 @@ export interface AppointmentSlot {
   duration: number;
   maxPatients: number;
   status: 'available' | 'booked' | 'cancelled';
+  patient_name?: string;
+  reason?: string;
+  user_id?: string;
+}
+
+export interface UnifiedAppointment {
+  id: string;
+  date: string;
+  time: string;
+  patientName: string;
+  reason: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'available' | 'booked';
+  notes?: string;
+  type: 'direct' | 'slot';
+  userId?: string;
+  doctorId?: string;
+  doctorName?: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 export type SymptomCategory = {
