@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ interface DoctorSlotsProps {
 
 const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
   const { slots, loading } = useAvailableSlots(doctor.id);
-  const { bookAppointment } = useAppointmentBooking();
+  const { bookSlotAppointment } = useAppointmentBooking();
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [reason, setReason] = useState('');
   const [isBooking, setIsBooking] = useState(false);
@@ -42,13 +41,11 @@ const DoctorSlots: React.FC<DoctorSlotsProps> = ({ doctor }) => {
 
     setIsBooking(true);
     try {
-      await bookAppointment({
-        doctor_id: doctor.id,
-        slot_id: selectedSlot.id,
-        date: selectedSlot.date,
-        time: selectedSlot.start_time,
-        reason: reason || 'General consultation'
-      });
+      await bookSlotAppointment(
+        selectedSlot.id,
+        '', // Patient name will be auto-filled from user profile
+        reason || 'General consultation'
+      );
       
       setShowBookingDialog(false);
       setSelectedSlot(null);

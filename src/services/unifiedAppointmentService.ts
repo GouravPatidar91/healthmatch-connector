@@ -39,7 +39,7 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (!doctorProfile) throw new Error('Doctor profile not found');
 
-      // Fetch direct appointments
+      // Fetch direct appointments with patient profile data
       const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
         .select(`
@@ -50,7 +50,7 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (directError) throw directError;
 
-      // Fetch slot-based appointments
+      // Fetch slot-based appointments with patient profile data
       const { data: slotAppointments, error: slotError } = await supabase
         .from('appointment_slots')
         .select(`
@@ -64,7 +64,7 @@ export const useUnifiedDoctorAppointments = () => {
 
       // Transform and unify the data
       const unifiedAppointments: UnifiedAppointment[] = [
-        // Direct appointments
+        // Direct appointments - use profile names when available
         ...(directAppointments || []).map(appointment => ({
           id: appointment.id,
           date: appointment.date,
@@ -79,7 +79,7 @@ export const useUnifiedDoctorAppointments = () => {
           userId: appointment.user_id,
           doctorName: appointment.doctor_name
         })),
-        // Slot-based appointments
+        // Slot-based appointments - prioritize profile names over stored patient_name
         ...(slotAppointments || []).map(slot => ({
           id: slot.id,
           date: slot.date,
