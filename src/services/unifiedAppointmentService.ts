@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -39,12 +38,12 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (!doctorProfile) throw new Error('Doctor profile not found');
 
-      // Fetch direct appointments with patient profile data
+      // Fetch direct appointments with patient profile data using the correct foreign key reference
       const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
         .select(`
           *,
-          profiles!appointments_user_id_fkey(first_name, last_name)
+          profiles(first_name, last_name)
         `)
         .eq('doctor_name', doctorProfile.name);
 
@@ -55,7 +54,7 @@ export const useUnifiedDoctorAppointments = () => {
         .from('appointment_slots')
         .select(`
           *,
-          profiles!appointment_slots_user_id_fkey(first_name, last_name)
+          profiles(first_name, last_name)
         `)
         .eq('doctor_id', user.id)
         .neq('status', 'available');
