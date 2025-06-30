@@ -1,16 +1,13 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Mail } from "lucide-react";
 
 const AuthForm = () => {
   const { toast } = useToast();
@@ -19,9 +16,6 @@ const AuthForm = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -64,47 +58,6 @@ const AuthForm = () => {
       });
     } finally {
       setGoogleLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    if (!resetEmail) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setResetLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/dashboard`,
-      });
-
-      if (error) {
-        toast({
-          title: "Reset failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Reset email sent",
-          description: "Check your email for password reset instructions",
-        });
-        setIsResetDialogOpen(false);
-        setResetEmail("");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Reset failed",
-        description: error.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setResetLoading(false);
     }
   };
 
@@ -250,41 +203,12 @@ const AuthForm = () => {
               </div>
               
               <div className="text-right">
-                <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="link" className="px-0 text-sm">
-                      Forgot password?
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Reset Password</DialogTitle>
-                      <DialogDescription>
-                        Enter your email address and we'll send you a link to reset your password.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="reset-email">Email</Label>
-                        <Input
-                          id="reset-email"
-                          type="email"
-                          placeholder="name@example.com"
-                          value={resetEmail}
-                          onChange={(e) => setResetEmail(e.target.value)}
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleForgotPassword} 
-                        disabled={resetLoading}
-                        className="w-full"
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        {resetLoading ? "Sending..." : "Send Reset Link"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
               </div>
             </CardContent>
             <CardFooter>
