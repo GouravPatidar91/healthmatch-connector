@@ -211,6 +211,12 @@
   }
   
   .rounded-2xl {
-    @apply rounded-lg sm:rounded-2xl;
+    border-radius: 0.5rem;
+  }
+  
+  @media (min-width: 640px) {
+    .rounded-2xl {
+      border-radius: 1rem;
+    }
   }
 }
