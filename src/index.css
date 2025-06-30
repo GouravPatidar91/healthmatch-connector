@@ -75,22 +75,31 @@
   body {
     @apply bg-gradient-to-br from-slate-50 to-blue-50/30 text-gray-900 antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight text-gray-900;
+    word-wrap: break-word;
+    hyphens: auto;
   }
 
   h1 {
-    @apply text-3xl md:text-4xl;
+    @apply text-2xl sm:text-3xl md:text-4xl;
   }
 
   h2 {
-    @apply text-2xl md:text-3xl;
+    @apply text-xl sm:text-2xl md:text-3xl;
   }
 
   h3 {
-    @apply text-xl md:text-2xl;
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  p, span, div {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
 }
 
@@ -108,11 +117,11 @@
   }
   
   .btn-modern {
-    @apply bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl px-6 py-3 transition-all duration-200 shadow-lg hover:shadow-xl;
+    @apply bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl px-4 sm:px-6 py-2 sm:py-3 transition-all duration-200 shadow-lg hover:shadow-xl text-sm sm:text-base;
   }
   
   .btn-outline-modern {
-    @apply border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 text-blue-600 font-medium rounded-xl px-6 py-3 transition-all duration-200;
+    @apply border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 text-blue-600 font-medium rounded-xl px-4 sm:px-6 py-2 sm:py-3 transition-all duration-200 text-sm sm:text-base;
   }
 
   .sidebar-modern {
@@ -128,22 +137,80 @@
   }
 
   .health-card {
-    @apply bg-white/70 backdrop-blur-sm border border-green-100/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300;
+    @apply bg-white/70 backdrop-blur-sm border border-green-100/50 rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300;
   }
 
   .emergency-btn {
-    @apply bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl px-8 py-4 shadow-lg hover:shadow-xl transition-all duration-200;
+    @apply bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl px-6 sm:px-8 py-3 sm:py-4 shadow-lg hover:shadow-xl transition-all duration-200 text-sm sm:text-base;
   }
 
   .status-good {
-    @apply text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full text-sm font-medium;
+    @apply text-emerald-500 bg-emerald-50 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
   }
 
   .status-warning {
-    @apply text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full text-sm font-medium;
+    @apply text-yellow-600 bg-yellow-50 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
   }
 
   .status-danger {
-    @apply text-red-500 bg-red-50 px-3 py-1 rounded-full text-sm font-medium;
+    @apply text-red-500 bg-red-50 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
+  }
+
+  .mobile-responsive-text {
+    @apply text-sm sm:text-base leading-relaxed;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  .mobile-safe-container {
+    @apply px-4 sm:px-6 lg:px-8 max-w-full overflow-x-hidden;
+  }
+
+  .mobile-card {
+    @apply w-full max-w-none sm:max-w-md mx-auto;
+  }
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 640px) {
+  .container {
+    @apply px-4 max-w-full;
+  }
+  
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  pre {
+    @apply text-xs overflow-x-auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  code {
+    @apply text-xs;
+    word-wrap: break-word;
+  }
+  
+  .accordion-content {
+    @apply text-sm;
+  }
+  
+  .grid {
+    @apply gap-2 sm:gap-4;
+  }
+  
+  .space-y-4 > * + * {
+    @apply mt-2 sm:mt-4;
+  }
+  
+  .space-y-6 > * + * {
+    @apply mt-3 sm:mt-6;
+  }
+  
+  .rounded-2xl {
+    @apply rounded-lg sm:rounded-2xl;
   }
 }

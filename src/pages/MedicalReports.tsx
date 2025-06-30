@@ -20,7 +20,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
   AccordionContent,
@@ -366,60 +365,60 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Comprehensive Medical Report Analysis</h1>
-        <p className="text-gray-600">
+    <div className="mobile-safe-container mx-auto py-4 sm:py-8 max-w-6xl">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Comprehensive Medical Report Analysis</h1>
+        <p className="mobile-responsive-text text-gray-600">
           Upload your medical reports and get AI-powered deep analysis in your preferred language
         </p>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-4 sm:gap-6">
         {/* Upload Section */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
               Upload Medical Report
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="mobile-responsive-text">
               Supported formats: PDF, JPEG, PNG (Max 10MB)
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
             <div>
-              <Label htmlFor="report-file">Select Medical Report</Label>
+              <Label htmlFor="report-file" className="text-sm sm:text-base">Select Medical Report</Label>
               <Input
                 id="report-file"
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={handleFileChange}
-                className="mt-1"
+                className="mt-1 text-sm sm:text-base"
               />
               {file && (
-                <p className="text-sm text-gray-600 mt-2">
+                <p className="text-xs sm:text-sm text-gray-600 mt-2 break-all">
                   Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="language">Preferred Language</Label>
+              <Label htmlFor="language" className="text-sm sm:text-base">Preferred Language</Label>
               <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="w-full justify-between mt-1"
+                    className="w-full justify-between mt-1 text-sm sm:text-base"
                   >
-                    {selectedLanguageLabel}
+                    <span className="truncate">{selectedLanguageLabel}</span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
+                <PopoverContent className="w-full p-0 z-50 bg-white" align="start">
                   <Command>
-                    <CommandInput placeholder="Search languages..." />
-                    <CommandList className="max-h-80">
+                    <CommandInput placeholder="Search languages..." className="text-sm" />
+                    <CommandList className="max-h-60 sm:max-h-80">
                       <CommandEmpty>No language found.</CommandEmpty>
                       {Object.entries(groupedLanguages).map(([category, languages]) => (
                         <CommandGroup key={category} heading={category}>
@@ -431,6 +430,7 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                                 setLanguage(lang.value);
                                 setOpen(false);
                               }}
+                              className="text-sm"
                             >
                               {lang.label}
                             </CommandItem>
@@ -446,7 +446,7 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
             <Button
               onClick={analyzeReport}
               disabled={!file || isAnalyzing}
-              className="w-full"
+              className="w-full text-sm sm:text-base"
             >
               {isAnalyzing ? (
                 <>
@@ -468,72 +468,72 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
           <>
             {/* Header Card with Urgency */}
             <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Stethoscope className="h-6 w-6" />
+              <CardHeader className="px-4 sm:px-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                    <Stethoscope className="h-5 w-5 sm:h-6 sm:w-6" />
                     Comprehensive Medical Analysis
                   </CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                     <Badge className={`${
                       analysisResult.urgencyLevel === 'High' ? 'bg-red-100 text-red-800' :
                       analysisResult.urgencyLevel === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-green-100 text-green-800'
-                    }`}>
+                    } text-xs sm:text-sm`}>
                       {analysisResult.urgencyLevel} Urgency
                     </Badge>
-                    <Button variant="outline" size="sm" onClick={downloadComprehensiveReport}>
-                      <Download className="mr-2 h-4 w-4" />
+                    <Button variant="outline" size="sm" onClick={downloadComprehensiveReport} className="text-xs sm:text-sm">
+                      <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                       Download Report
                     </Button>
                   </div>
                 </div>
-                <CardDescription>
+                <CardDescription className="mobile-responsive-text">
                   Language: {analysisResult.language} | Analysis completed on {new Date().toLocaleDateString()}
                 </CardDescription>
               </CardHeader>
             </Card>
 
             {/* Detailed Analysis Sections */}
-            <div className="grid gap-6">
-              <Accordion type="multiple" className="w-full space-y-4">
+            <div className="grid gap-4 sm:gap-6">
+              <Accordion type="multiple" className="w-full space-y-3 sm:space-y-4">
                 
                 {/* 1. Summary of Findings */}
-                <AccordionItem value="summary" className="border rounded-lg px-4">
-                  <AccordionTrigger className="text-left hover:no-underline">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-blue-100 p-2 rounded-lg">
-                        <ClipboardCheck className="h-5 w-5 text-blue-600" />
+                <AccordionItem value="summary" className="border rounded-lg px-3 sm:px-4">
+                  <AccordionTrigger className="text-left hover:no-underline py-3 sm:py-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="bg-blue-100 p-1.5 sm:p-2 rounded-lg">
+                        <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">1. Summary of Findings</h3>
-                        <p className="text-sm text-gray-600">Diagnosis, abnormal values, and severity assessment</p>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-base sm:text-lg">1. Summary of Findings</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">Diagnosis, abnormal values, and severity assessment</p>
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-4">
-                    <div className="grid gap-4">
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-blue-800 mb-2">Diagnosis</h4>
-                        <p className="text-blue-700">{analysisResult.summaryOfFindings?.diagnosis || 'No diagnosis provided'}</p>
+                  <AccordionContent className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
+                    <div className="grid gap-3 sm:gap-4">
+                      <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-blue-800 mb-2 text-sm sm:text-base">Diagnosis</h4>
+                        <p className="mobile-responsive-text text-blue-700">{analysisResult.summaryOfFindings?.diagnosis || 'No diagnosis provided'}</p>
                       </div>
                       
                       {analysisResult.summaryOfFindings?.severityOrStage && (
-                        <div className="bg-orange-50 p-4 rounded-lg">
-                          <h4 className="font-medium text-orange-800 mb-2">Severity/Stage</h4>
-                          <p className="text-orange-700">{analysisResult.summaryOfFindings.severityOrStage}</p>
+                        <div className="bg-orange-50 p-3 sm:p-4 rounded-lg">
+                          <h4 className="font-medium text-orange-800 mb-2 text-sm sm:text-base">Severity/Stage</h4>
+                          <p className="mobile-responsive-text text-orange-700">{analysisResult.summaryOfFindings.severityOrStage}</p>
                         </div>
                       )}
                       
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-gray-800 mb-2">Normal/Abnormal Values</h4>
+                      <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-gray-800 mb-2 text-sm sm:text-base">Normal/Abnormal Values</h4>
                         <div className="space-y-2">
                           {(analysisResult.summaryOfFindings?.normalAbnormalValues || []).map((value, index) => (
                             <div key={index} className="flex items-start gap-2">
-                              <span className="bg-gray-200 text-gray-800 text-xs font-medium px-2 py-1 rounded min-w-[24px] text-center">
+                              <span className="bg-gray-200 text-gray-800 text-xs font-medium px-2 py-1 rounded min-w-[20px] sm:min-w-[24px] text-center">
                                 {index + 1}
                               </span>
-                              <p className="text-sm text-gray-700">{value}</p>
+                              <p className="mobile-responsive-text text-gray-700">{value}</p>
                             </div>
                           ))}
                         </div>
@@ -543,32 +543,32 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                 </AccordionItem>
 
                 {/* 2. Interpretation of Results */}
-                <AccordionItem value="interpretation" className="border rounded-lg px-4">
-                  <AccordionTrigger className="text-left hover:no-underline">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-green-100 p-2 rounded-lg">
-                        <FileText className="h-5 w-5 text-green-600" />
+                <AccordionItem value="interpretation" className="border rounded-lg px-3 sm:px-4">
+                  <AccordionTrigger className="text-left hover:no-underline py-3 sm:py-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="bg-green-100 p-1.5 sm:p-2 rounded-lg">
+                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">2. Interpretation of Results</h3>
-                        <p className="text-sm text-gray-600">Detailed explanation of findings and clinical significance</p>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-base sm:text-lg">2. Interpretation of Results</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">Detailed explanation of findings and clinical significance</p>
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-4">
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-green-800 mb-2">Overall Interpretation</h4>
-                      <p className="text-green-700">{analysisResult.interpretationOfResults?.overallInterpretation || 'No overall interpretation available'}</p>
+                  <AccordionContent className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
+                    <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
+                      <h4 className="font-medium text-green-800 mb-2 text-sm sm:text-base">Overall Interpretation</h4>
+                      <p className="mobile-responsive-text text-green-700">{analysisResult.interpretationOfResults?.overallInterpretation || 'No overall interpretation available'}</p>
                     </div>
                     
                     {(analysisResult.interpretationOfResults?.significantResults || []).length > 0 && (
                       <div className="space-y-3">
-                        <h4 className="font-medium text-gray-800">Significant Results</h4>
+                        <h4 className="font-medium text-gray-800 text-sm sm:text-base">Significant Results</h4>
                         {(analysisResult.interpretationOfResults?.significantResults || []).map((result, index) => (
                           <Card key={index} className="border-l-4 border-l-green-500">
-                            <CardContent className="p-4">
-                              <h5 className="font-medium text-gray-900 mb-2">{result.parameter}</h5>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <CardContent className="p-3 sm:p-4">
+                              <h5 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">{result.parameter}</h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                                 <div>
                                   <span className="font-medium text-gray-600">Value: </span>
                                   <span className="text-gray-800">{result.value}</span>
@@ -578,7 +578,7 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                                   <span className="text-gray-800">{result.normalRange}</span>
                                 </div>
                               </div>
-                              <div className="mt-3 space-y-2">
+                              <div className="mt-2 sm:mt-3 space-y-1 sm:space-y-2 text-xs sm:text-sm">
                                 <div>
                                   <span className="font-medium text-gray-600">Interpretation: </span>
                                   <span className="text-gray-800">{result.interpretation}</span>
@@ -597,28 +597,28 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                 </AccordionItem>
 
                 {/* 3. Treatment Plan */}
-                <AccordionItem value="treatment" className="border rounded-lg px-4">
-                  <AccordionTrigger className="text-left hover:no-underline">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-purple-100 p-2 rounded-lg">
-                        <Pill className="h-5 w-5 text-purple-600" />
+                <AccordionItem value="treatment" className="border rounded-lg px-3 sm:px-4">
+                  <AccordionTrigger className="text-left hover:no-underline py-3 sm:py-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="bg-purple-100 p-1.5 sm:p-2 rounded-lg">
+                        <Pill className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">3. Treatment Plan</h3>
-                        <p className="text-sm text-gray-600">Medications, therapies, and lifestyle recommendations</p>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-base sm:text-lg">3. Treatment Plan</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">Medications, therapies, and lifestyle recommendations</p>
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-4">
+                  <AccordionContent className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
                     {/* Medications */}
                     {(analysisResult.treatmentPlan?.medicationsPrescribed || []).length > 0 && (
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-purple-800 mb-3">Medications Prescribed</h4>
+                      <div className="bg-purple-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-purple-800 mb-3 text-sm sm:text-base">Medications Prescribed</h4>
                         <div className="space-y-3">
                           {(analysisResult.treatmentPlan?.medicationsPrescribed || []).map((med, index) => (
-                            <div key={index} className="bg-white p-3 rounded border">
+                            <div key={index} className="bg-white p-2 sm:p-3 rounded border text-xs sm:text-sm">
                               <h5 className="font-medium text-gray-900">{med.name}</h5>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-700 mt-2">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1 sm:mt-2">
                                 <div><span className="font-medium">Dosage:</span> {med.dosage}</div>
                                 <div><span className="font-medium">Duration:</span> {med.duration}</div>
                                 <div><span className="font-medium">Purpose:</span> {med.purpose}</div>
@@ -631,15 +631,15 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
 
                     {/* Therapies */}
                     {(analysisResult.treatmentPlan?.therapiesRecommended || []).length > 0 && (
-                      <div className="bg-indigo-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-indigo-800 mb-2">Therapies Recommended</h4>
+                      <div className="bg-indigo-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-indigo-800 mb-2 text-sm sm:text-base">Therapies Recommended</h4>
                         <div className="space-y-2">
                           {(analysisResult.treatmentPlan?.therapiesRecommended || []).map((therapy, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <span className="bg-indigo-200 text-indigo-800 text-xs font-medium px-2 py-1 rounded min-w-[24px] text-center">
+                            <div key={index} className="flex items-start gap-2 text-xs sm:text-sm">
+                              <span className="bg-indigo-200 text-indigo-800 font-medium px-2 py-1 rounded min-w-[20px] sm:min-w-[24px] text-center">
                                 {index + 1}
                               </span>
-                              <p className="text-sm text-indigo-700">{therapy}</p>
+                              <p className="text-indigo-700">{therapy}</p>
                             </div>
                           ))}
                         </div>
@@ -648,24 +648,24 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
 
                     {/* Lifestyle Changes */}
                     {analysisResult.treatmentPlan?.lifestyleChanges && (
-                      <div className="bg-teal-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-teal-800 mb-3">Lifestyle Changes</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-teal-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-teal-800 mb-3 text-sm sm:text-base">Lifestyle Changes</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
-                            <h5 className="font-medium text-teal-700 mb-1">Diet</h5>
-                            <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.diet || 'Not specified'}</p>
+                            <h5 className="font-medium text-teal-700 mb-1 text-xs sm:text-sm">Diet</h5>
+                            <p className="text-teal-600 text-xs sm:text-sm">{analysisResult.treatmentPlan.lifestyleChanges.diet || 'Not specified'}</p>
                           </div>
                           <div>
-                            <h5 className="font-medium text-teal-700 mb-1">Exercise</h5>
-                            <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.exercise || 'Not specified'}</p>
+                            <h5 className="font-medium text-teal-700 mb-1 text-xs sm:text-sm">Exercise</h5>
+                            <p className="text-teal-600 text-xs sm:text-sm">{analysisResult.treatmentPlan.lifestyleChanges.exercise || 'Not specified'}</p>
                           </div>
                           <div>
-                            <h5 className="font-medium text-teal-700 mb-1">Sleep</h5>
-                            <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.sleep || 'Not specified'}</p>
+                            <h5 className="font-medium text-teal-700 mb-1 text-xs sm:text-sm">Sleep</h5>
+                            <p className="text-teal-600 text-xs sm:text-sm">{analysisResult.treatmentPlan.lifestyleChanges.sleep || 'Not specified'}</p>
                           </div>
                           <div>
-                            <h5 className="font-medium text-teal-700 mb-1">Other</h5>
-                            <p className="text-sm text-teal-600">{analysisResult.treatmentPlan.lifestyleChanges.other || 'Not specified'}</p>
+                            <h5 className="font-medium text-teal-700 mb-1 text-xs sm:text-sm">Other</h5>
+                            <p className="text-teal-600 text-xs sm:text-sm">{analysisResult.treatmentPlan.lifestyleChanges.other || 'Not specified'}</p>
                           </div>
                         </div>
                       </div>
@@ -673,15 +673,15 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
 
                     {/* Preventive Measures */}
                     {(analysisResult.treatmentPlan?.preventiveMeasures || []).length > 0 && (
-                      <div className="bg-cyan-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-cyan-800 mb-2">Preventive Measures</h4>
+                      <div className="bg-cyan-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-cyan-800 mb-2 text-sm sm:text-base">Preventive Measures</h4>
                         <div className="space-y-2">
                           {(analysisResult.treatmentPlan?.preventiveMeasures || []).map((measure, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <span className="bg-cyan-200 text-cyan-800 text-xs font-medium px-2 py-1 rounded min-w-[24px] text-center">
+                            <div key={index} className="flex items-start gap-2 text-xs sm:text-sm">
+                              <span className="bg-cyan-200 text-cyan-800 font-medium px-2 py-1 rounded min-w-[20px] sm:min-w-[24px] text-center">
                                 {index + 1}
                               </span>
-                              <p className="text-sm text-cyan-700">{measure}</p>
+                              <p className="text-cyan-700">{measure}</p>
                             </div>
                           ))}
                         </div>
@@ -691,28 +691,28 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                 </AccordionItem>
 
                 {/* 4. Next Steps */}
-                <AccordionItem value="nextsteps" className="border rounded-lg px-4">
-                  <AccordionTrigger className="text-left hover:no-underline">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-orange-100 p-2 rounded-lg">
-                        <Calendar className="h-5 w-5 text-orange-600" />
+                <AccordionItem value="nextsteps" className="border rounded-lg px-3 sm:px-4">
+                  <AccordionTrigger className="text-left hover:no-underline py-3 sm:py-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="bg-orange-100 p-1.5 sm:p-2 rounded-lg">
+                        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">4. Next Steps / Follow-Up</h3>
-                        <p className="text-sm text-gray-600">Additional tests, referrals, and follow-up appointments</p>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-base sm:text-lg">4. Next Steps / Follow-Up</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">Additional tests, referrals, and follow-up appointments</p>
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-4">
+                  <AccordionContent className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
                     {/* Additional Tests */}
                     {(analysisResult.nextSteps?.additionalTestsRequired || []).length > 0 && (
-                      <div className="bg-red-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-red-800 mb-3">Additional Tests Required</h4>
+                      <div className="bg-red-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-red-800 mb-3 text-sm sm:text-base">Additional Tests Required</h4>
                         <div className="space-y-3">
                           {(analysisResult.nextSteps?.additionalTestsRequired || []).map((test, index) => (
-                            <div key={index} className="bg-white p-3 rounded border">
+                            <div key={index} className="bg-white p-2 sm:p-3 rounded border text-xs sm:text-sm">
                               <h5 className="font-medium text-gray-900">{test.testName}</h5>
-                              <div className="text-sm text-gray-700 mt-2 space-y-1">
+                              <div className="mt-1 sm:mt-2 space-y-1">
                                 <div><span className="font-medium">Reason:</span> {test.reason}</div>
                                 <div><span className="font-medium">Urgency:</span> {test.urgency}</div>
                               </div>
@@ -724,9 +724,9 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
 
                     {/* Specialist Referral */}
                     {analysisResult.nextSteps?.specialistReferral?.required && (
-                      <div className="bg-yellow-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-yellow-800 mb-2">Specialist Referral Required</h4>
-                        <div className="text-sm text-yellow-700 space-y-1">
+                      <div className="bg-yellow-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-yellow-800 mb-2 text-sm sm:text-base">Specialist Referral Required</h4>
+                        <div className="space-y-1 text-xs sm:text-sm text-yellow-700">
                           <div><span className="font-medium">Specialist Type:</span> {analysisResult.nextSteps.specialistReferral.specialistType || 'Not specified'}</div>
                           <div><span className="font-medium">Reason:</span> {analysisResult.nextSteps.specialistReferral.reason || 'Not specified'}</div>
                         </div>
@@ -735,12 +735,12 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
 
                     {/* Follow-up Appointments */}
                     {(analysisResult.nextSteps?.followUpAppointments || []).length > 0 && (
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-blue-800 mb-3">Follow-up Appointments</h4>
+                      <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
+                        <h4 className="font-medium text-blue-800 mb-3 text-sm sm:text-base">Follow-up Appointments</h4>
                         <div className="space-y-2">
                           {(analysisResult.nextSteps?.followUpAppointments || []).map((appointment, index) => (
-                            <div key={index} className="bg-white p-3 rounded border">
-                              <div className="text-sm text-gray-700 space-y-1">
+                            <div key={index} className="bg-white p-2 sm:p-3 rounded border text-xs sm:text-sm">
+                              <div className="space-y-1">
                                 <div><span className="font-medium">Timeframe:</span> {appointment.timeframe}</div>
                                 <div><span className="font-medium">Purpose:</span> {appointment.purpose}</div>
                               </div>
@@ -753,35 +753,35 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                 </AccordionItem>
 
                 {/* 5. Documentation */}
-                <AccordionItem value="documentation" className="border rounded-lg px-4">
-                  <AccordionTrigger className="text-left hover:no-underline">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gray-100 p-2 rounded-lg">
-                        <FileText className="h-5 w-5 text-gray-600" />
+                <AccordionItem value="documentation" className="border rounded-lg px-3 sm:px-4">
+                  <AccordionTrigger className="text-left hover:no-underline py-3 sm:py-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="bg-gray-100 p-1.5 sm:p-2 rounded-lg">
+                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">5. Documentation Provided</h3>
-                        <p className="text-sm text-gray-600">Report details and additional notes</p>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-base sm:text-lg">5. Documentation Provided</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">Report details and additional notes</p>
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-4">
-                    <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                  <AccordionContent className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
+                    <div className="bg-gray-50 p-3 sm:p-4 rounded-lg space-y-3 text-xs sm:text-sm">
                       <div>
-                        <h4 className="font-medium text-gray-800 mb-2">Report Type</h4>
+                        <h4 className="font-medium text-gray-800 mb-2 text-sm sm:text-base">Report Type</h4>
                         <p className="text-gray-700">{analysisResult.documentationProvided?.reportType || 'Not specified'}</p>
                       </div>
                       
                       {(analysisResult.documentationProvided?.keyDocuments || []).length > 0 && (
                         <div>
-                          <h4 className="font-medium text-gray-800 mb-2">Key Documents</h4>
+                          <h4 className="font-medium text-gray-800 mb-2 text-sm sm:text-base">Key Documents</h4>
                           <div className="space-y-1">
                             {(analysisResult.documentationProvided?.keyDocuments || []).map((doc, index) => (
                               <div key={index} className="flex items-start gap-2">
-                                <span className="bg-gray-200 text-gray-800 text-xs font-medium px-2 py-1 rounded min-w-[24px] text-center">
+                                <span className="bg-gray-200 text-gray-800 font-medium px-2 py-1 rounded min-w-[20px] sm:min-w-[24px] text-center">
                                   {index + 1}
                                 </span>
-                                <p className="text-sm text-gray-700">{doc}</p>
+                                <p>{doc}</p>
                               </div>
                             ))}
                           </div>
@@ -789,7 +789,7 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
                       )}
                       
                       <div>
-                        <h4 className="font-medium text-gray-800 mb-2">Additional Notes</h4>
+                        <h4 className="font-medium text-gray-800 mb-2 text-sm sm:text-base">Additional Notes</h4>
                         <p className="text-gray-700">{analysisResult.documentationProvided?.additionalNotes || 'None'}</p>
                       </div>
                     </div>
@@ -800,14 +800,14 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
 
             {/* Disclaimer */}
             <Card className="border-amber-200 bg-amber-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-800">
-                  <AlertTriangle className="h-5 w-5" />
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2 text-amber-800 text-base sm:text-lg">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
                   Important Disclaimer
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-amber-700 text-sm">{analysisResult.disclaimer || 'This analysis is AI-generated and should be reviewed by a qualified healthcare professional'}</p>
+              <CardContent className="px-4 sm:px-6">
+                <p className="mobile-responsive-text text-amber-700">{analysisResult.disclaimer || 'This analysis is AI-generated and should be reviewed by a qualified healthcare professional'}</p>
               </CardContent>
             </Card>
           </>

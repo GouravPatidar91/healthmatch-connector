@@ -61,19 +61,19 @@ const ForgotPassword = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-medical-blue-light to-medical-blue">
-        <Card className="w-full max-w-md mx-auto">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <Mail className="h-6 w-6 text-green-600" />
+      <div className="min-h-screen flex flex-col items-center justify-center mobile-safe-container bg-gradient-to-b from-medical-blue-light to-medical-blue">
+        <Card className="mobile-card">
+          <CardHeader className="text-center px-4 sm:px-6">
+            <div className="mx-auto mb-4 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-green-100">
+              <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </div>
-            <CardTitle>Check your email</CardTitle>
-            <CardDescription>
-              We've sent a password reset link to {email}
+            <CardTitle className="text-lg sm:text-xl">Check your email</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              We've sent a password reset link to <span className="break-all">{email}</span>
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
+          <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+            <p className="mobile-responsive-text text-muted-foreground text-center">
               Click the link in your email to reset your password. If you don't see the email, check your spam folder.
             </p>
             <div className="flex flex-col space-y-2">
@@ -83,13 +83,14 @@ const ForgotPassword = () => {
                   setEmailSent(false);
                   setEmail("");
                 }}
+                className="w-full text-sm sm:text-base"
               >
                 Try different email
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => navigate('/login')}
-                className="flex items-center justify-center"
+                className="flex items-center justify-center w-full text-sm sm:text-base"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to login
@@ -102,18 +103,18 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-medical-blue-light to-medical-blue">
-      <Card className="w-full max-w-md mx-auto">
+    <div className="min-h-screen flex flex-col items-center justify-center mobile-safe-container bg-gradient-to-b from-medical-blue-light to-medical-blue">
+      <Card className="mobile-card">
         <form onSubmit={handleSubmit}>
-          <CardHeader>
-            <CardTitle>Reset your password</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">Reset your password</CardTitle>
+            <CardDescription className="mobile-responsive-text">
               Enter your email address and we'll send you a link to reset your password
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -121,11 +122,12 @@ const ForgotPassword = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="text-sm sm:text-base"
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full"
+              className="w-full text-sm sm:text-base"
               disabled={loading}
             >
               <Mail className="w-4 h-4 mr-2" />
@@ -134,7 +136,7 @@ const ForgotPassword = () => {
             <Button
               type="button"
               variant="ghost"
-              className="w-full flex items-center justify-center"
+              className="w-full flex items-center justify-center text-sm sm:text-base"
               onClick={() => navigate('/login')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />

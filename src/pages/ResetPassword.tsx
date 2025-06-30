@@ -101,28 +101,28 @@ const ResetPassword = () => {
 
   if (!isValidSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center mobile-safe-container">
+        <div className="animate-spin rounded-full h-24 w-24 sm:h-32 sm:w-32 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (resetComplete) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-medical-blue-light to-medical-blue">
-        <Card className="w-full max-w-md mx-auto">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+      <div className="min-h-screen flex flex-col items-center justify-center mobile-safe-container bg-gradient-to-b from-medical-blue-light to-medical-blue">
+        <Card className="mobile-card">
+          <CardHeader className="text-center px-4 sm:px-6">
+            <div className="mx-auto mb-4 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </div>
-            <CardTitle>Password updated successfully</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Password updated successfully</CardTitle>
+            <CardDescription className="mobile-responsive-text">
               Your password has been changed. You can now sign in with your new password.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6">
             <Button
-              className="w-full"
+              className="w-full text-sm sm:text-base"
               onClick={() => navigate('/login')}
             >
               Continue to login
@@ -134,18 +134,18 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-medical-blue-light to-medical-blue">
-      <Card className="w-full max-w-md mx-auto">
+    <div className="min-h-screen flex flex-col items-center justify-center mobile-safe-container bg-gradient-to-b from-medical-blue-light to-medical-blue">
+      <Card className="mobile-card">
         <form onSubmit={handleSubmit}>
-          <CardHeader>
-            <CardTitle>Set new password</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">Set new password</CardTitle>
+            <CardDescription className="mobile-responsive-text">
               Enter your new password below
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
             <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
+              <Label htmlFor="password" className="text-sm sm:text-base">New Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -153,13 +153,14 @@ const ResetPassword = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="text-sm sm:text-base"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Password must be at least 6 characters long
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-sm sm:text-base">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -167,11 +168,12 @@ const ResetPassword = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                className="text-sm sm:text-base"
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full"
+              className="w-full text-sm sm:text-base"
               disabled={loading}
             >
               <Lock className="w-4 h-4 mr-2" />
