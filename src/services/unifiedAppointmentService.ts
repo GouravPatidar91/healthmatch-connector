@@ -49,6 +49,8 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (directError) throw directError;
 
+      console.log('Direct appointments raw data:', directAppointments);
+
       // Fetch slot-based appointments with patient profile data
       const { data: slotAppointments, error: slotError } = await supabase
         .from('appointment_slots')
@@ -61,39 +63,79 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (slotError) throw slotError;
 
+      console.log('Slot appointments raw data:', slotAppointments);
+
       // Transform and unify the data
       const unifiedAppointments: UnifiedAppointment[] = [
-        // Direct appointments - use profile names when available
-        ...(directAppointments || []).map(appointment => ({
-          id: appointment.id,
-          date: appointment.date,
-          time: appointment.time,
-          patientName: appointment.profiles 
-            ? `${appointment.profiles.first_name || ''} ${appointment.profiles.last_name || ''}`.trim() || 'Unknown Patient'
-            : 'Unknown Patient',
-          reason: appointment.reason || 'General consultation',
-          status: appointment.status as any,
-          notes: appointment.notes,
-          type: 'direct' as const,
-          userId: appointment.user_id,
-          doctorName: appointment.doctor_name
-        })),
+        // Direct appointments - improved profile name extraction with debugging
+        ...(directAppointments || []).map(appointment => {
+          console.log('Processing direct appointment:', appointment);
+          console.log('Profile data:', appointment.profiles);
+          
+          let patientName = 'Unknown Patient';
+          
+          // Handle the profile data correctly - it should be an object, not an array
+          if (appointment.profiles && typeof appointment.profiles === 'object') {
+            const profile = appointment.profiles;
+            const firstName = profile.first_name || '';
+            const lastName = profile.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            if (fullName) {
+              patientName = fullName;
+            }
+          }
+          
+          console.log('Final patient name for direct appointment:', patientName);
+          
+          return {
+            id: appointment.id,
+            date: appointment.date,
+            time: appointment.time,
+            patientName,
+            reason: appointment.reason || 'General consultation',
+            status: appointment.status as any,
+            notes: appointment.notes,
+            type: 'direct' as const,
+            userId: appointment.user_id,
+            doctorName: appointment.doctor_name
+          };
+        }),
         // Slot-based appointments - prioritize profile names over stored patient_name
-        ...(slotAppointments || []).map(slot => ({
-          id: slot.id,
-          date: slot.date,
-          time: slot.start_time,
-          patientName: slot.profiles 
-            ? `${slot.profiles.first_name || ''} ${slot.profiles.last_name || ''}`.trim() || slot.patient_name || 'Unknown Patient'
-            : slot.patient_name || 'Unknown Patient',
-          reason: slot.reason || 'General consultation',
-          status: slot.status === 'booked' ? 'confirmed' : slot.status as any,
-          type: 'slot' as const,
-          userId: slot.user_id,
-          doctorId: slot.doctor_id,
-          startTime: slot.start_time,
-          endTime: slot.end_time
-        }))
+        ...(slotAppointments || []).map(slot => {
+          console.log('Processing slot appointment:', slot);
+          console.log('Slot profile data:', slot.profiles);
+          
+          let patientName = slot.patient_name || 'Unknown Patient';
+          
+          // Handle the profile data correctly for slots too
+          if (slot.profiles && typeof slot.profiles === 'object') {
+            const profile = slot.profiles;
+            const firstName = profile.first_name || '';
+            const lastName = profile.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            if (fullName) {
+              patientName = fullName;
+            }
+          }
+          
+          console.log('Final patient name for slot appointment:', patientName);
+          
+          return {
+            id: slot.id,
+            date: slot.date,
+            time: slot.start_time,
+            patientName,
+            reason: slot.reason || 'General consultation',
+            status: slot.status === 'booked' ? 'confirmed' : slot.status as any,
+            type: 'slot' as const,
+            userId: slot.user_id,
+            doctorId: slot.doctor_id,
+            startTime: slot.start_time,
+            endTime: slot.end_time
+          };
+        })
       ];
 
       // Sort by date and time
@@ -103,6 +145,7 @@ export const useUnifiedDoctorAppointments = () => {
         return dateA.getTime() - dateB.getTime();
       });
 
+      console.log('Final unified appointments:', unifiedAppointments);
       setAppointments(unifiedAppointments);
     } catch (err) {
       console.error('Error fetching unified appointments:', err);
