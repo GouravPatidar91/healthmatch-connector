@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -38,39 +39,53 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (!doctorProfile) throw new Error('Doctor profile not found');
 
-      // Fetch direct appointments and use the database function for patient names
+      // Fetch direct appointments
       const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
-        .select('*, patient_display_name:get_patient_display_name(user_id)')
+        .select('*')
         .eq('doctor_name', doctorProfile.name);
 
       if (directError) throw directError;
 
-      console.log('Direct appointments with function data:', directAppointments);
+      console.log('Direct appointments data:', directAppointments);
 
-      // Fetch slot-based appointments and use the database function for patient names  
+      // Fetch slot-based appointments
       const { data: slotAppointments, error: slotError } = await supabase
         .from('appointment_slots')
-        .select('*, patient_display_name:get_patient_display_name(user_id)')
+        .select('*')
         .eq('doctor_id', user.id)
         .neq('status', 'available');
 
       if (slotError) throw slotError;
 
-      console.log('Slot appointments with function data:', slotAppointments);
+      console.log('Slot appointments data:', slotAppointments);
 
       // Transform and unify the data
-      const unifiedAppointments: UnifiedAppointment[] = [
-        // Direct appointments - use the database function result
-        ...(directAppointments || []).map(appointment => {
+      const unifiedAppointments: UnifiedAppointment[] = [];
+
+      // Process direct appointments
+      if (directAppointments) {
+        for (const appointment of directAppointments) {
           console.log('Processing direct appointment:', appointment);
           
-          // Use the database function result as the primary source
-          const patientName = appointment.patient_display_name || 'Unknown Patient';
+          let patientName = 'Unknown Patient';
           
-          console.log('Final patient name for direct appointment:', patientName);
+          // Get patient name using the database function if user_id exists
+          if (appointment.user_id) {
+            try {
+              const { data: nameResult, error: nameError } = await supabase
+                .rpc('get_patient_display_name', { user_uuid: appointment.user_id });
+              
+              if (!nameError && nameResult) {
+                patientName = nameResult;
+              }
+              console.log('Patient name from function:', patientName);
+            } catch (err) {
+              console.error('Error getting patient name:', err);
+            }
+          }
           
-          return {
+          unifiedAppointments.push({
             id: appointment.id,
             date: appointment.date,
             time: appointment.time,
@@ -81,18 +96,43 @@ export const useUnifiedDoctorAppointments = () => {
             type: 'direct' as const,
             userId: appointment.user_id,
             doctorName: appointment.doctor_name
-          };
-        }),
-        // Slot-based appointments - prioritize database function result over stored patient_name
-        ...(slotAppointments || []).map(slot => {
+          });
+        }
+      }
+
+      // Process slot-based appointments
+      if (slotAppointments) {
+        for (const slot of slotAppointments) {
           console.log('Processing slot appointment:', slot);
           
-          // Use the database function result as the primary source, fallback to stored patient_name
-          const patientName = slot.patient_display_name || slot.patient_name || 'Unknown Patient';
+          let patientName = 'Unknown Patient';
           
-          console.log('Final patient name for slot appointment:', patientName);
+          // Get patient name using the database function if user_id exists
+          if (slot.user_id) {
+            try {
+              const { data: nameResult, error: nameError } = await supabase
+                .rpc('get_patient_display_name', { user_uuid: slot.user_id });
+              
+              if (!nameError && nameResult) {
+                patientName = nameResult;
+              } else if (slot.patient_name) {
+                // Fallback to stored patient_name if function fails
+                patientName = slot.patient_name;
+              }
+              console.log('Patient name from function for slot:', patientName);
+            } catch (err) {
+              console.error('Error getting patient name for slot:', err);
+              // Fallback to stored patient_name
+              if (slot.patient_name) {
+                patientName = slot.patient_name;
+              }
+            }
+          } else if (slot.patient_name) {
+            // Use stored patient_name if no user_id
+            patientName = slot.patient_name;
+          }
           
-          return {
+          unifiedAppointments.push({
             id: slot.id,
             date: slot.date,
             time: slot.start_time,
@@ -104,9 +144,9 @@ export const useUnifiedDoctorAppointments = () => {
             doctorId: slot.doctor_id,
             startTime: slot.start_time,
             endTime: slot.end_time
-          };
-        })
-      ];
+          });
+        }
+      }
 
       // Sort by date and time
       unifiedAppointments.sort((a, b) => {
