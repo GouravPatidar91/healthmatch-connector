@@ -438,6 +438,10 @@ export type Database = {
           distance: number
         }[]
       }
+      get_patient_display_name: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
       get_verified_doctors: {
         Args: Record<PropertyKey, never>
         Returns: {

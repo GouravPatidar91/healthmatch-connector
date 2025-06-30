@@ -38,53 +38,35 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (!doctorProfile) throw new Error('Doctor profile not found');
 
-      // Fetch direct appointments with patient profile data using the correct foreign key reference
+      // Fetch direct appointments and use the database function for patient names
       const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          profiles(first_name, last_name)
-        `)
+        .select('*, patient_display_name:get_patient_display_name(user_id)')
         .eq('doctor_name', doctorProfile.name);
 
       if (directError) throw directError;
 
-      console.log('Direct appointments raw data:', directAppointments);
+      console.log('Direct appointments with function data:', directAppointments);
 
-      // Fetch slot-based appointments with patient profile data
+      // Fetch slot-based appointments and use the database function for patient names  
       const { data: slotAppointments, error: slotError } = await supabase
         .from('appointment_slots')
-        .select(`
-          *,
-          profiles(first_name, last_name)
-        `)
+        .select('*, patient_display_name:get_patient_display_name(user_id)')
         .eq('doctor_id', user.id)
         .neq('status', 'available');
 
       if (slotError) throw slotError;
 
-      console.log('Slot appointments raw data:', slotAppointments);
+      console.log('Slot appointments with function data:', slotAppointments);
 
       // Transform and unify the data
       const unifiedAppointments: UnifiedAppointment[] = [
-        // Direct appointments - improved profile name extraction with debugging
+        // Direct appointments - use the database function result
         ...(directAppointments || []).map(appointment => {
           console.log('Processing direct appointment:', appointment);
-          console.log('Profile data:', appointment.profiles);
           
-          let patientName = 'Unknown Patient';
-          
-          // Handle the profile data correctly - it should be an object, not an array
-          if (appointment.profiles && typeof appointment.profiles === 'object') {
-            const profile = appointment.profiles;
-            const firstName = profile.first_name || '';
-            const lastName = profile.last_name || '';
-            const fullName = `${firstName} ${lastName}`.trim();
-            
-            if (fullName) {
-              patientName = fullName;
-            }
-          }
+          // Use the database function result as the primary source
+          const patientName = appointment.patient_display_name || 'Unknown Patient';
           
           console.log('Final patient name for direct appointment:', patientName);
           
@@ -101,24 +83,12 @@ export const useUnifiedDoctorAppointments = () => {
             doctorName: appointment.doctor_name
           };
         }),
-        // Slot-based appointments - prioritize profile names over stored patient_name
+        // Slot-based appointments - prioritize database function result over stored patient_name
         ...(slotAppointments || []).map(slot => {
           console.log('Processing slot appointment:', slot);
-          console.log('Slot profile data:', slot.profiles);
           
-          let patientName = slot.patient_name || 'Unknown Patient';
-          
-          // Handle the profile data correctly for slots too
-          if (slot.profiles && typeof slot.profiles === 'object') {
-            const profile = slot.profiles;
-            const firstName = profile.first_name || '';
-            const lastName = profile.last_name || '';
-            const fullName = `${firstName} ${lastName}`.trim();
-            
-            if (fullName) {
-              patientName = fullName;
-            }
-          }
+          // Use the database function result as the primary source, fallback to stored patient_name
+          const patientName = slot.patient_display_name || slot.patient_name || 'Unknown Patient';
           
           console.log('Final patient name for slot appointment:', patientName);
           
