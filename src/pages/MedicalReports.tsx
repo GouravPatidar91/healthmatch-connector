@@ -356,6 +356,11 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
 
       // Upload the report content to Supabase Storage and get a public URL
       const fileName = `comprehensive-medical-analysis-${Date.now()}.txt`;
+      
+      console.log('📋 DOWNLOAD PROCESS STARTED');
+      console.log('Generated fileName:', fileName);
+      console.log('Content length:', content.length, 'characters');
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('medical-reports')
         .upload(fileName, content, {
@@ -364,17 +369,25 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        console.error('❌ Upload error:', uploadError);
+        console.log('🔄 Falling back to blob URL method');
+        
         // Fallback to old method if upload fails
         const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
+        const blobUrl = URL.createObjectURL(blob);
+        
+        console.log('📋 FALLBACK BLOB URL DETAILS:');
+        console.log('Raw Blob URL:', blobUrl);
+        console.log('Blob size:', blob.size, 'bytes');
+        console.log('Blob type:', blob.type);
+        
         const a = document.createElement('a');
-        a.href = url;
+        a.href = blobUrl;
         a.download = fileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(blobUrl);
         
         toast({
           title: "Download Started",
@@ -383,38 +396,63 @@ This comprehensive analysis was generated on ${new Date().toLocaleString()}.
         return;
       }
 
+      console.log('✅ Upload successful:', uploadData);
+      console.log('Upload path:', uploadData?.path);
+      console.log('Upload fullPath:', uploadData?.fullPath);
+
       // Get the public URL for the uploaded file
       const { data: urlData } = supabase.storage
         .from('medical-reports')
         .getPublicUrl(fileName);
 
+      console.log('🔗 PUBLIC URL GENERATION:');
+      console.log('URL Data:', urlData);
+      console.log('Raw Public URL:', urlData?.publicUrl);
+
       if (urlData?.publicUrl) {
+        // Log detailed URL information
+        console.log('📋 HTTPS URL DETAILS FOR APP VERSION:');
+        console.log('==============================================');
+        console.log('Full Raw URL:', urlData.publicUrl);
+        console.log('URL Protocol:', new URL(urlData.publicUrl).protocol);
+        console.log('URL Host:', new URL(urlData.publicUrl).host);
+        console.log('URL Pathname:', new URL(urlData.publicUrl).pathname);
+        console.log('URL Search:', new URL(urlData.publicUrl).search);
+        console.log('Is HTTPS:', urlData.publicUrl.startsWith('https://'));
+        console.log('URL Length:', urlData.publicUrl.length);
+        console.log('==============================================');
+        
         // Create a temporary link to download from the public URL
         const a = document.createElement('a');
         a.href = urlData.publicUrl;
         a.download = fileName;
         a.target = '_blank';
+        console.log('🔗 Creating download link with href:', a.href);
+        console.log('🔗 Download attribute set to:', a.download);
+        
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
 
         // Schedule file deletion after 5 minutes
         setTimeout(async () => {
+          console.log('🗑️ Cleaning up file:', fileName);
           await supabase.storage
             .from('medical-reports')
             .remove([fileName]);
+          console.log('✅ File cleanup completed');
         }, 5 * 60 * 1000);
 
         toast({
           title: "Download Started",
-          description: "Your comprehensive medical report is being downloaded.",
+          description: "Your comprehensive medical report is being downloaded via HTTPS URL.",
         });
       } else {
         throw new Error('Failed to get public URL');
       }
       
     } catch (error) {
-      console.error('Error downloading report:', error);
+      console.error('💥 Error in download process:', error);
       
       // Fallback to blob URL method if Supabase storage fails
       const content = `
@@ -514,19 +552,26 @@ ${analysisResult.disclaimer || 'This analysis is AI-generated and should be revi
 This comprehensive analysis was generated on ${new Date().toLocaleString()}.
       `;
       
+      console.log('🔄 EMERGENCY FALLBACK TO BLOB URL:');
       const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
+      const blobUrl = URL.createObjectURL(blob);
+      
+      console.log('📋 EMERGENCY FALLBACK BLOB URL DETAILS:');
+      console.log('Raw Blob URL:', blobUrl);
+      console.log('Blob size:', blob.size, 'bytes');
+      console.log('Blob type:', blob.type);
+      
       const a = document.createElement('a');
-      a.href = url;
+      a.href = blobUrl;
       a.download = `comprehensive-medical-analysis-${Date.now()}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
 
       toast({
         title: "Download Started",
-        description: "Report downloaded using fallback method.",
+        description: "Report downloaded using emergency fallback method.",
         variant: "destructive"
       });
     }
