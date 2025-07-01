@@ -75,6 +75,87 @@ const Profile = () => {
     setPasswordForm(prev => ({ ...prev, [name]: value }));
   };
 
+  const reverseGeocode = async (latitude: number, longitude: number) => {
+    try {
+      // Try multiple geocoding services for better accuracy
+      const geocodingServices = [
+        // Primary: Nominatim (OpenStreetMap) - Free and detailed
+        {
+          url: `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          parser: (data: any) => {
+            if (data.display_name) {
+              const address = data.address || {};
+              const detailedAddress = [
+                address.house_number,
+                address.road || address.street,
+                address.neighbourhood || address.suburb || address.village,
+                address.city_district || address.town || address.municipality,
+              ].filter(Boolean).join(', ');
+              
+              const city = address.city || address.town || address.village || address.municipality || '';
+              
+              return {
+                formattedAddress: detailedAddress || data.display_name,
+                city: city,
+                fullAddress: data.display_name
+              };
+            }
+            return null;
+          }
+        },
+        // Fallback: BigDataCloud - Free tier available
+        {
+          url: `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
+          parser: (data: any) => {
+            if (data.locality) {
+              const detailedAddress = [
+                data.locality,
+                data.principalSubdivision,
+                data.city
+              ].filter(Boolean).join(', ');
+              
+              return {
+                formattedAddress: detailedAddress,
+                city: data.city || data.locality || '',
+                fullAddress: `${detailedAddress}, ${data.principalSubdivision}, ${data.countryName}`
+              };
+            }
+            return null;
+          }
+        }
+      ];
+
+      for (const service of geocodingServices) {
+        try {
+          console.log(`Attempting geocoding with: ${service.url}`);
+          const response = await fetch(service.url);
+          
+          if (!response.ok) {
+            console.log(`Service failed with status: ${response.status}`);
+            continue;
+          }
+          
+          const data = await response.json();
+          console.log('Geocoding response:', data);
+          
+          const result = service.parser(data);
+          if (result && result.formattedAddress && result.city) {
+            console.log('Successfully parsed address:', result);
+            return result;
+          }
+        } catch (serviceError) {
+          console.log('Service error:', serviceError);
+          continue;
+        }
+      }
+      
+      throw new Error('All geocoding services failed');
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      throw error;
+    }
+  };
+
   const handleGetLocation = async () => {
     try {
       setIsGettingLocation(true);
@@ -85,52 +166,43 @@ const Profile = () => {
       
       console.log('Location obtained:', { latitude, longitude });
       
-      // Get address using reverse geocoding (browser's built-in capability)
-      if ('geolocation' in navigator) {
-        try {
-          // Use reverse geocoding to get address
-          const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=demo&limit=1`);
-          const data = await response.json();
-          
-          if (data.results && data.results.length > 0) {
-            const result = data.results[0];
-            const formattedAddress = result.formatted;
-            
-            setFormData(prev => ({
-              ...prev,
-              address: formattedAddress
-            }));
-            
-            console.log('Address set from location:', formattedAddress);
-          }
-        } catch (geocodeError) {
-          console.log('Geocoding failed, using coordinates as address');
+      // Use enhanced reverse geocoding
+      try {
+        const addressData = await reverseGeocode(latitude, longitude);
+        
+        if (addressData) {
           setFormData(prev => ({
             ...prev,
-            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+            address: addressData.formattedAddress,
+            city: addressData.city
           }));
+          
+          console.log('Address set from enhanced geocoding:', addressData);
+          
+          toast({
+            title: "Location Updated Successfully",
+            description: `Address: ${addressData.formattedAddress}, City: ${addressData.city}`,
+          });
+        } else {
+          throw new Error('No address data returned');
         }
-      }
-      
-      // Get nearby cities and set the closest one
-      const nearbyCities = getNearbyCities(latitude, longitude);
-      if (nearbyCities.length > 0) {
-        const closestCity = nearbyCities[0];
+      } catch (geocodeError) {
+        console.log('Enhanced geocoding failed, using fallback method');
+        
+        // Fallback: Use nearby cities and coordinate-based address
+        const nearbyCities = getNearbyCities(latitude, longitude);
+        const fallbackAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+        
         setFormData(prev => ({
           ...prev,
-          city: closestCity
+          address: fallbackAddress,
+          city: nearbyCities.length > 0 ? nearbyCities[0] : ''
         }));
         
-        console.log('City set from location:', closestCity);
-        
         toast({
-          title: "Location Updated",
-          description: `Address and city updated based on your current location. Closest city: ${closestCity}`,
-        });
-      } else {
-        toast({
-          title: "Location Updated",
-          description: "Address updated based on your current location",
+          title: "Location Updated (Limited Info)",
+          description: `Used coordinates as address. ${nearbyCities.length > 0 ? `Nearest city: ${nearbyCities[0]}` : 'Please manually select your city.'}`,
+          variant: "default"
         });
       }
       
@@ -144,7 +216,7 @@ const Profile = () => {
         } else if (error.message.includes('unavailable')) {
           errorMessage += "Location services are not available.";
         } else if (error.message.includes('timeout')) {
-          errorMessage += "Location request timed out.";
+          errorMessage += "Location request timed out. Please try again.";
         } else {
           errorMessage += error.message;
         }
@@ -300,7 +372,7 @@ const Profile = () => {
                       value={formData.address}
                       onChange={handleChange}
                       className="text-sm md:text-base flex-1"
-                      placeholder="Enter your address or use location"
+                      placeholder="Enter your address or use GPS location"
                     />
                     <Button
                       type="button"
@@ -309,7 +381,7 @@ const Profile = () => {
                       onClick={handleGetLocation}
                       disabled={isGettingLocation}
                       className="shrink-0"
-                      title="Use current location"
+                      title="Use current GPS location"
                     >
                       {isGettingLocation ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -319,7 +391,7 @@ const Profile = () => {
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Click the location icon to automatically fill your address using GPS
+                    Click the GPS icon to automatically fill your detailed address including area/colony name
                   </p>
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -329,7 +401,7 @@ const Profile = () => {
                     onValueChange={value => setFormData(prev => ({ ...prev, city: value }))}
                   >
                     <SelectTrigger className="text-sm md:text-base">
-                      <SelectValue placeholder="Select your city (auto-filled with location)" />
+                      <SelectValue placeholder="Select your city (auto-filled with GPS location)" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px]">
                       {worldCities.map(city => (
