@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile, Profile as ProfileType } from "@/services/userDataService";
-import { getWorldCities } from "@/utils/geolocation";
+import { getWorldCities, getCurrentPosition, getNearbyCities } from "@/utils/geolocation";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { MapPin, Loader2 } from "lucide-react";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -33,6 +33,7 @@ const Profile = () => {
     emergency_contact_phone: ""
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     password: "",
     confirmPassword: ""
@@ -72,6 +73,91 @@ const Profile = () => {
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGetLocation = async () => {
+    try {
+      setIsGettingLocation(true);
+      console.log('Getting current location...');
+      
+      const position = await getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+      
+      console.log('Location obtained:', { latitude, longitude });
+      
+      // Get address using reverse geocoding (browser's built-in capability)
+      if ('geolocation' in navigator) {
+        try {
+          // Use reverse geocoding to get address
+          const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=demo&limit=1`);
+          const data = await response.json();
+          
+          if (data.results && data.results.length > 0) {
+            const result = data.results[0];
+            const formattedAddress = result.formatted;
+            
+            setFormData(prev => ({
+              ...prev,
+              address: formattedAddress
+            }));
+            
+            console.log('Address set from location:', formattedAddress);
+          }
+        } catch (geocodeError) {
+          console.log('Geocoding failed, using coordinates as address');
+          setFormData(prev => ({
+            ...prev,
+            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          }));
+        }
+      }
+      
+      // Get nearby cities and set the closest one
+      const nearbyCities = getNearbyCities(latitude, longitude);
+      if (nearbyCities.length > 0) {
+        const closestCity = nearbyCities[0];
+        setFormData(prev => ({
+          ...prev,
+          city: closestCity
+        }));
+        
+        console.log('City set from location:', closestCity);
+        
+        toast({
+          title: "Location Updated",
+          description: `Address and city updated based on your current location. Closest city: ${closestCity}`,
+        });
+      } else {
+        toast({
+          title: "Location Updated",
+          description: "Address updated based on your current location",
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error getting location:', error);
+      let errorMessage = "Failed to get your location. ";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('denied')) {
+          errorMessage += "Please enable location access in your browser settings.";
+        } else if (error.message.includes('unavailable')) {
+          errorMessage += "Location services are not available.";
+        } else if (error.message.includes('timeout')) {
+          errorMessage += "Location request timed out.";
+        } else {
+          errorMessage += error.message;
+        }
+      }
+      
+      toast({
+        title: "Location Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsGettingLocation(false);
+    }
   };
   
   const handleSaveProfile = async () => {
@@ -205,15 +291,36 @@ const Profile = () => {
                     className="text-sm md:text-base"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="address" className="text-sm md:text-base">Address</Label>
-                  <Input
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    className="text-sm md:text-base"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="address"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      className="text-sm md:text-base flex-1"
+                      placeholder="Enter your address or use location"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleGetLocation}
+                      disabled={isGettingLocation}
+                      className="shrink-0"
+                      title="Use current location"
+                    >
+                      {isGettingLocation ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <MapPin className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Click the location icon to automatically fill your address using GPS
+                  </p>
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="city" className="text-sm md:text-base">City</Label>
@@ -222,7 +329,7 @@ const Profile = () => {
                     onValueChange={value => setFormData(prev => ({ ...prev, city: value }))}
                   >
                     <SelectTrigger className="text-sm md:text-base">
-                      <SelectValue placeholder="Select your city" />
+                      <SelectValue placeholder="Select your city (auto-filled with location)" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px]">
                       {worldCities.map(city => (
@@ -230,6 +337,9 @@ const Profile = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-gray-500">
+                    City will be automatically selected when you use GPS location
+                  </p>
                 </div>
               </div>
               
