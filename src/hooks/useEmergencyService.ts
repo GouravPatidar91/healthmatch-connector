@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { EmergencyCallData, createEmergencyCall, findNearbyDoctors, assignDoctorToEmergencyCall } from '@/services/emergencyService';
 import { geocodeAddress, getCurrentPosition } from '@/utils/geolocation';
+import { supabase } from "@/integrations/supabase/client";
 
 export function useEmergencyService() {
   const { user } = useAuth();
@@ -78,24 +79,84 @@ export function useEmergencyService() {
   };
 
   /**
-   * Get user's current location and find nearby doctors
+   * Enhanced function to get user location and find nearby doctors
+   * First tries GPS, then falls back to profile address
    */
   const findDoctorsNearCurrentLocation = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get current position
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
-      
-      // Find nearby doctors
-      const doctors = await findNearbyDoctors(latitude, longitude);
-      return doctors;
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      let locationSource = '';
+
+      // First, try GPS location
+      try {
+        console.log('Emergency service: Attempting GPS location...');
+        const position = await getCurrentPosition();
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        locationSource = 'GPS';
+        
+        toast({
+          title: "GPS location found",
+          description: "Using current location for emergency services...",
+        });
+      } catch (gpsError) {
+        console.log('Emergency service: GPS failed, trying profile address...');
+        
+        // Fallback to profile address
+        if (!user) {
+          throw new Error('User not authenticated and GPS unavailable');
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('address, city, region')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError || (!profile?.address && !profile?.city && !profile?.region)) {
+          throw new Error('No location information available. Please enable GPS or update your profile address.');
+        }
+
+        // Construct address from profile
+        const addressParts = [
+          profile.address,
+          profile.city || profile.region
+        ].filter(Boolean);
+        
+        const fullAddress = addressParts.join(', ');
+        
+        const coordinates = await geocodeAddress(fullAddress);
+        latitude = coordinates.latitude;
+        longitude = coordinates.longitude;
+        locationSource = 'Profile Address';
+
+        toast({
+          title: "Using profile address",
+          description: `Emergency location: ${fullAddress}`,
+        });
+      }
+
+      if (latitude && longitude) {
+        // Find nearby doctors
+        const doctors = await findNearbyDoctors(latitude, longitude);
+        
+        toast({
+          title: "Emergency doctors found",
+          description: `Found ${doctors.length} doctors using ${locationSource}`,
+        });
+        
+        return doctors;
+      }
+
+      throw new Error('Could not determine location');
       
     } catch (err) {
       console.error("Error finding doctors near current location:", err);
-      const errorMessage = err instanceof Error ? err.message : 'Could not access your location';
+      const errorMessage = err instanceof Error ? err.message : 'Could not access location or find doctors';
       setError(errorMessage);
       toast({
         title: "Location error",

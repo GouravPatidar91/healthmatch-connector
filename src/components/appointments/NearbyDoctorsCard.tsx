@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, Clock, Phone, Calendar, Loader2, Stethoscope, CalendarIcon } from "lucide-react";
+import { MapPin, Star, Clock, Phone, Calendar, Loader2, Stethoscope, CalendarIcon, Navigation, MapPinIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDoctors } from "@/services/doctorService";
 import { useAppointmentBooking } from "@/services/appointmentService";
@@ -34,7 +33,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
   const { doctors, loading, error, findNearbyDoctors } = useDoctors();
   const { bookDirectAppointment } = useAppointmentBooking();
   const [bookingDoctor, setBookingDoctor] = useState<string | null>(null);
-  const [locationAccess, setLocationAccess] = useState<boolean | null>(null);
+  const [locationMethod, setLocationMethod] = useState<string | null>(null);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -46,23 +45,31 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
     // Only run once on mount to prevent infinite loops
     if (!hasInitialized) {
       const tryFindNearby = async () => {
-        console.log('Attempting to find nearby doctors...');
+        console.log('NearbyDoctorsCard: Attempting to find nearby doctors...');
         const success = await findNearbyDoctors();
-        console.log('Find nearby doctors result:', success);
-        setLocationAccess(success);
+        console.log('NearbyDoctorsCard: Find nearby doctors result:', success);
         setHasInitialized(true);
         
-        if (!success) {
-          toast({
-            title: "Location Access",
-            description: "Unable to access location. Showing all available doctors.",
-          });
+        if (success) {
+          setLocationMethod('automatic');
         }
       };
 
       tryFindNearby();
     }
-  }, [findNearbyDoctors, toast, hasInitialized]);
+  }, [findNearbyDoctors, hasInitialized]);
+
+  const handleManualLocationSearch = async () => {
+    console.log('NearbyDoctorsCard: Manual location search triggered');
+    const success = await findNearbyDoctors();
+    if (success) {
+      setLocationMethod('manual');
+      toast({
+        title: "Location Search Complete",
+        description: "Found doctors using the most accurate location method available.",
+      });
+    }
+  };
 
   const handleSelectDoctor = (doctor: any) => {
     console.log('NearbyDoctorsCard: Selected doctor for booking:', doctor);
@@ -184,7 +191,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
     }
   };
 
-  console.log('NearbyDoctorsCard: Current state:', { loading, error, doctorsCount: doctors?.length, locationAccess, showBookingDialog });
+  console.log('NearbyDoctorsCard: Current state:', { loading, error, doctorsCount: doctors?.length, locationMethod, showBookingDialog });
 
   if (loading) {
     return (
@@ -193,7 +200,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
             <p className="mt-4 text-gray-600">Finding nearby doctors...</p>
-            <p className="text-sm text-gray-500">This may take a moment</p>
+            <p className="text-sm text-gray-500">Trying GPS location first, then profile address if needed</p>
           </div>
         </div>
       </div>
@@ -212,14 +219,12 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
           </CardHeader>
           <CardContent>
             <Button 
-              onClick={() => {
-                setHasInitialized(false);
-                findNearbyDoctors();
-              }} 
+              onClick={handleManualLocationSearch} 
               variant="outline"
               className="border-red-300 text-red-700 hover:bg-red-100"
             >
-              Try Again
+              <Navigation className="mr-2 h-4 w-4" />
+              Try Location Search Again
             </Button>
           </CardContent>
         </Card>
@@ -232,27 +237,25 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>No Doctors Available</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <MapPinIcon className="h-5 w-5 text-blue-600" />
+              No Doctors Found
+            </CardTitle>
             <CardDescription>
-              {locationAccess === false 
-                ? "We couldn't access your location to find nearby doctors." 
-                : "No doctors found in your area at the moment."
-              }
+              We tried both GPS location and your profile address to find nearby doctors, but none were found in your area.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-gray-600">
-              Please try again later or visit our main appointments page to browse all available doctors.
+              You can try searching again or browse all available doctors on the appointments page.
             </p>
             <div className="flex gap-3">
               <Button 
-                onClick={() => {
-                  setHasInitialized(false);
-                  findNearbyDoctors();
-                }} 
+                onClick={handleManualLocationSearch} 
                 variant="outline"
               >
-                Try Again
+                <Navigation className="mr-2 h-4 w-4" />
+                Search Again
               </Button>
               <Button 
                 onClick={() => window.open('/appointments', '_blank')}
@@ -271,18 +274,30 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">
-            {locationAccess ? "Nearby Doctors" : "Available Doctors"}
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-blue-600" />
+            Nearby Doctors
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            Found {doctors.length} doctor{doctors.length !== 1 ? 's' : ''} available for booking
+            Found {doctors.length} doctor{doctors.length !== 1 ? 's' : ''} using {locationMethod === 'automatic' ? 'automatic location detection' : 'enhanced location search'}
           </p>
         </div>
-        {healthCheckData && (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-            Health data will be shared
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {healthCheckData && (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              Health data will be shared
+            </Badge>
+          )}
+          <Button 
+            onClick={handleManualLocationSearch}
+            variant="outline" 
+            size="sm"
+            className="text-xs"
+          >
+            <Navigation className="mr-1 h-3 w-3" />
+            Refresh Location
+          </Button>
+        </div>
       </div>
 
       {healthCheckData && (

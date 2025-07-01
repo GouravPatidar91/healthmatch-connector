@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { geocodeAddress, getCurrentPosition } from "@/utils/geolocation";
 
 export interface Doctor {
   id: string;
@@ -83,88 +84,107 @@ export const useDoctors = () => {
     try {
       setLoading(true);
       
-      if (!navigator.geolocation) {
+      // First, try to get GPS location
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      let locationSource = '';
+
+      try {
+        console.log('Attempting to get GPS location...');
+        const position = await getCurrentPosition();
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        locationSource = 'GPS';
+        
         toast({
-          title: "Location not supported",
-          description: "Your browser doesn't support location services",
-          variant: "destructive"
+          title: "GPS location found",
+          description: "Using your current location to find nearby doctors...",
         });
-        return false;
+      } catch (gpsError) {
+        console.log('GPS location failed, trying profile address...', gpsError);
+        
+        // Fallback to user's profile address
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error('User not authenticated');
+          }
+
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('address, city, region')
+            .eq('id', user.id)
+            .single();
+
+          if (profileError) {
+            throw new Error('Failed to fetch user profile');
+          }
+
+          if (!profile?.address && !profile?.city && !profile?.region) {
+            throw new Error('No address information found in profile');
+          }
+
+          // Construct address from profile data
+          const addressParts = [
+            profile.address,
+            profile.city || profile.region
+          ].filter(Boolean);
+          
+          const fullAddress = addressParts.join(', ');
+          
+          console.log('Using profile address for geocoding:', fullAddress);
+          
+          const coordinates = await geocodeAddress(fullAddress);
+          latitude = coordinates.latitude;
+          longitude = coordinates.longitude;
+          locationSource = 'Profile Address';
+
+          toast({
+            title: "Using profile address",
+            description: `Finding doctors near: ${fullAddress}`,
+          });
+        } catch (profileError) {
+          console.error('Profile address fallback failed:', profileError);
+          
+          toast({
+            title: "Location not available",
+            description: "Please enable GPS or update your address in your profile to find nearby doctors.",
+            variant: "destructive"
+          });
+          
+          return false;
+        }
       }
 
-      return new Promise<boolean>((resolve) => {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            try {
-              const { latitude, longitude } = position.coords;
-              
-              // Show success toast for location access
-              toast({
-                title: "Location found",
-                description: "Finding doctors near your location...",
-              });
-              
-              const nearbyDoctors = await findNearestDoctors(latitude, longitude);
-              const formattedDoctors = nearbyDoctors.map((doctor: any) => ({
-                ...doctor,
-                region: doctor.region || 'Unknown',
-              }));
-              
-              setDoctors(formattedDoctors);
-              
-              toast({
-                title: "Nearby doctors found",
-                description: `Found ${formattedDoctors.length} doctors near you`,
-              });
-              
-              resolve(true);
-            } catch (error) {
-              console.error('Error finding nearby doctors:', error);
-              toast({
-                title: "Error",
-                description: "Failed to find nearby doctors",
-                variant: "destructive"
-              });
-              resolve(false);
-            } finally {
-              setLoading(false);
-            }
-          },
-          (error) => {
-            setLoading(false);
-            let errorMessage = 'Location access denied';
-            switch(error.code) {
-              case error.PERMISSION_DENIED:
-                errorMessage = 'Please allow location access to find nearby doctors';
-                break;
-              case error.POSITION_UNAVAILABLE:
-                errorMessage = 'Your location is not available';
-                break;
-              case error.TIMEOUT:
-                errorMessage = 'Location request timed out';
-                break;
-            }
-            
-            toast({
-              title: "Location error",
-              description: errorMessage,
-              variant: "destructive"
-            });
-            
-            resolve(false);
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-        );
-      });
+      if (latitude && longitude) {
+        // Find nearby doctors using coordinates
+        const nearbyDoctors = await findNearestDoctors(latitude, longitude);
+        const formattedDoctors = nearbyDoctors.map((doctor: any) => ({
+          ...doctor,
+          region: doctor.region || 'Unknown',
+        }));
+        
+        setDoctors(formattedDoctors);
+        
+        toast({
+          title: "Nearby doctors found",
+          description: `Found ${formattedDoctors.length} doctors using ${locationSource}`,
+        });
+        
+        return true;
+      }
+
+      return false;
     } catch (error) {
-      setLoading(false);
-      console.error('Error accessing location:', error);
+      console.error('Error finding nearby doctors:', error);
       toast({
         title: "Error",
-        description: "Failed to access location services",
+        description: "Failed to find nearby doctors. Please try again.",
         variant: "destructive"
       });
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
