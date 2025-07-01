@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ const Profile = () => {
     confirmPassword: ""
   });
   
-  // Get the list of world cities
+  // Get the comprehensive list of world cities including Indian cities
   const worldCities = getWorldCities();
   
   useEffect(() => {
