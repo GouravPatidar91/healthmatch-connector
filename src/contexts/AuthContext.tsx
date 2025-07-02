@@ -21,7 +21,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -34,8 +33,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Only show success message for actual sign-in events, not session restoration
-        if (event === 'SIGNED_IN' && !isInitialLoad) {
+        if (event === 'SIGNED_IN') {
           toast({
             title: "Signed in successfully",
             description: "Welcome to HealthMatch!"
@@ -61,11 +59,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           navigate('/', { replace: true });
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('Token refreshed successfully');
-        }
-
-        // Mark that initial load is complete
-        if (isInitialLoad) {
-          setIsInitialLoad(false);
         }
       }
     );
