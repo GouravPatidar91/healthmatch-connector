@@ -66,13 +66,22 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({
   }, []);
 
   // Auto-fullscreen on mobile when video starts
-  const enterFullscreen = async () => {
-    if (isMobile && fullscreenContainerRef.current && !document.fullscreenElement) {
-      try {
-        await fullscreenContainerRef.current.requestFullscreen();
-      } catch (error) {
-        console.log('Fullscreen not supported or failed:', error);
-      }
+  const enterFullscreen = async (targetContainer?: HTMLDivElement) => {
+    if (!isMobile || document.fullscreenElement) return;
+    
+    const container = targetContainer || fullscreenContainerRef.current;
+    if (!container) return;
+
+    try {
+      await container.requestFullscreen();
+      console.log('Mobile fullscreen activated successfully');
+    } catch (error) {
+      console.log('Fullscreen not supported or failed:', error);
+      toast({
+        title: "Fullscreen Unavailable",
+        description: "Your device doesn't support fullscreen mode",
+        variant: "destructive"
+      });
     }
   };
 
@@ -160,14 +169,8 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({
     try {
       console.log('Loading AI assistant video interface...');
 
-      // Wait for video container to be ready
-      let retries = 0;
-      const containerRef = isFullscreen ? fullscreenContainerRef : videoContainerRef;
-      while (!containerRef.current && retries < 10) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        retries++;
-      }
-      if (!containerRef.current) {
+      // Always start with regular container, then move to fullscreen if needed
+      if (!videoContainerRef.current) {
         throw new Error('Video container not ready');
       }
 
@@ -177,28 +180,36 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({
       iframe.style.width = '100%';
       iframe.style.height = '100%';
       iframe.style.border = 'none';
-      iframe.style.borderRadius = isFullscreen ? '0' : '8px';
+      iframe.style.borderRadius = '8px';
       iframe.allow = 'camera; microphone; fullscreen; autoplay';
       iframe.allowFullscreen = true;
 
-      // Load AI assistant interface
-      containerRef.current.innerHTML = '';
-      containerRef.current.appendChild(iframe);
-      setIsLoading(false);
+      // Handle iframe load for mobile fullscreen
+      iframe.onload = () => {
+        console.log('AI Assistant video call loaded successfully');
+        setIsLoading(false);
+        
+        // Auto-fullscreen on mobile after iframe loads
+        if (isMobile && !document.fullscreenElement) {
+          // Move iframe to fullscreen container and request fullscreen
+          if (fullscreenContainerRef.current) {
+            fullscreenContainerRef.current.innerHTML = '';
+            iframe.style.borderRadius = '0';
+            fullscreenContainerRef.current.appendChild(iframe);
+            enterFullscreen(fullscreenContainerRef.current);
+          }
+        }
+      };
 
-      // Auto-fullscreen on mobile
-      if (isMobile) {
-        setTimeout(() => {
-          enterFullscreen();
-        }, 1000); // Small delay to ensure iframe is loaded
-      }
+      // Load AI assistant interface in regular container first
+      videoContainerRef.current.innerHTML = '';
+      videoContainerRef.current.appendChild(iframe);
+
       toast({
         title: "AI Medical Assistant Connected",
         description: `${personaDetails?.persona_name || 'AI Assistant'} is ready to help with your emergency consultation.`
       });
-      iframe.onload = () => {
-        console.log('AI Assistant video call loaded successfully');
-      };
+
     } catch (error) {
       console.error('Error loading AI assistant video:', error);
       toast({
