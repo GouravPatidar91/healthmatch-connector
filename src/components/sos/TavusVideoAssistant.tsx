@@ -56,43 +56,87 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({
   const TAVUS_REPLICA_ID = "r6ae5b6efc9d";
   const TAVUS_PERSONA_ID = "p92039232c9e";
 
-  // Handle fullscreen changes
+  // Handle fullscreen changes with cross-browser support
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isFullscreen);
     };
+
+    // Add event listeners for different browsers
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
   }, []);
+
+  // Check if fullscreen is supported
+  const isFullscreenSupported = () => {
+    return !!(
+      document.fullscreenEnabled ||
+      (document as any).webkitFullscreenEnabled ||
+      (document as any).mozFullScreenEnabled ||
+      (document as any).msFullscreenEnabled
+    );
+  };
 
   // Auto-fullscreen on mobile when video starts
   const enterFullscreen = async (targetContainer?: HTMLDivElement) => {
     if (!isMobile || document.fullscreenElement) return;
     
+    // Check if fullscreen is supported
+    if (!isFullscreenSupported()) {
+      console.log('Fullscreen not supported on this device');
+      return; // Silently return without showing error
+    }
+    
     const container = targetContainer || fullscreenContainerRef.current;
     if (!container) return;
 
     try {
-      await container.requestFullscreen();
+      // Try different fullscreen methods for cross-browser compatibility
+      if (container.requestFullscreen) {
+        await container.requestFullscreen();
+      } else if ((container as any).webkitRequestFullscreen) {
+        await (container as any).webkitRequestFullscreen();
+      } else if ((container as any).mozRequestFullScreen) {
+        await (container as any).mozRequestFullScreen();
+      } else if ((container as any).msRequestFullscreen) {
+        await (container as any).msRequestFullscreen();
+      }
       console.log('Mobile fullscreen activated successfully');
     } catch (error) {
-      console.log('Fullscreen not supported or failed:', error);
-      toast({
-        title: "Fullscreen Unavailable",
-        description: "Your device doesn't support fullscreen mode",
-        variant: "destructive"
-      });
+      console.log('Fullscreen request failed:', error);
+      // Don't show error toast - just log it
     }
   };
 
-  // Exit fullscreen
+  // Exit fullscreen with cross-browser support
   const exitFullscreen = async () => {
-    if (document.fullscreenElement) {
-      try {
+    try {
+      if (document.exitFullscreen) {
         await document.exitFullscreen();
-      } catch (error) {
-        console.log('Exit fullscreen failed:', error);
+      } else if ((document as any).webkitExitFullscreen) {
+        await (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        await (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        await (document as any).msExitFullscreen();
       }
+    } catch (error) {
+      console.log('Exit fullscreen failed:', error);
     }
   };
 
@@ -195,8 +239,8 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({
         console.log('AI Assistant video call loaded successfully');
         setIsLoading(false);
         
-        // Auto-fullscreen on mobile after iframe loads
-        if (isMobile && !document.fullscreenElement) {
+        // Auto-fullscreen on mobile after iframe loads (only if supported)
+        if (isMobile && !document.fullscreenElement && isFullscreenSupported()) {
           // Move iframe to fullscreen container and request fullscreen
           if (fullscreenContainerRef.current) {
             fullscreenContainerRef.current.innerHTML = '';
@@ -337,22 +381,22 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({
                 <VideoIcon className="h-4 w-4 text-green-500" />
                 <AlertTitle>AI Assistant Active</AlertTitle>
                 <AlertDescription>
-                  You are now connected with {personaDetails?.persona_name || 'AI Medical Assistant'}. Please describe your emergency situation clearly for immediate assessment.
-                  {isMobile && !isFullscreen && " Tap the video to go fullscreen for better experience."}
-                </AlertDescription>
-              </Alert>
-              
-              <motion.div initial={{
-            opacity: 0,
-            scale: 0.9
-          }} animate={{
-            opacity: 1,
-            scale: 1
-          }} className="relative bg-black rounded-lg overflow-hidden cursor-pointer" style={{
-            aspectRatio: '16/9',
-            minHeight: '400px'
-          }} onClick={() => isMobile && !isFullscreen && enterFullscreen()}>
-                <div ref={videoContainerRef} className="w-full h-full" style={{
+                   You are now connected with {personaDetails?.persona_name || 'AI Medical Assistant'}. Please describe your emergency situation clearly for immediate assessment.
+                   {isMobile && !isFullscreen && isFullscreenSupported() && " Tap the video to go fullscreen for better experience."}
+                 </AlertDescription>
+               </Alert>
+               
+               <motion.div initial={{
+             opacity: 0,
+             scale: 0.9
+           }} animate={{
+             opacity: 1,
+             scale: 1
+           }} className="relative bg-black rounded-lg overflow-hidden cursor-pointer" style={{
+             aspectRatio: '16/9',
+             minHeight: '400px'
+           }} onClick={() => isMobile && !isFullscreen && isFullscreenSupported() && enterFullscreen()}>
+                 <div ref={videoContainerRef} className="w-full h-full" style={{
               minHeight: '400px'
             }} />
                 
@@ -371,11 +415,11 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({
                     Session: {conversationId.slice(-8)}
                   </div>}
 
-                {isMobile && !isFullscreen && <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-xs">
-                    Tap to go fullscreen
-                  </div>}
-              </motion.div>
-            </div>}
+                 {isMobile && !isFullscreen && isFullscreenSupported() && <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-xs">
+                     Tap to go fullscreen
+                   </div>}
+               </motion.div>
+             </div>}
         </CardContent>
         
         <CardFooter>
