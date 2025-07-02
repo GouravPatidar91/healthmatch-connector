@@ -169,9 +169,15 @@ const TavusVideoAssistant: React.FC<TavusVideoAssistantProps> = ({
     try {
       console.log('Loading AI assistant video interface...');
 
-      // Always start with regular container, then move to fullscreen if needed
+      // Wait for video container to be ready with proper retry logic
+      let retries = 0;
+      while (!videoContainerRef.current && retries < 20) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+      }
+      
       if (!videoContainerRef.current) {
-        throw new Error('Video container not ready');
+        throw new Error('Video container not ready after retries');
       }
 
       // Create iframe for AI assistant
