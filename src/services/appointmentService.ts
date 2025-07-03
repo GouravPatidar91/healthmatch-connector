@@ -39,7 +39,7 @@ export const useAppointmentBooking = () => {
 
       console.log('Booking direct appointment for:', booking.doctorName);
 
-      // First, get the doctor's ID from their name to ensure proper linking
+      // Get the doctor's ID from their name to ensure proper linking
       const { data: doctorData, error: doctorError } = await supabase
         .from('doctors')
         .select('id, name')
@@ -55,33 +55,42 @@ export const useAppointmentBooking = () => {
         throw new Error('Doctor not found in database');
       }
 
-      console.log('Found doctor:', doctorData);
+      console.log('Found doctor for booking:', doctorData);
 
-      // Insert the appointment with the correct doctor_id
-      const { error: insertError } = await supabase
+      // Insert the appointment with the correct doctor_id - this is the key fix
+      const appointmentData = {
+        user_id: user.id,
+        doctor_id: doctorData.id, // Ensure this is set correctly
+        doctor_name: booking.doctorName,
+        date: booking.date,
+        time: booking.time,
+        reason: booking.reason || 'General consultation',
+        notes: booking.notes,
+        status: 'pending'
+      };
+
+      console.log('Inserting appointment with data:', appointmentData);
+
+      const { data: insertedAppointment, error: insertError } = await supabase
         .from('appointments')
-        .insert({
-          user_id: user.id,
-          doctor_id: doctorData.id, // This is crucial - ensures it shows on doctor's dashboard
-          doctor_name: booking.doctorName,
-          date: booking.date,
-          time: booking.time,
-          reason: booking.reason || 'General consultation',
-          notes: booking.notes,
-          status: 'pending'
-        });
+        .insert(appointmentData)
+        .select('*')
+        .single();
 
       if (insertError) {
         console.error('Error inserting appointment:', insertError);
         throw insertError;
       }
 
-      console.log('Direct appointment successfully booked with doctor_id:', doctorData.id);
+      console.log('Direct appointment successfully created:', insertedAppointment);
+      console.log('Appointment assigned to doctor_id:', insertedAppointment.doctor_id);
 
       toast({
         title: "Appointment Booked",
         description: `Your appointment with ${booking.doctorName} has been successfully booked.`,
       });
+
+      return insertedAppointment;
     } catch (error) {
       console.error('Error booking direct appointment:', error);
       toast({

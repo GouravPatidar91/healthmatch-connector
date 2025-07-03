@@ -29,91 +29,80 @@ export const useUnifiedDoctorAppointments = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      console.log('Fetching appointments for doctor user:', user.id);
+      console.log('=== FETCHING APPOINTMENTS FOR DOCTOR ===');
+      console.log('Doctor user ID:', user.id);
 
-      // Verify the user is a doctor
-      const { data: userProfile } = await supabase
+      // Verify the user has doctor access
+      const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('is_doctor')
         .eq('id', user.id)
         .single();
 
-      console.log('User profile check:', userProfile);
-
-      if (!userProfile?.is_doctor) {
+      if (profileError || !userProfile?.is_doctor) {
+        console.error('User is not a doctor or profile error:', profileError);
         throw new Error('User does not have doctor access');
       }
 
+      console.log('User confirmed as doctor');
+
       // Get doctor profile to ensure they're verified
-      const { data: doctorProfile } = await supabase
+      const { data: doctorProfile, error: doctorError } = await supabase
         .from('doctors')
         .select('name, verified')
         .eq('id', user.id)
         .single();
 
-      console.log('Doctor profile check:', doctorProfile);
-
-      if (!doctorProfile) throw new Error('Doctor profile not found');
+      if (doctorError || !doctorProfile) {
+        console.error('Doctor profile error:', doctorError);
+        throw new Error('Doctor profile not found');
+      }
       
       if (!doctorProfile.verified) {
         throw new Error('Doctor profile is not verified');
       }
 
-      // PRIMARY: Fetch appointments by doctor_id (this is the main fix)
+      console.log('Doctor profile verified:', doctorProfile.name);
+
+      // Fetch ALL appointments for this doctor by doctor_id (this is the main fix)
       const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
         .select('*')
-        .eq('doctor_id', user.id); // This ensures we get appointments for this specific doctor
+        .eq('doctor_id', user.id)
+        .order('date', { ascending: true })
+        .order('time', { ascending: true });
 
       if (directError) {
-        console.error('Direct appointments error:', directError);
+        console.error('Error fetching direct appointments:', directError);
         throw directError;
       }
 
-      console.log('Direct appointments found by doctor_id:', directAppointments?.length || 0);
-
-      // FALLBACK: Also fetch by doctor_name for legacy appointments that might not have doctor_id set
-      const { data: fallbackAppointments, error: fallbackError } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('doctor_name', doctorProfile.name)
-        .is('doctor_id', null); // Only get appointments without doctor_id set
-
-      if (fallbackError) {
-        console.error('Fallback appointments error:', fallbackError);
-      } else {
-        console.log('Fallback appointments found by doctor_name:', fallbackAppointments?.length || 0);
-      }
-
-      // Combine both results
-      const allDirectAppointments = [
-        ...(directAppointments || []),
-        ...(fallbackAppointments || [])
-      ];
-
-      console.log('Total direct appointments:', allDirectAppointments.length);
+      console.log('✅ Direct appointments found:', directAppointments?.length || 0);
+      console.log('Direct appointments data:', directAppointments);
 
       // Fetch slot-based appointments
       const { data: slotAppointments, error: slotError } = await supabase
         .from('appointment_slots')
         .select('*')
         .eq('doctor_id', user.id)
-        .neq('status', 'available');
+        .neq('status', 'available')
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
 
       if (slotError) {
-        console.error('Slot appointments error:', slotError);
+        console.error('Error fetching slot appointments:', slotError);
         throw slotError;
       }
 
-      console.log('Slot appointments found:', slotAppointments?.length || 0);
+      console.log('✅ Slot appointments found:', slotAppointments?.length || 0);
 
       // Transform and unify the data
       const unifiedAppointments: UnifiedAppointment[] = [];
 
       // Process direct appointments
-      if (allDirectAppointments) {
-        for (const appointment of allDirectAppointments) {
-          console.log('Processing direct appointment:', appointment.id, 'for doctor_id:', appointment.doctor_id);
+      if (directAppointments && directAppointments.length > 0) {
+        for (const appointment of directAppointments) {
+          console.log('Processing direct appointment:', appointment.id, 'for patient:', appointment.user_id);
           
           let patientName = 'Unknown Patient';
           
@@ -144,10 +133,11 @@ export const useUnifiedDoctorAppointments = () => {
             doctorName: appointment.doctor_name
           });
         }
+        console.log('✅ Processed', directAppointments.length, 'direct appointments');
       }
 
       // Process slot-based appointments
-      if (slotAppointments) {
+      if (slotAppointments && slotAppointments.length > 0) {
         for (const slot of slotAppointments) {
           console.log('Processing slot appointment:', slot.id);
           
@@ -187,6 +177,7 @@ export const useUnifiedDoctorAppointments = () => {
             endTime: slot.end_time
           });
         }
+        console.log('✅ Processed', slotAppointments.length, 'slot appointments');
       }
 
       // Sort by date and time
@@ -196,11 +187,17 @@ export const useUnifiedDoctorAppointments = () => {
         return dateA.getTime() - dateB.getTime();
       });
 
-      console.log('Final unified appointments for doctor:', doctorProfile.name, 'Total:', unifiedAppointments.length);
+      console.log('=== FINAL RESULTS ===');
+      console.log('Total unified appointments for doctor:', doctorProfile.name);
+      console.log('Total count:', unifiedAppointments.length);
+      console.log('Appointments:', unifiedAppointments);
+
       setAppointments(unifiedAppointments);
+      setError(null);
     } catch (err) {
-      console.error('Error fetching unified appointments:', err);
+      console.error('❌ Error fetching unified appointments:', err);
       setError(err instanceof Error ? err : new Error('Failed to fetch appointments'));
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
