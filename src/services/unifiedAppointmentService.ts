@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -59,11 +58,11 @@ export const useUnifiedDoctorAppointments = () => {
 
       console.log('Doctor profile:', doctorProfile);
 
-      // Fetch direct appointments - only those assigned to this specific doctor
+      // Fetch direct appointments - now using doctor_id for precise matching
       const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
         .select('*')
-        .eq('doctor_name', doctorProfile.name);
+        .eq('doctor_id', user.id);
 
       if (directError) {
         console.error('Direct appointments error:', directError);
@@ -91,16 +90,10 @@ export const useUnifiedDoctorAppointments = () => {
       // Transform and unify the data
       const unifiedAppointments: UnifiedAppointment[] = [];
 
-      // Process direct appointments - these should already be filtered by RLS
+      // Process direct appointments - now filtered by doctor_id at database level
       if (directAppointments) {
         for (const appointment of directAppointments) {
           console.log('Processing direct appointment:', appointment);
-          
-          // Double-check that this appointment is actually for this doctor
-          if (appointment.doctor_name !== doctorProfile.name) {
-            console.warn('Skipping appointment not assigned to this doctor:', appointment);
-            continue;
-          }
           
           let patientName = 'Unknown Patient';
           
@@ -129,6 +122,7 @@ export const useUnifiedDoctorAppointments = () => {
             notes: appointment.notes,
             type: 'direct' as const,
             userId: appointment.user_id,
+            doctorId: appointment.doctor_id,
             doctorName: appointment.doctor_name
           });
         }
@@ -138,12 +132,6 @@ export const useUnifiedDoctorAppointments = () => {
       if (slotAppointments) {
         for (const slot of slotAppointments) {
           console.log('Processing slot appointment:', slot);
-          
-          // Double-check that this slot belongs to this doctor
-          if (slot.doctor_id !== user.id) {
-            console.warn('Skipping slot not belonging to this doctor:', slot);
-            continue;
-          }
           
           let patientName = 'Unknown Patient';
           
