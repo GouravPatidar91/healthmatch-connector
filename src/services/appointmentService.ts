@@ -159,16 +159,12 @@ export const useAppointmentBooking = () => {
 
       if (directError) throw directError;
 
-      // Fetch slot-based appointments with doctor data
+      // Fetch slot-based appointments
       const { data: slotAppointments, error: slotError } = await supabase
         .from('appointment_slots')
         .select(`
           *,
-          doctors!appointment_slots_doctor_id_fkey(
-            name, 
-            specialization,
-            profiles!inner(avatar_url)
-          )
+          doctors!appointment_slots_doctor_id_fkey(name, specialization)
         `)
         .eq('user_id', user.id)
         .neq('status', 'available')
@@ -176,35 +172,19 @@ export const useAppointmentBooking = () => {
 
       if (slotError) throw slotError;
 
-      // Fetch all doctors with avatars to match with direct appointments
-      const { data: doctorsWithAvatars } = await supabase
-        .from('doctors')
-        .select(`
-          name,
-          profiles!inner(avatar_url)
-        `);
-
-      // Create a map for quick doctor avatar lookup by name
-      const doctorAvatarMap = new Map();
-      (doctorsWithAvatars || []).forEach(doctor => {
-        doctorAvatarMap.set(doctor.name, doctor.profiles?.avatar_url);
-      });
-
       // Combine and normalize the appointments
       const allAppointments = [
-        // Direct appointments - add avatar data by matching doctor name
+        // Direct appointments - already have the right structure
         ...(directAppointments || []).map(apt => ({
           ...apt,
-          doctor_avatar_url: doctorAvatarMap.get(apt.doctor_name),
           type: 'direct' as const
         })),
-        // Slot appointments - already have doctor data with avatars
+        // Slot appointments - need to transform to match PatientAppointment interface
         ...(slotAppointments || []).map(slot => ({
           id: slot.id,
           user_id: slot.user_id,
           doctor_name: slot.doctors?.name || 'Unknown Doctor',
           doctor_specialty: slot.doctors?.specialization,
-          doctor_avatar_url: slot.doctors?.profiles?.avatar_url,
           date: slot.date,
           time: slot.start_time,
           reason: slot.reason,

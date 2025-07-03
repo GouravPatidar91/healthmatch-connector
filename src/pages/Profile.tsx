@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserProfile, Profile as ProfileType } from "@/services/userDataService";
 import { getWorldCities, getCurrentPosition, getNearbyCities } from "@/utils/geolocation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MapPin, Loader2, Camera, Upload } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
+import { MapPin, Loader2 } from "lucide-react";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -41,10 +39,6 @@ const Profile = () => {
     password: "",
     confirmPassword: ""
   });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Get the comprehensive list of world cities including Indian cities
   const worldCities = getWorldCities();
@@ -67,7 +61,6 @@ const Profile = () => {
         emergency_contact_relationship: profile.emergency_contact_relationship || "",
         emergency_contact_phone: profile.emergency_contact_phone || ""
       });
-      setAvatarPreview(profile.avatar_url || null);
     } else {
       console.log("No profile data available");
     }
@@ -81,62 +74,6 @@ const Profile = () => {
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({
-          title: "File too large",
-          description: "Please select an image smaller than 5MB.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setAvatarPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadAvatar = async (): Promise<string | null> => {
-    if (!avatarFile) return null;
-
-    try {
-      setIsUploadingAvatar(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const fileExt = avatarFile.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, avatarFile, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload profile photo. Please try again.",
-        variant: "destructive"
-      });
-      return null;
-    } finally {
-      setIsUploadingAvatar(false);
-    }
   };
 
   const reverseGeocode = async (latitude: number, longitude: number) => {
@@ -301,17 +238,10 @@ const Profile = () => {
       setIsSaving(true);
       console.log("Saving profile with data:", formData);
       
-      // Upload avatar if a new one was selected
-      let avatarUrl = null;
-      if (avatarFile) {
-        avatarUrl = await uploadAvatar();
-      }
-      
       // Map city back to region when saving to maintain compatibility with existing data structure
       const dataToSave = {
         ...formData,
-        region: formData.city,
-        ...(avatarUrl && { avatar_url: avatarUrl })
+        region: formData.city
       };
       
       await updateProfile(dataToSave);
@@ -375,49 +305,6 @@ const Profile = () => {
               <CardDescription className="text-sm md:text-base">Update your personal details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Profile Photo Section */}
-              <div className="flex flex-col items-center space-y-4 pb-4">
-                <div className="relative">
-                  <Avatar className="h-24 w-24 md:h-32 md:w-32">
-                    <AvatarImage src={avatarPreview || undefined} alt="Profile" />
-                    <AvatarFallback className="text-lg md:text-xl">
-                      {formData.first_name?.[0]}{formData.last_name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="outline"
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-white shadow-md"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingAvatar}
-                  >
-                    {isUploadingAvatar ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Camera className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                />
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">
-                    Click the camera icon to upload a profile photo
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Max file size: 5MB. Supported formats: JPG, PNG, GIF
-                  </p>
-                </div>
-              </div>
-              
-              <Separator />
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="first_name" className="text-sm md:text-base">First Name</Label>
