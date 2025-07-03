@@ -20,6 +20,7 @@ export interface Doctor {
   experience?: number;
   verified?: boolean;
   available?: boolean;
+  avatar_url?: string;
 }
 
 export interface AppointmentSlot {
@@ -55,7 +56,10 @@ export const useDoctors = () => {
       try {
         const { data, error } = await supabase
           .from('doctors')
-          .select('*')
+          .select(`
+            *,
+            profiles!inner(avatar_url)
+          `)
           .eq('verified', true)
           .eq('available', true);
 
@@ -63,7 +67,12 @@ export const useDoctors = () => {
           throw error;
         }
 
-        setDoctors(data || []);
+        // Map the data to include avatar_url from profiles
+        const mappedDoctors = (data || []).map(doctor => ({
+          ...doctor,
+          avatar_url: doctor.profiles?.avatar_url
+        }));
+        setDoctors(mappedDoctors);
       } catch (err) {
         console.error('Error fetching doctors:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch doctors'));
@@ -203,7 +212,10 @@ export const useDoctorsBySpecialization = (specialization?: string) => {
       try {
         let query = supabase
           .from('doctors')
-          .select('*')
+          .select(`
+            *,
+            profiles!inner(avatar_url)
+          `)
           .eq('verified', true)
           .eq('available', true);
 
@@ -217,7 +229,12 @@ export const useDoctorsBySpecialization = (specialization?: string) => {
           throw error;
         }
 
-        setDoctors(data || []);
+        // Map the data to include avatar_url from profiles
+        const mappedDoctors = (data || []).map(doctor => ({
+          ...doctor,
+          avatar_url: doctor.profiles?.avatar_url
+        }));
+        setDoctors(mappedDoctors);
       } catch (err) {
         console.error('Error fetching doctors by specialization:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch doctors'));

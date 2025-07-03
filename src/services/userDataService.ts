@@ -157,6 +157,7 @@ export interface Profile {
   emergency_contact_name?: string;
   emergency_contact_relationship?: string;
   emergency_contact_phone?: string;
+  avatar_url?: string;
   created_at?: string;
   updated_at?: string;
 }

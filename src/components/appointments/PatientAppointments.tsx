@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Clock, MapPin, User, FileText } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, parseISO, isBefore } from 'date-fns';
 import { useAppointmentBooking } from '@/services/appointmentService';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -29,6 +30,7 @@ interface PatientAppointment {
   notes?: string;
   created_at: string;
   updated_at: string;
+  doctor_avatar_url?: string;
 }
 
 const PatientAppointments: React.FC = () => {
@@ -87,8 +89,13 @@ const PatientAppointments: React.FC = () => {
   const AppointmentMobileCard = ({ appointment }: { appointment: PatientAppointment }) => (
     <div className="bg-white/80 backdrop-blur-sm border border-blue-100/50 rounded-xl p-4 shadow-sm space-y-3">
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2 flex-1">
-          <User className="h-4 w-4 text-blue-600" />
+        <div className="flex items-center gap-3 flex-1">
+          <Avatar className="h-10 w-10 flex-shrink-0">
+            <AvatarImage src={appointment.doctor_avatar_url || undefined} alt={appointment.doctor_name} />
+            <AvatarFallback>
+              {appointment.doctor_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+            </AvatarFallback>
+          </Avatar>
           <span className="font-medium text-gray-900">{appointment.doctor_name}</span>
         </div>
         <Badge className={getStatusColor(appointment.status)}>
@@ -128,8 +135,13 @@ const PatientAppointments: React.FC = () => {
           {appointments.map((appointment) => (
             <TableRow key={appointment.id}>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src={appointment.doctor_avatar_url || undefined} alt={appointment.doctor_name} />
+                    <AvatarFallback className="text-xs">
+                      {appointment.doctor_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
                   {appointment.doctor_name}
                 </div>
               </TableCell>

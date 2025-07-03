@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -323,7 +324,13 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         {doctors.map((doctor) => (
           <Card key={doctor.id} className="hover:shadow-lg transition-all duration-200 border-gray-200">
             <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <Avatar className="h-12 w-12 flex-shrink-0">
+                  <AvatarImage src={doctor.avatar_url || undefined} alt={doctor.name} />
+                  <AvatarFallback>
+                    {doctor.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
                   <CardTitle className="text-lg truncate">{doctor.name}</CardTitle>
                   <CardDescription className="flex items-center gap-1 mt-1">
@@ -332,7 +339,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
                   </CardDescription>
                 </div>
                 {doctor.rating && (
-                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="text-sm font-medium">{doctor.rating}</span>
                   </div>
