@@ -15,7 +15,7 @@ const Footer = () => {
                 <Heart className="text-white h-4 w-4" />
               </div>
               <span className="font-bold text-lg text-white">
-                HealthMatch
+                Curezy
               </span>
             </Link>
             <p className="text-slate-400 text-xs leading-relaxed">
@@ -90,7 +90,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-2 text-xs">
                 <Mail className="h-3 w-3 text-blue-400" />
-                <span className="text-slate-400">support@healthmatch.com</span>
+                <span className="text-slate-400">admin@curezy.in</span>
               </li>
               <li className="flex items-start gap-2 text-xs">
                 <MapPin className="h-3 w-3 text-blue-400 mt-0.5" />
@@ -107,7 +107,7 @@ const Footer = () => {
         <div className="border-t border-slate-800 mt-4 pt-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-2">
             <p className="text-slate-400 text-xs">
-              © {new Date().getFullYear()} HealthMatch. All rights reserved.
+              © {new Date().getFullYear()} Curezy. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-xs">
               <Link to="/privacy-policy" className="text-slate-400 hover:text-white transition-colors">
