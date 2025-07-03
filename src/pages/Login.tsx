@@ -26,7 +26,7 @@ const Login = () => {
         <div className="bg-white p-3 rounded-full mb-4">
           <Heart className="text-medical-blue h-10 w-10" />
         </div>
-        <h1 className="text-3xl font-bold text-white text-center">HealthMatch</h1>
+        <h1 className="text-3xl font-bold text-white text-center">Curezy</h1>
         <p className="text-white/80 mt-2 text-center">Your personal healthcare assistant</p>
       </div>
       
