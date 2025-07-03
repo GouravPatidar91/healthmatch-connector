@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -47,9 +48,9 @@ export const useAppointmentBooking = () => {
 
       let finalDoctorId = booking.doctorId;
 
-      // If doctorId is not provided, fetch it using doctor name
+      // CRITICAL: Ensure we always have a valid doctor_id
       if (!finalDoctorId) {
-        console.log('🔍 Doctor ID not provided, fetching from doctor name...');
+        console.log('⚠️ Doctor ID not provided, fetching from doctor name...');
         const { data: doctorData, error: doctorError } = await supabase
           .from('doctors')
           .select('id, name, verified')
@@ -57,24 +58,20 @@ export const useAppointmentBooking = () => {
           .eq('verified', true)
           .single();
 
-        if (doctorError) {
+        if (doctorError || !doctorData) {
           console.error('❌ Error finding doctor:', doctorError);
           throw new Error(`Doctor "${booking.doctorName}" not found or not verified`);
         }
 
-        if (!doctorData) {
-          throw new Error(`Doctor "${booking.doctorName}" not found in database`);
-        }
-
         finalDoctorId = doctorData.id;
-        console.log('✅ Found doctor:', {
+        console.log('✅ Found doctor by name:', {
           id: finalDoctorId,
           name: doctorData.name,
           verified: doctorData.verified
         });
       } else {
         // Verify that the provided doctorId exists and is verified
-        console.log('🔍 Verifying provided doctor ID...');
+        console.log('🔍 Verifying provided doctor ID:', finalDoctorId);
         const { data: doctorData, error: doctorError } = await supabase
           .from('doctors')
           .select('id, name, verified')
@@ -94,21 +91,31 @@ export const useAppointmentBooking = () => {
         });
       }
 
-      // Prepare appointment data with explicit doctor_id
+      // CRITICAL: Ensure finalDoctorId is never null or undefined
+      if (!finalDoctorId) {
+        throw new Error('Failed to determine doctor ID for appointment');
+      }
+
+      // Prepare appointment data with GUARANTEED doctor_id
       const appointmentData = {
         user_id: user.id,
-        doctor_id: finalDoctorId, // This is the key - ensure doctor_id is set
+        doctor_id: finalDoctorId, // CRITICAL: This must never be null
         doctor_name: booking.doctorName,
         date: booking.date,
         time: booking.time,
         reason: booking.reason || 'General consultation',
-        notes: booking.notes,
+        notes: booking.notes || null,
         status: 'pending'
       };
 
-      console.log('📝 Inserting appointment with data:', appointmentData);
+      console.log('📝 Inserting appointment with GUARANTEED doctor_id:', appointmentData);
 
-      // Insert the appointment
+      // Validate the appointment data before inserting
+      if (!appointmentData.doctor_id) {
+        throw new Error('CRITICAL ERROR: doctor_id is still null before insertion');
+      }
+
+      // Insert the appointment with explicit doctor_id
       const { data: insertedAppointment, error: insertError } = await supabase
         .from('appointments')
         .insert(appointmentData)
@@ -130,7 +137,12 @@ export const useAppointmentBooking = () => {
         status: insertedAppointment.status
       });
 
-      // Verify the appointment was created with correct doctor_id
+      // Final verification that doctor_id was properly set
+      if (!insertedAppointment.doctor_id) {
+        console.error('🚨 CRITICAL: Appointment was created but doctor_id is null!');
+        throw new Error('Appointment created but doctor assignment failed');
+      }
+
       if (insertedAppointment.doctor_id !== finalDoctorId) {
         console.error('⚠️ Warning: Appointment doctor_id mismatch!', {
           expected: finalDoctorId,

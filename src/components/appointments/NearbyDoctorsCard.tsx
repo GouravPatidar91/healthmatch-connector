@@ -111,6 +111,16 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
       return;
     }
 
+    // CRITICAL: Ensure we have the doctor ID
+    if (!selectedDoctor.id) {
+      toast({
+        title: "Error",
+        description: "Doctor information is incomplete. Please try selecting the doctor again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     console.log('🚀 Starting appointment booking process...', {
       doctor: {
         id: selectedDoctor.id,
@@ -131,8 +141,8 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         reason = `Health Check Follow-up: ${symptomsText}${urgencyText}`;
       }
 
-      console.log('📋 Appointment booking data:', {
-        doctorId: selectedDoctor.id,
+      console.log('📋 Appointment booking data with GUARANTEED doctor ID:', {
+        doctorId: selectedDoctor.id, // CRITICAL: This must be set
         doctorName: selectedDoctor.name,
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
@@ -140,9 +150,9 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         notes: notes || healthCheckData?.notes
       });
 
-      // Book the appointment with explicit doctorId
+      // CRITICAL: Pass both doctorId AND doctorName to ensure doctor_id is set
       await bookDirectAppointment({
-        doctorId: selectedDoctor.id, // This is crucial - pass the doctor's ID
+        doctorId: selectedDoctor.id, // CRITICAL: Explicitly pass the doctor's ID
         doctorName: selectedDoctor.name,
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
@@ -150,7 +160,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         notes: notes || healthCheckData?.notes || undefined
       });
 
-      console.log('✅ Appointment booked successfully');
+      console.log('✅ Appointment booked successfully with doctor_id:', selectedDoctor.id);
 
       // Handle health check data sharing if available
       if (healthCheckData) {
