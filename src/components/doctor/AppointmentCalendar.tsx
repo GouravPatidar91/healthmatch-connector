@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/popover";
 import { format, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useDoctorSlots } from "@/services/doctorService";
+import { useDoctorSlots } from "@/services/doctorSlotService";
 import { useUnifiedDoctorAppointments } from "@/services/unifiedAppointmentService";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, CheckCircle, Clock, X, Check } from "lucide-react";

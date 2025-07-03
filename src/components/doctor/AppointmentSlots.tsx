@@ -36,7 +36,7 @@ import {
 import { CalendarPlus, ChevronDown, ChevronUp, Clock, Loader2, Trash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, addMinutes, parseISO } from 'date-fns';
-import { useDoctorSlots } from '@/services/doctorService';
+import { useDoctorSlots } from '@/services/doctorSlotService';
 import { useAuth } from '@/contexts/AuthContext';
 
 const timeSlots = Array.from({ length: 24 }, (_, i) => {
