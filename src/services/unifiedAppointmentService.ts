@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -30,71 +29,71 @@ export const useUnifiedDoctorAppointments = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      console.log('Fetching appointments for user:', user.id);
+      console.log('Fetching appointments for doctor user:', user.id);
 
-      // Enhanced check to ensure user has proper doctor access
+      // Verify the user is a doctor
       const { data: userProfile } = await supabase
         .from('profiles')
         .select('is_doctor')
         .eq('id', user.id)
         .single();
 
-      console.log('User profile:', userProfile);
+      console.log('User profile check:', userProfile);
 
       if (!userProfile?.is_doctor) {
         throw new Error('User does not have doctor access');
       }
 
-      // Fetch doctor profile to get doctor name and verify status
+      // Get doctor profile to ensure they're verified
       const { data: doctorProfile } = await supabase
         .from('doctors')
         .select('name, verified')
         .eq('id', user.id)
         .single();
 
-      console.log('Doctor profile:', doctorProfile);
+      console.log('Doctor profile check:', doctorProfile);
 
       if (!doctorProfile) throw new Error('Doctor profile not found');
       
-      // Additional check to ensure doctor is verified
       if (!doctorProfile.verified) {
         throw new Error('Doctor profile is not verified');
       }
 
-      // Fetch direct appointments - using doctor_id for precise matching
+      // PRIMARY: Fetch appointments by doctor_id (this is the main fix)
       const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
         .select('*')
-        .eq('doctor_id', user.id);
+        .eq('doctor_id', user.id); // This ensures we get appointments for this specific doctor
 
       if (directError) {
         console.error('Direct appointments error:', directError);
         throw directError;
       }
 
-      console.log('Direct appointments found:', directAppointments?.length || 0);
-      console.log('Direct appointments data:', directAppointments);
+      console.log('Direct appointments found by doctor_id:', directAppointments?.length || 0);
 
-      // Also fetch by doctor_name as fallback for existing appointments that might not have doctor_id set
+      // FALLBACK: Also fetch by doctor_name for legacy appointments that might not have doctor_id set
       const { data: fallbackAppointments, error: fallbackError } = await supabase
         .from('appointments')
         .select('*')
         .eq('doctor_name', doctorProfile.name)
-        .is('doctor_id', null);
+        .is('doctor_id', null); // Only get appointments without doctor_id set
 
       if (fallbackError) {
         console.error('Fallback appointments error:', fallbackError);
       } else {
-        console.log('Fallback appointments found:', fallbackAppointments?.length || 0);
+        console.log('Fallback appointments found by doctor_name:', fallbackAppointments?.length || 0);
       }
 
-      // Combine direct appointments with fallback appointments
+      // Combine both results
       const allDirectAppointments = [
         ...(directAppointments || []),
         ...(fallbackAppointments || [])
       ];
 
-      // Fetch slot-based appointments - only slots created by this doctor
+      console.log('Total direct appointments:', allDirectAppointments.length);
+
+      // Fetch slot-based appointments
       const { data: slotAppointments, error: slotError } = await supabase
         .from('appointment_slots')
         .select('*')
@@ -114,11 +113,10 @@ export const useUnifiedDoctorAppointments = () => {
       // Process direct appointments
       if (allDirectAppointments) {
         for (const appointment of allDirectAppointments) {
-          console.log('Processing direct appointment:', appointment.id);
+          console.log('Processing direct appointment:', appointment.id, 'for doctor_id:', appointment.doctor_id);
           
           let patientName = 'Unknown Patient';
           
-          // Get patient name using the database function if user_id exists
           if (appointment.user_id) {
             try {
               const { data: nameResult, error: nameError } = await supabase
@@ -155,7 +153,6 @@ export const useUnifiedDoctorAppointments = () => {
           
           let patientName = 'Unknown Patient';
           
-          // Get patient name using the database function if user_id exists
           if (slot.user_id) {
             try {
               const { data: nameResult, error: nameError } = await supabase
@@ -219,7 +216,6 @@ export const useUnifiedDoctorAppointments = () => {
         
         if (error) throw error;
       } else {
-        // For slot appointments, map status appropriately
         const slotStatus = status === 'confirmed' ? 'booked' : status;
         const { error } = await supabase
           .from('appointment_slots')
@@ -229,7 +225,6 @@ export const useUnifiedDoctorAppointments = () => {
         if (error) throw error;
       }
 
-      // Refresh appointments
       await fetchUnifiedAppointments();
       
       toast({

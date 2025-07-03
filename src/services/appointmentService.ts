@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -38,24 +37,32 @@ export const useAppointmentBooking = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Get the doctor's ID from their name to ensure proper linking
+      console.log('Booking direct appointment for:', booking.doctorName);
+
+      // First, get the doctor's ID from their name to ensure proper linking
       const { data: doctorData, error: doctorError } = await supabase
         .from('doctors')
         .select('id, name')
         .eq('name', booking.doctorName)
         .single();
 
-      if (doctorError || !doctorData) {
+      if (doctorError) {
+        console.error('Error finding doctor:', doctorError);
         throw new Error('Doctor not found');
       }
 
-      console.log('Booking appointment for doctor:', doctorData);
+      if (!doctorData) {
+        throw new Error('Doctor not found in database');
+      }
 
-      const { error } = await supabase
+      console.log('Found doctor:', doctorData);
+
+      // Insert the appointment with the correct doctor_id
+      const { error: insertError } = await supabase
         .from('appointments')
         .insert({
           user_id: user.id,
-          doctor_id: doctorData.id, // Ensure doctor_id is set correctly
+          doctor_id: doctorData.id, // This is crucial - ensures it shows on doctor's dashboard
           doctor_name: booking.doctorName,
           date: booking.date,
           time: booking.time,
@@ -64,19 +71,19 @@ export const useAppointmentBooking = () => {
           status: 'pending'
         });
 
-      if (error) {
-        console.error('Error inserting appointment:', error);
-        throw error;
+      if (insertError) {
+        console.error('Error inserting appointment:', insertError);
+        throw insertError;
       }
 
-      console.log('Appointment successfully booked with doctor_id:', doctorData.id);
+      console.log('Direct appointment successfully booked with doctor_id:', doctorData.id);
 
       toast({
         title: "Appointment Booked",
-        description: "Your appointment has been successfully booked.",
+        description: `Your appointment with ${booking.doctorName} has been successfully booked.`,
       });
     } catch (error) {
-      console.error('Error booking appointment:', error);
+      console.error('Error booking direct appointment:', error);
       toast({
         title: "Booking Failed",
         description: "Failed to book appointment. Please try again.",
