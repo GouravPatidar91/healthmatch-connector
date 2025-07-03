@@ -544,6 +544,13 @@ const HealthCheckResults = () => {
                                 <p className="text-sm text-orange-700 mt-1">{condition.medicationConsiderations}</p>
                               </div>
                             )}
+                            
+                            {condition.deepAnalysisReasoning && (
+                              <div className="p-3 bg-purple-50 border border-purple-200 rounded-md">
+                                <h4 className="font-medium text-purple-800">Deep Analysis Reasoning:</h4>
+                                <p className="text-sm text-purple-700 mt-1">{condition.deepAnalysisReasoning}</p>
+                              </div>
+                            )}
                           </div>
                         </TabsContent>
                       )}
