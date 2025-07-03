@@ -256,7 +256,7 @@ const Homepage = () => {
                   <Heart className="text-white h-6 w-6" />
                 </div>
                 <span className="font-bold text-xl text-white">
-                  HealthMatch
+                  Curezy
                 </span>
               </div>
               <p className="text-gray-400">
