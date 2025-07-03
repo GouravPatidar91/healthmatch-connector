@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -30,14 +29,30 @@ export const useUnifiedDoctorAppointments = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Enhanced check to ensure user has proper doctor access
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('is_doctor')
+        .eq('id', user.id)
+        .single();
+
+      if (!userProfile?.is_doctor) {
+        throw new Error('User does not have doctor access');
+      }
+
       // Fetch doctor profile to get doctor name
       const { data: doctorProfile } = await supabase
         .from('doctors')
-        .select('name')
+        .select('name, verified')
         .eq('id', user.id)
         .single();
 
       if (!doctorProfile) throw new Error('Doctor profile not found');
+      
+      // Additional check to ensure doctor is verified
+      if (!doctorProfile.verified) {
+        throw new Error('Doctor profile is not verified');
+      }
 
       // Fetch direct appointments
       const { data: directAppointments, error: directError } = await supabase

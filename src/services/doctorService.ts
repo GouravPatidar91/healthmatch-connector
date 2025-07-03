@@ -55,12 +55,12 @@ export const useDoctors = () => {
       try {
         console.log('Fetching verified doctors with is_doctor = true...');
         
-        // Join doctors table with profiles table to ensure is_doctor = true
+        // Updated query to be more explicit about requirements
         const { data, error } = await supabase
           .from('doctors')
           .select(`
             *,
-            profiles!inner(is_doctor)
+            profiles!inner(is_doctor, first_name, last_name)
           `)
           .eq('verified', true)
           .eq('available', true)
@@ -71,19 +71,32 @@ export const useDoctors = () => {
           throw error;
         }
 
-        console.log('Fetched doctors with profile check:', data);
+        console.log('Raw fetched doctors data:', data);
         
-        // Transform the data to remove the nested profiles object
-        const verifiedDoctors = (data || []).map(doctor => ({
-          ...doctor,
-          // Remove the profiles object from the response
-          profiles: undefined
-        })).filter(doctor => 
-          doctor.verified === true && 
-          doctor.available === true
-        );
+        // Enhanced client-side filtering as additional security layer
+        const verifiedDoctors = (data || [])
+          .filter(doctor => {
+            const isValid = doctor.verified === true && 
+                           doctor.available === true &&
+                           doctor.profiles?.is_doctor === true;
+            
+            if (!isValid) {
+              console.log('Filtered out doctor:', doctor.name, {
+                verified: doctor.verified,
+                available: doctor.available,
+                is_doctor: doctor.profiles?.is_doctor
+              });
+            }
+            
+            return isValid;
+          })
+          .map(doctor => ({
+            ...doctor,
+            // Remove the profiles object from the response
+            profiles: undefined
+          }));
         
-        console.log('Filtered verified doctors with admin access:', verifiedDoctors);
+        console.log('Final filtered verified doctors:', verifiedDoctors);
         setDoctors(verifiedDoctors);
       } catch (err) {
         console.error('Error fetching doctors:', err);
@@ -178,14 +191,16 @@ export const useDoctors = () => {
       }
 
       if (latitude && longitude) {
-        // Find nearby doctors using coordinates - this function now filters for is_doctor = true
+        // Find nearby doctors using coordinates - with enhanced filtering
         const nearbyDoctors = await findNearestDoctorsWithProfileCheck(latitude, longitude);
-        const formattedDoctors = nearbyDoctors.map((doctor: any) => ({
-          ...doctor,
-          region: doctor.region || 'Unknown',
-          verified: true, // Ensure verified flag is set
-          available: true // Ensure available flag is set
-        }));
+        const formattedDoctors = nearbyDoctors
+          .filter(doctor => doctor.verified === true && doctor.available === true)
+          .map((doctor: any) => ({
+            ...doctor,
+            region: doctor.region || 'Unknown',
+            verified: true,
+            available: true
+          }));
         
         setDoctors(formattedDoctors);
         
@@ -214,7 +229,7 @@ export const useDoctors = () => {
   return { doctors, loading, error, findNearbyDoctors };
 };
 
-// Custom hook to fetch doctors by specialization - now with profile check
+// Custom hook to fetch doctors by specialization - now with enhanced profile check
 export const useDoctorsBySpecialization = (specialization?: string) => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,7 +243,7 @@ export const useDoctorsBySpecialization = (specialization?: string) => {
           .from('doctors')
           .select(`
             *,
-            profiles!inner(is_doctor)
+            profiles!inner(is_doctor, first_name, last_name)
           `)
           .eq('verified', true)
           .eq('available', true)
@@ -244,11 +259,17 @@ export const useDoctorsBySpecialization = (specialization?: string) => {
           throw error;
         }
 
-        // Transform the data to remove the nested profiles object
-        const transformedDoctors = (data || []).map(doctor => ({
-          ...doctor,
-          profiles: undefined
-        }));
+        // Enhanced client-side filtering
+        const transformedDoctors = (data || [])
+          .filter(doctor => 
+            doctor.verified === true && 
+            doctor.available === true &&
+            doctor.profiles?.is_doctor === true
+          )
+          .map(doctor => ({
+            ...doctor,
+            profiles: undefined
+          }));
 
         setDoctors(transformedDoctors);
       } catch (err) {
@@ -636,19 +657,19 @@ export const revokeDoctorAccess = async (userId: string): Promise<boolean> => {
   }
 };
 
-// Function to find nearest doctors with profile check - updated to ensure is_doctor = true
+// Function to find nearest doctors with enhanced profile check
 export const findNearestDoctorsWithProfileCheck = async (
   latitude: number,
   longitude: number,
   specialization?: string
 ) => {
   try {
-    // First get verified doctors with is_doctor = true
+    // Enhanced query to ensure proper verification
     const { data: verifiedDoctors, error } = await supabase
       .from('doctors')
       .select(`
         *,
-        profiles!inner(is_doctor)
+        profiles!inner(is_doctor, first_name, last_name)
       `)
       .eq('verified', true)
       .eq('available', true)
@@ -666,8 +687,15 @@ export const findNearestDoctorsWithProfileCheck = async (
       );
     }
 
+    // Enhanced client-side filtering
+    const validDoctors = filteredDoctors.filter(doctor => 
+      doctor.verified === true && 
+      doctor.available === true &&
+      doctor.profiles?.is_doctor === true
+    );
+
     // Calculate distances and sort by proximity
-    const doctorsWithDistance = filteredDoctors
+    const doctorsWithDistance = validDoctors
       .filter(doctor => doctor.latitude && doctor.longitude)
       .map(doctor => {
         // Calculate distance using Haversine formula
@@ -690,15 +718,15 @@ export const findNearestDoctorsWithProfileCheck = async (
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 5); // Limit to 5 nearest doctors
 
-    console.log('Nearest doctors with profile check:', doctorsWithDistance);
+    console.log('Enhanced nearest doctors with profile check:', doctorsWithDistance);
     return doctorsWithDistance;
   } catch (err) {
-    console.error('Error finding nearest doctors with profile check:', err);
+    console.error('Error finding nearest doctors with enhanced profile check:', err);
     throw err;
   }
 };
 
-// Backward compatibility - keep the original function but update it to use the new one
+// Backward compatibility - keep the original function but update it to use the enhanced one
 export const findNearestDoctors = async (
   latitude: number,
   longitude: number,
