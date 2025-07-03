@@ -37,30 +37,67 @@ export const useAppointmentBooking = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      console.log('Booking direct appointment for:', booking.doctorName);
+      console.log('🔍 Starting direct appointment booking process...');
+      console.log('📋 Booking details:', {
+        doctorName: booking.doctorName,
+        doctorId: booking.doctorId,
+        date: booking.date,
+        time: booking.time
+      });
 
-      // Get the doctor's ID from their name to ensure proper linking
-      const { data: doctorData, error: doctorError } = await supabase
-        .from('doctors')
-        .select('id, name')
-        .eq('name', booking.doctorName)
-        .single();
+      let finalDoctorId = booking.doctorId;
 
-      if (doctorError) {
-        console.error('Error finding doctor:', doctorError);
-        throw new Error('Doctor not found');
+      // If doctorId is not provided, fetch it using doctor name
+      if (!finalDoctorId) {
+        console.log('🔍 Doctor ID not provided, fetching from doctor name...');
+        const { data: doctorData, error: doctorError } = await supabase
+          .from('doctors')
+          .select('id, name, verified')
+          .eq('name', booking.doctorName)
+          .eq('verified', true)
+          .single();
+
+        if (doctorError) {
+          console.error('❌ Error finding doctor:', doctorError);
+          throw new Error(`Doctor "${booking.doctorName}" not found or not verified`);
+        }
+
+        if (!doctorData) {
+          throw new Error(`Doctor "${booking.doctorName}" not found in database`);
+        }
+
+        finalDoctorId = doctorData.id;
+        console.log('✅ Found doctor:', {
+          id: finalDoctorId,
+          name: doctorData.name,
+          verified: doctorData.verified
+        });
+      } else {
+        // Verify that the provided doctorId exists and is verified
+        console.log('🔍 Verifying provided doctor ID...');
+        const { data: doctorData, error: doctorError } = await supabase
+          .from('doctors')
+          .select('id, name, verified')
+          .eq('id', finalDoctorId)
+          .eq('verified', true)
+          .single();
+
+        if (doctorError || !doctorData) {
+          console.error('❌ Error verifying doctor:', doctorError);
+          throw new Error('Doctor not found or not verified');
+        }
+
+        console.log('✅ Doctor verified:', {
+          id: finalDoctorId,
+          name: doctorData.name,
+          verified: doctorData.verified
+        });
       }
 
-      if (!doctorData) {
-        throw new Error('Doctor not found in database');
-      }
-
-      console.log('Found doctor for booking:', doctorData);
-
-      // Insert the appointment with the correct doctor_id - this is the key fix
+      // Prepare appointment data with explicit doctor_id
       const appointmentData = {
         user_id: user.id,
-        doctor_id: doctorData.id, // Ensure this is set correctly
+        doctor_id: finalDoctorId, // This is the key - ensure doctor_id is set
         doctor_name: booking.doctorName,
         date: booking.date,
         time: booking.time,
@@ -69,8 +106,9 @@ export const useAppointmentBooking = () => {
         status: 'pending'
       };
 
-      console.log('Inserting appointment with data:', appointmentData);
+      console.log('📝 Inserting appointment with data:', appointmentData);
 
+      // Insert the appointment
       const { data: insertedAppointment, error: insertError } = await supabase
         .from('appointments')
         .insert(appointmentData)
@@ -78,24 +116,39 @@ export const useAppointmentBooking = () => {
         .single();
 
       if (insertError) {
-        console.error('Error inserting appointment:', insertError);
+        console.error('❌ Error inserting appointment:', insertError);
         throw insertError;
       }
 
-      console.log('Direct appointment successfully created:', insertedAppointment);
-      console.log('Appointment assigned to doctor_id:', insertedAppointment.doctor_id);
+      console.log('✅ Appointment successfully created:', {
+        id: insertedAppointment.id,
+        doctor_id: insertedAppointment.doctor_id,
+        doctor_name: insertedAppointment.doctor_name,
+        patient_id: insertedAppointment.user_id,
+        date: insertedAppointment.date,
+        time: insertedAppointment.time,
+        status: insertedAppointment.status
+      });
+
+      // Verify the appointment was created with correct doctor_id
+      if (insertedAppointment.doctor_id !== finalDoctorId) {
+        console.error('⚠️ Warning: Appointment doctor_id mismatch!', {
+          expected: finalDoctorId,
+          actual: insertedAppointment.doctor_id
+        });
+      }
 
       toast({
-        title: "Appointment Booked",
-        description: `Your appointment with ${booking.doctorName} has been successfully booked.`,
+        title: "Appointment Booked Successfully",
+        description: `Your appointment with ${booking.doctorName} has been scheduled for ${booking.date} at ${booking.time}.`,
       });
 
       return insertedAppointment;
     } catch (error) {
-      console.error('Error booking direct appointment:', error);
+      console.error('❌ Failed to book direct appointment:', error);
       toast({
         title: "Booking Failed",
-        description: "Failed to book appointment. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to book appointment. Please try again.",
         variant: "destructive",
       });
       throw error;

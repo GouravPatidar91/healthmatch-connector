@@ -42,7 +42,6 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
   const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    // Only run once on mount to prevent infinite loops
     if (!hasInitialized) {
       const tryFindNearby = async () => {
         console.log('NearbyDoctorsCard: Attempting to find nearby doctors...');
@@ -74,21 +73,18 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
   const handleSelectDoctor = (doctor: any) => {
     console.log('NearbyDoctorsCard: Selected doctor for booking:', doctor);
     
-    // Prevent multiple dialogs by checking if one is already open
     if (showBookingDialog) {
       console.log('Dialog already open, ignoring click');
       return;
     }
     
     setSelectedDoctor(doctor);
-    // Set default date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setSelectedDate(tomorrow);
     setSelectedTime("10:00");
     setNotes("");
     
-    // Use requestAnimationFrame to ensure DOM is ready
     requestAnimationFrame(() => {
       setShowBookingDialog(true);
     });
@@ -97,7 +93,6 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
   const handleCloseDialog = () => {
     console.log('NearbyDoctorsCard: Closing dialog');
     setShowBookingDialog(false);
-    // Clear state after dialog closes
     setTimeout(() => {
       setSelectedDoctor(null);
       setSelectedDate(undefined);
@@ -116,17 +111,19 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
       return;
     }
 
-    console.log('NearbyDoctorsCard: Booking appointment with:', {
-      doctor: selectedDoctor,
+    console.log('🚀 Starting appointment booking process...', {
+      doctor: {
+        id: selectedDoctor.id,
+        name: selectedDoctor.name
+      },
       date: selectedDate,
       time: selectedTime,
-      healthCheckData
+      healthCheckData: !!healthCheckData
     });
 
     setBookingDoctor(selectedDoctor.id);
     
     try {
-      // Prepare reason with health check summary if available
       let reason = "General consultation";
       if (healthCheckData) {
         const symptomsText = healthCheckData.symptoms?.join(', ') || '';
@@ -134,11 +131,18 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         reason = `Health Check Follow-up: ${symptomsText}${urgencyText}`;
       }
 
-      console.log('Appointment reason:', reason);
-
-      // Book the appointment - fix the property names to match AppointmentBooking interface
-      await bookDirectAppointment({
+      console.log('📋 Appointment booking data:', {
         doctorId: selectedDoctor.id,
+        doctorName: selectedDoctor.name,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        time: selectedTime,
+        reason: reason,
+        notes: notes || healthCheckData?.notes
+      });
+
+      // Book the appointment with explicit doctorId
+      await bookDirectAppointment({
+        doctorId: selectedDoctor.id, // This is crucial - pass the doctor's ID
         doctorName: selectedDoctor.name,
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
@@ -146,14 +150,14 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         notes: notes || healthCheckData?.notes || undefined
       });
 
-      console.log('Appointment booked successfully');
+      console.log('✅ Appointment booked successfully');
 
-      // If health check data exists, send it to the doctor
+      // Handle health check data sharing if available
       if (healthCheckData) {
         try {
           await sendHealthCheckToDoctor(
             healthCheckData,
-            'temp-appointment-id', // We'll need to get the actual appointment ID
+            'temp-appointment-id',
             selectedDoctor.id
           );
           
@@ -179,7 +183,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
       onAppointmentBooked?.();
       
     } catch (error) {
-      console.error('Error booking appointment:', error);
+      console.error('❌ Error booking appointment:', error);
       toast({
         title: "Booking Failed",
         description: "Failed to book appointment. Please try again.",
@@ -388,7 +392,7 @@ export const NearbyDoctorsCard = ({ healthCheckData, onAppointmentBooked }: Near
         ))}
       </div>
 
-      {/* Health Check Specific Booking Dialog - completely isolated */}
+      {/* Health Check Specific Booking Dialog */}
       {showBookingDialog && selectedDoctor && (
         <Dialog 
           open={showBookingDialog} 
