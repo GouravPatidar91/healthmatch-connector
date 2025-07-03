@@ -47,7 +47,6 @@ export interface AnalysisCondition {
   photoAnalysisMethod?: string; // Description of the photo analysis method used
   medicalHistoryRelevance?: string; // How this condition relates to patient's medical history
   medicationConsiderations?: string; // Drug interactions or medication-related factors
-  deepAnalysisReasoning?: string; // Complex medical reasoning for comprehensive analysis
 }
 
 // Symptom detail with photo
@@ -92,11 +91,10 @@ const parseAnalysisResults = (data: any): HealthCheck => {
           matchScore: Number(item.matchScore || 0),
           recommendedActions: Array.isArray(item.recommendedActions) ? item.recommendedActions : [],
           seekMedicalAttention: item.seekMedicalAttention || undefined,
-            visualDiagnosticFeatures: Array.isArray(item.visualDiagnosticFeatures) ? item.visualDiagnosticFeatures : undefined,
-            photoAnalysisMethod: item.photoAnalysisMethod || undefined,
-            medicalHistoryRelevance: item.medicalHistoryRelevance || undefined,
-            medicationConsiderations: item.medicationConsiderations || undefined,
-            deepAnalysisReasoning: item.deepAnalysisReasoning || undefined
+          visualDiagnosticFeatures: Array.isArray(item.visualDiagnosticFeatures) ? item.visualDiagnosticFeatures : undefined,
+          photoAnalysisMethod: item.photoAnalysisMethod || undefined,
+          medicalHistoryRelevance: item.medicalHistoryRelevance || undefined,
+          medicationConsiderations: item.medicationConsiderations || undefined
         }));
       } 
       // If it's a string, parse it

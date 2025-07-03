@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || "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";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,9 +24,9 @@ serve(async (req) => {
       );
     }
 
-    if (!GEMINI_API_KEY) {
+    if (!GROQ_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "Gemini API key not configured" }),
+        JSON.stringify({ error: "API key not configured" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -127,16 +127,9 @@ serve(async (req) => {
       photoAnalysisText += "\n\nThe photos show visible symptoms which have been considered in this analysis.";
     }
 
-    // Determine analysis depth based on additional information
-    const hasAdditionalInfo = (previousConditions && previousConditions.length > 0) || 
-                             (medications && medications.length > 0) || 
-                             (notes && notes.trim());
-    
-    const analysisDepth = hasAdditionalInfo ? "COMPREHENSIVE_DEEP_ANALYSIS" : "STANDARD_ANALYSIS";
-
     // Create the enhanced prompt for the AI with medical history context
     const prompt = `
-      As a medical AI assistant specializing in ${hasAdditionalInfo ? 'comprehensive deep health analysis' : 'health analysis'}, analyze the following patient information and provide possible conditions:
+      As a medical AI assistant specializing in comprehensive health analysis, analyze the following patient information and provide possible conditions:
       
       CURRENT SYMPTOMS: ${symptomsText}
       ${severityInfo}
@@ -146,24 +139,12 @@ serve(async (req) => {
       ${medicationsText}
       ${notesText}
       
-      ANALYSIS TYPE: ${analysisDepth}
-      ${hasAdditionalInfo ? `
-      COMPREHENSIVE DEEP ANALYSIS REQUIREMENTS:
-      - Perform multi-layered diagnostic reasoning considering symptom interactions
-      - Analyze drug-disease interactions and contraindications
-      - Consider genetic predispositions based on medical history
-      - Evaluate symptom progression patterns and timeline correlation
-      - Assess risk stratification based on comorbidities
-      - Provide differential diagnosis with likelihood ratios
-      - Consider rare conditions if medical history suggests complex cases` : ''}
-      
       IMPORTANT ANALYSIS CONSIDERATIONS:
       1. Consider how previous medical conditions might influence current symptoms
       2. Evaluate potential drug interactions or medication side effects that could contribute to symptoms
       3. Factor in the patient's additional notes for context about symptom onset, triggers, or patterns
       4. Assess if current symptoms could be related to existing conditions or complications
       ${hasDetailedVisualAnalysis ? "5. Pay special attention to visual symptoms where photos were provided. For eye conditions, examine for redness, discharge, swelling, or abnormal appearance. For skin conditions, look for patterns, coloration, texture, and distribution of the affected areas." : ""}
-      ${hasAdditionalInfo ? "6. Perform deep medical reasoning considering complex interactions between symptoms, conditions, and medications" : ""}
       
       For each potential condition, provide:
       1. Name of the condition
@@ -174,7 +155,6 @@ serve(async (req) => {
       6. Recommended actions or treatments (considering existing medications and conditions)
       7. When to seek immediate medical attention
       8. Drug interaction warnings if relevant
-      ${hasAdditionalInfo ? "9. Deep analysis reasoning explaining complex medical relationships" : ""}
       
       ${hasDetailedVisualAnalysis ? "For conditions diagnosed based on photos, explain clearly which visual characteristics led to this diagnosis and include a 'visualDiagnosticFeatures' section listing specific visual markers that support this diagnosis." : ""}
       
@@ -190,62 +170,59 @@ serve(async (req) => {
             "seekMedicalAttention": "When to see a doctor immediately",
             "medicalHistoryRelevance": "How this relates to previous conditions",
             "medicationConsiderations": "Drug interactions or medication-related factors",
-            "visualDiagnosticFeatures": ["feature1", "feature2"], // Only for photo-based diagnoses
-            ${hasAdditionalInfo ? '"deepAnalysisReasoning": "Complex medical reasoning and interactions"' : ''}
+            "visualDiagnosticFeatures": ["feature1", "feature2"] // Only for photo-based diagnoses
           }
         ],
         "overallAssessment": "Summary considering all patient information including medical history and medications",
         "urgencyLevel": "low/moderate/high",
-        "analysisDepth": "${analysisDepth}",
         "photoAnalysisMethod": "Description of the visual analysis method used for photos" // Only when photos are analyzed
       }
       
       The JSON should be properly formatted without any non-JSON content before or after.
     `;
 
-    console.log("Sending comprehensive analysis request to Google Gemini API");
+    console.log("Sending comprehensive analysis request to Groq API");
     console.log("Symptoms:", symptomsText);
     console.log("Previous conditions:", previousConditions);
     console.log("Medications:", medications);
     console.log("Has photo analysis:", hasDetailedVisualAnalysis);
-    console.log("Analysis depth:", analysisDepth);
 
-    // Call Google Gemini API with enhanced prompt
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    // Call Groq API with enhanced prompt
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `${hasAdditionalInfo ? 'COMPREHENSIVE DEEP MEDICAL ANALYSIS MODE ACTIVATED\n\n' : ''}${prompt}\n\nIMPORTANT: Respond ONLY with valid JSON. No other text before or after the JSON.`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.8,
-          topK: 40,
-          maxOutputTokens: 2048,
-        }
+        model: 'llama3-8b-8192',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a comprehensive medical AI assistant that considers complete patient history including previous conditions, medications, and additional notes for accurate diagnosis. When photos of visual symptoms are provided, perform detailed analysis. Always return valid JSON format with no additional text.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.2,
+        response_format: { type: "json_object" }
       }),
     });
 
     if (!response.ok) {
       const errorDetails = await response.text();
-      console.error("Gemini API error:", errorDetails);
-      throw new Error(`Gemini API returned error status: ${response.status}`);
+      console.error("Groq API error:", errorDetails);
+      throw new Error(`Groq API returned error status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("Received enhanced analysis response from Gemini");
+    console.log("Received enhanced analysis response from Groq");
     
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error("Unexpected response structure:", JSON.stringify(data));
-      throw new Error("Invalid response structure from Gemini");
+      throw new Error("Invalid response structure from Groq");
     }
 
-    const aiResponse = data.candidates[0].content.parts[0].text;
+    const aiResponse = data.choices[0].message.content;
     
     try {
       const analysisResult = JSON.parse(aiResponse);
