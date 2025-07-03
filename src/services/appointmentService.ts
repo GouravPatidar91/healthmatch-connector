@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export interface AppointmentBooking {
@@ -173,4 +173,52 @@ export const useAppointmentBooking = () => {
     getPatientAppointments,
     loading
   };
+};
+
+// Add the missing useAvailableSlots hook
+export const useAvailableSlots = (doctorId: string) => {
+  const [slots, setSlots] = useState<DoctorSlot[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSlots = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('appointment_slots')
+          .select(`
+            *,
+            doctors:doctor_id (
+              name,
+              specialization,
+              hospital
+            )
+          `)
+          .eq('doctor_id', doctorId)
+          .eq('status', 'available')
+          .gte('date', new Date().toISOString().split('T')[0])
+          .order('date')
+          .order('start_time');
+
+        if (error) throw error;
+
+        const mappedSlots = data?.map(slot => ({
+          ...slot,
+          doctor: slot.doctors as any
+        })) || [];
+
+        setSlots(mappedSlots);
+      } catch (error) {
+        console.error('Error fetching available slots:', error);
+        setSlots([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (doctorId) {
+      fetchSlots();
+    }
+  }, [doctorId]);
+
+  return { slots, loading };
 };
