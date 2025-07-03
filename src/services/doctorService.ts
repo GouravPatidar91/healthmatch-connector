@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -172,11 +173,24 @@ export const useDoctors = () => {
       if (latitude && longitude) {
         // Find nearby doctors using coordinates
         const nearbyDoctors = await findNearestDoctors(latitude, longitude);
-        setDoctors(nearbyDoctors);
+        
+        // Transform the data to match our Doctor interface
+        const transformedDoctors: Doctor[] = nearbyDoctors.map(doctor => ({
+          id: doctor.id,
+          name: doctor.name,
+          specialization: doctor.specialization,
+          hospital: doctor.hospital,
+          address: doctor.address,
+          region: '', // Set a default value since it's required
+          verified: true,
+          available: true
+        }));
+        
+        setDoctors(transformedDoctors);
         
         toast({
           title: "Nearby doctors found",
-          description: `Found ${nearbyDoctors.length} doctors using ${locationSource}`,
+          description: `Found ${transformedDoctors.length} doctors using ${locationSource}`,
         });
         
         return true;
