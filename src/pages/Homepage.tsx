@@ -56,7 +56,7 @@ const Homepage = () => {
                 <Heart className="text-white h-6 w-6" />
               </div>
               <span className="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                HealthMatch
+                Curezy
               </span>
             </div>
             
@@ -289,7 +289,7 @@ const Homepage = () => {
                   <Clock className="h-4 w-4" />
                   <span>24/7 Support</span>
                 </li>
-                <li>support@healthmatch.com</li>
+                <li>admin@curezy.in</li>
                 <li>1-800-HEALTH</li>
               </ul>
             </div>
@@ -297,7 +297,7 @@ const Homepage = () => {
 
           <div className="border-t border-gray-800 mt-12 pt-8 text-center">
             <p className="text-gray-400">
-              © {new Date().getFullYear()} HealthMatch. All rights reserved.
+              © {new Date().getFullYear()} Curezy. All rights reserved.
             </p>
           </div>
         </div>
