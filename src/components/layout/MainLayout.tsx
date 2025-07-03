@@ -110,7 +110,7 @@ const MainLayout = () => {
               <Heart className="text-white h-6 w-6" />
             </div>
             <span className="font-bold text-xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              HealthMatch
+              Curezy
             </span>
           </Link>
           
@@ -144,7 +144,7 @@ const MainLayout = () => {
                       <Heart className="text-white h-6 w-6" />
                     </div>
                     <span className="font-bold text-xl text-gray-900">
-                      HealthMatch
+                      Curezy
                     </span>
                   </div>
                   
