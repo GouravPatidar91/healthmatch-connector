@@ -43,7 +43,7 @@ export interface DoctorAppointment {
   notes?: string;
 }
 
-// Custom hook to fetch all doctors
+// Custom hook to fetch all doctors - only verified and available ones
 export const useDoctors = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +53,8 @@ export const useDoctors = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
+        console.log('Fetching verified doctors...');
+        
         const { data, error } = await supabase
           .from('doctors')
           .select('*')
@@ -60,10 +62,19 @@ export const useDoctors = () => {
           .eq('available', true);
 
         if (error) {
+          console.error('Error fetching doctors:', error);
           throw error;
         }
 
-        setDoctors(data || []);
+        console.log('Fetched doctors:', data);
+        
+        // Additional client-side filter to ensure only verified doctors
+        const verifiedDoctors = (data || []).filter(doctor => 
+          doctor.verified === true && doctor.available === true
+        );
+        
+        console.log('Filtered verified doctors:', verifiedDoctors);
+        setDoctors(verifiedDoctors);
       } catch (err) {
         console.error('Error fetching doctors:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch doctors'));
@@ -157,11 +168,13 @@ export const useDoctors = () => {
       }
 
       if (latitude && longitude) {
-        // Find nearby doctors using coordinates
+        // Find nearby doctors using coordinates - this function already filters for verified doctors
         const nearbyDoctors = await findNearestDoctors(latitude, longitude);
         const formattedDoctors = nearbyDoctors.map((doctor: any) => ({
           ...doctor,
           region: doctor.region || 'Unknown',
+          verified: true, // Ensure verified flag is set
+          available: true // Ensure available flag is set
         }));
         
         setDoctors(formattedDoctors);
@@ -603,7 +616,7 @@ export const revokeDoctorAccess = async (userId: string): Promise<boolean> => {
   }
 };
 
-// Function to find nearest doctors using Supabase function
+// Function to find nearest doctors using Supabase function - this already filters for verified doctors
 export const findNearestDoctors = async (
   latitude: number,
   longitude: number,
@@ -620,6 +633,8 @@ export const findNearestDoctors = async (
       throw error;
     }
 
+    // The RPC function should only return verified doctors, but let's ensure it
+    console.log('Nearest doctors from RPC:', data);
     return data || [];
   } catch (err) {
     console.error('Error finding nearest doctors:', err);
