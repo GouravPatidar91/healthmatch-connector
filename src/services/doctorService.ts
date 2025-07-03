@@ -53,50 +53,29 @@ export const useDoctors = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        console.log('Fetching verified doctors with is_doctor = true...');
+        console.log('Fetching verified doctors...');
         
-        // Updated query to be more explicit about requirements
+        // Simplified query that relies on the RLS policy
         const { data, error } = await supabase
           .from('doctors')
-          .select(`
-            *,
-            profiles!inner(is_doctor, first_name, last_name)
-          `)
-          .eq('verified', true)
-          .eq('available', true)
-          .eq('profiles.is_doctor', true);
+          .select('*');
 
         if (error) {
           console.error('Error fetching doctors:', error);
           throw error;
         }
 
-        console.log('Raw fetched doctors data:', data);
+        console.log('Fetched doctors data:', data);
         
-        // Enhanced client-side filtering as additional security layer
-        const verifiedDoctors = (data || [])
-          .filter(doctor => {
-            const isValid = doctor.verified === true && 
-                           doctor.available === true &&
-                           doctor.profiles?.is_doctor === true;
-            
-            if (!isValid) {
-              console.log('Filtered out doctor:', doctor.name, {
-                verified: doctor.verified,
-                available: doctor.available,
-                is_doctor: doctor.profiles?.is_doctor
-              });
-            }
-            
-            return isValid;
-          })
-          .map(doctor => ({
-            ...doctor,
-            // Remove the profiles object from the response
-            profiles: undefined
-          }));
+        // The RLS policy already filters for verified, available doctors with is_doctor = true
+        // So we just need to map the data to our interface
+        const verifiedDoctors = (data || []).map(doctor => ({
+          ...doctor,
+          verified: true, // All returned doctors are verified due to RLS
+          available: true // All returned doctors are available due to RLS
+        }));
         
-        console.log('Final filtered verified doctors:', verifiedDoctors);
+        console.log('Final verified doctors:', verifiedDoctors);
         setDoctors(verifiedDoctors);
       } catch (err) {
         console.error('Error fetching doctors:', err);
@@ -191,22 +170,13 @@ export const useDoctors = () => {
       }
 
       if (latitude && longitude) {
-        // Find nearby doctors using coordinates - with enhanced filtering
-        const nearbyDoctors = await findNearestDoctorsWithProfileCheck(latitude, longitude);
-        const formattedDoctors = nearbyDoctors
-          .filter(doctor => doctor.verified === true && doctor.available === true)
-          .map((doctor: any) => ({
-            ...doctor,
-            region: doctor.region || 'Unknown',
-            verified: true,
-            available: true
-          }));
-        
-        setDoctors(formattedDoctors);
+        // Find nearby doctors using coordinates
+        const nearbyDoctors = await findNearestDoctors(latitude, longitude);
+        setDoctors(nearbyDoctors);
         
         toast({
           title: "Nearby doctors found",
-          description: `Found ${formattedDoctors.length} doctors using ${locationSource}`,
+          description: `Found ${nearbyDoctors.length} doctors using ${locationSource}`,
         });
         
         return true;
@@ -229,7 +199,7 @@ export const useDoctors = () => {
   return { doctors, loading, error, findNearbyDoctors };
 };
 
-// Custom hook to fetch doctors by specialization - now with enhanced profile check
+// Custom hook to fetch doctors by specialization
 export const useDoctorsBySpecialization = (specialization?: string) => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -239,15 +209,7 @@ export const useDoctorsBySpecialization = (specialization?: string) => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        let query = supabase
-          .from('doctors')
-          .select(`
-            *,
-            profiles!inner(is_doctor, first_name, last_name)
-          `)
-          .eq('verified', true)
-          .eq('available', true)
-          .eq('profiles.is_doctor', true);
+        let query = supabase.from('doctors').select('*');
 
         if (specialization) {
           query = query.eq('specialization', specialization);
@@ -259,17 +221,12 @@ export const useDoctorsBySpecialization = (specialization?: string) => {
           throw error;
         }
 
-        // Enhanced client-side filtering
-        const transformedDoctors = (data || [])
-          .filter(doctor => 
-            doctor.verified === true && 
-            doctor.available === true &&
-            doctor.profiles?.is_doctor === true
-          )
-          .map(doctor => ({
-            ...doctor,
-            profiles: undefined
-          }));
+        // RLS policy handles filtering, so we just map the results
+        const transformedDoctors = (data || []).map(doctor => ({
+          ...doctor,
+          verified: true,
+          available: true
+        }));
 
         setDoctors(transformedDoctors);
       } catch (err) {
@@ -657,80 +614,29 @@ export const revokeDoctorAccess = async (userId: string): Promise<boolean> => {
   }
 };
 
-// Function to find nearest doctors with enhanced profile check
-export const findNearestDoctorsWithProfileCheck = async (
-  latitude: number,
-  longitude: number,
-  specialization?: string
-) => {
-  try {
-    // Enhanced query to ensure proper verification
-    const { data: verifiedDoctors, error } = await supabase
-      .from('doctors')
-      .select(`
-        *,
-        profiles!inner(is_doctor, first_name, last_name)
-      `)
-      .eq('verified', true)
-      .eq('available', true)
-      .eq('profiles.is_doctor', true);
-
-    if (error) {
-      throw error;
-    }
-
-    // Filter by specialization if provided
-    let filteredDoctors = verifiedDoctors || [];
-    if (specialization) {
-      filteredDoctors = filteredDoctors.filter(doctor => 
-        doctor.specialization === specialization
-      );
-    }
-
-    // Enhanced client-side filtering
-    const validDoctors = filteredDoctors.filter(doctor => 
-      doctor.verified === true && 
-      doctor.available === true &&
-      doctor.profiles?.is_doctor === true
-    );
-
-    // Calculate distances and sort by proximity
-    const doctorsWithDistance = validDoctors
-      .filter(doctor => doctor.latitude && doctor.longitude)
-      .map(doctor => {
-        // Calculate distance using Haversine formula
-        const R = 6371; // Earth's radius in km
-        const dLat = (doctor.latitude - latitude) * Math.PI / 180;
-        const dLon = (doctor.longitude - longitude) * Math.PI / 180;
-        const a = 
-          Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(latitude * Math.PI / 180) * Math.cos(doctor.latitude * Math.PI / 180) * 
-          Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        const distance = R * c;
-
-        return {
-          ...doctor,
-          distance,
-          profiles: undefined // Remove nested profiles object
-        };
-      })
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 5); // Limit to 5 nearest doctors
-
-    console.log('Enhanced nearest doctors with profile check:', doctorsWithDistance);
-    return doctorsWithDistance;
-  } catch (err) {
-    console.error('Error finding nearest doctors with enhanced profile check:', err);
-    throw err;
-  }
-};
-
-// Backward compatibility - keep the original function but update it to use the enhanced one
+// Function to find nearest doctors 
 export const findNearestDoctors = async (
   latitude: number,
   longitude: number,
   specialization?: string
 ) => {
-  return findNearestDoctorsWithProfileCheck(latitude, longitude, specialization);
+  try {
+    // Use the database function which will respect RLS policies
+    const { data: nearbyDoctors, error } = await supabase
+      .rpc('find_nearest_doctor', {
+        lat: latitude,
+        long: longitude,
+        specialization_filter: specialization || null
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    console.log('Nearest doctors from database function:', nearbyDoctors);
+    return nearbyDoctors || [];
+  } catch (err) {
+    console.error('Error finding nearest doctors:', err);
+    throw err;
+  }
 };
