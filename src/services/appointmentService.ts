@@ -49,11 +49,13 @@ export const useAppointmentBooking = () => {
         throw new Error('Doctor not found');
       }
 
+      console.log('Booking appointment for doctor:', doctorData);
+
       const { error } = await supabase
         .from('appointments')
         .insert({
           user_id: user.id,
-          doctor_id: doctorData.id, // Now properly setting doctor_id
+          doctor_id: doctorData.id, // Ensure doctor_id is set correctly
           doctor_name: booking.doctorName,
           date: booking.date,
           time: booking.time,
@@ -62,7 +64,12 @@ export const useAppointmentBooking = () => {
           status: 'pending'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting appointment:', error);
+        throw error;
+      }
+
+      console.log('Appointment successfully booked with doctor_id:', doctorData.id);
 
       toast({
         title: "Appointment Booked",
