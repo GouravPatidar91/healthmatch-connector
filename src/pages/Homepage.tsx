@@ -67,7 +67,7 @@ const Homepage = () => {
               <a href="#about" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
                 About
               </a>
-              <a href="#footer" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
+              <a href="#contact" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
                 Contact
               </a>
               <Link 
@@ -82,7 +82,7 @@ const Homepage = () => {
       </nav>
 
       {/* Hero Section with Modern Design */}
-      <section className="py-20 lg:py-32">
+      <section id="about" className="py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-10">
@@ -247,7 +247,7 @@ const Homepage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-16">
+      <footer id="contact" className="bg-gray-900 text-gray-300 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
