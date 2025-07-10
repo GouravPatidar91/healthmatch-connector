@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -218,7 +219,7 @@ const MedicalReports = () => {
       // Convert file to base64
       const base64File = await convertFileToBase64(file);
       
-      console.log('Analyzing medical report:', file.name);
+      console.log('Analyzing medical report:', file.name, 'Size:', file.size, 'Type:', file.type);
       
       const { data, error } = await supabase.functions.invoke('analyze-medical-report', {
         body: {
@@ -229,11 +230,41 @@ const MedicalReports = () => {
         }
       });
 
+      console.log('Supabase function response:', { data, error });
+
       if (error) {
-        throw error;
+        console.error('Supabase function error:', error);
+        
+        // Provide more specific error messages
+        let errorMessage = "Failed to analyze the medical report. Please try again.";
+        
+        if (error.message?.includes('API key')) {
+          errorMessage = "AI service configuration issue. Please contact support.";
+        } else if (error.message?.includes('rate limit')) {
+          errorMessage = "Service temporarily busy. Please try again in a few minutes.";
+        } else if (error.message?.includes('file format')) {
+          errorMessage = "Unsupported file format. Please upload a PDF, JPEG, or PNG file.";
+        }
+        
+        toast({
+          title: "Analysis Failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return;
       }
 
-      console.log('Analysis result:', data);
+      if (!data) {
+        console.error('No data received from analysis function');
+        toast({
+          title: "Analysis Failed",
+          description: "No response received from analysis service. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Analysis result received:', data);
       setAnalysisResult(data);
       
       toast({
@@ -243,9 +274,21 @@ const MedicalReports = () => {
       
     } catch (error) {
       console.error('Error analyzing medical report:', error);
+      
+      let errorMessage = "Failed to analyze the medical report. Please try again.";
+      
+      // Handle specific error types
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Analysis timed out. Please try with a smaller file or try again later.";
+        }
+      }
+      
       toast({
         title: "Analysis Failed",
-        description: "Failed to analyze the medical report. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
