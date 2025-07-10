@@ -67,7 +67,7 @@ const Homepage = () => {
               <a href="#about" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
                 About
               </a>
-              <a href="#contact" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
+              <a href="#footer" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
                 Contact
               </a>
               <Link 
