@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -46,25 +47,38 @@ export const useUnifiedDoctorAppointments = () => {
 
       console.log('User confirmed as doctor');
 
-      // Get doctor profile to ensure they're verified
+      // Try to get doctor profile, but don't fail if it doesn't exist
       const { data: doctorProfile, error: doctorError } = await supabase
         .from('doctors')
         .select('name, verified')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to allow 0 results
 
-      if (doctorError || !doctorProfile) {
-        console.error('Doctor profile error:', doctorError);
-        throw new Error('Doctor profile not found');
+      let doctorName = 'Unknown Doctor';
+      let isVerified = false;
+
+      if (doctorError) {
+        console.warn('Doctor profile error (non-fatal):', doctorError);
+        // Continue with empty appointments if no doctor profile exists
+      } else if (doctorProfile) {
+        doctorName = doctorProfile.name;
+        isVerified = doctorProfile.verified || false;
+        console.log('Doctor profile found:', doctorName, 'verified:', isVerified);
+      } else {
+        console.warn('No doctor profile found in doctors table for user:', user.id);
+        // Still continue - user might be a doctor but not have a profile yet
       }
-      
-      if (!doctorProfile.verified) {
-        throw new Error('Doctor profile is not verified');
+
+      // If doctor profile doesn't exist or isn't verified, return empty appointments
+      if (!doctorProfile || !isVerified) {
+        console.log('Doctor profile missing or not verified, returning empty appointments');
+        setAppointments([]);
+        setError(null);
+        setLoading(false);
+        return;
       }
 
-      console.log('Doctor profile verified:', doctorProfile.name);
-
-      // Fetch ALL appointments for this doctor by doctor_id (this is the main fix)
+      // Fetch direct appointments for this doctor by doctor_id
       const { data: directAppointments, error: directError } = await supabase
         .from('appointments')
         .select('*')
@@ -74,11 +88,10 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (directError) {
         console.error('Error fetching direct appointments:', directError);
-        throw directError;
+        // Don't throw - continue with slot appointments
       }
 
       console.log('✅ Direct appointments found:', directAppointments?.length || 0);
-      console.log('Direct appointments data:', directAppointments);
 
       // Fetch slot-based appointments
       const { data: slotAppointments, error: slotError } = await supabase
@@ -91,7 +104,7 @@ export const useUnifiedDoctorAppointments = () => {
 
       if (slotError) {
         console.error('Error fetching slot appointments:', slotError);
-        throw slotError;
+        // Don't throw - continue with what we have
       }
 
       console.log('✅ Slot appointments found:', slotAppointments?.length || 0);
@@ -188,7 +201,7 @@ export const useUnifiedDoctorAppointments = () => {
       });
 
       console.log('=== FINAL RESULTS ===');
-      console.log('Total unified appointments for doctor:', doctorProfile.name);
+      console.log('Total unified appointments for doctor:', doctorName);
       console.log('Total count:', unifiedAppointments.length);
       console.log('Appointments:', unifiedAppointments);
 
