@@ -31,7 +31,7 @@ const PrivacyPolicy = () => {
           </CardHeader>
           <CardContent className="prose prose-slate max-w-none">
             <p className="text-slate-700 leading-relaxed">
-              HealthMatch ("we," "our," or "us") is committed to protecting your privacy and ensuring the security of your personal health information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our healthcare platform and services.
+              Curezy ("we," "our," or "us") is committed to protecting your privacy and ensuring the security of your personal health information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our healthcare platform and services.
             </p>
           </CardContent>
         </Card>
@@ -168,7 +168,7 @@ const PrivacyPolicy = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-slate-500" />
-                <span className="text-slate-700">privacy@healthmatch.com</span>
+                <span className="text-slate-700">privacy@curezy.in</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-slate-500" />
@@ -187,7 +187,7 @@ const PrivacyPolicy = () => {
             <p className="text-slate-700">
               We may update this Privacy Policy periodically to reflect changes in our practices or legal requirements. 
               We will notify you of any material changes through email or prominent notices on our platform. 
-              Your continued use of HealthMatch after such modifications constitutes acceptance of the updated Privacy Policy.
+              Your continued use of Curezy after such modifications constitutes acceptance of the updated Privacy Policy.
             </p>
           </CardContent>
         </Card>
