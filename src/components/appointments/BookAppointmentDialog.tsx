@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -63,6 +63,9 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
       }));
     }
   }, [selectedDoctor]);
+
+  // Check if doctor fields should be locked (when selectedDoctor is provided)
+  const isDoctorFieldsLocked = Boolean(selectedDoctor);
 
   const findOrCreateDoctorId = async (doctorName: string, doctorSpecialty?: string): Promise<string> => {
     console.log('🔍 Finding or creating doctor ID for:', { doctorName, doctorSpecialty });
@@ -306,33 +309,65 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="doctorName">Doctor Name *</Label>
-            <Input
-              id="doctorName"
-              value={formData.doctorName}
-              onChange={(e) => setFormData({ ...formData, doctorName: e.target.value })}
-              placeholder="Enter doctor's name"
-              required
-            />
+            <Label htmlFor="doctorName" className="flex items-center gap-2">
+              Doctor Name *
+              {isDoctorFieldsLocked && <Lock className="h-3 w-3 text-gray-500" />}
+            </Label>
+            <div className="relative">
+              <Input
+                id="doctorName"
+                value={formData.doctorName}
+                onChange={(e) => !isDoctorFieldsLocked && setFormData({ ...formData, doctorName: e.target.value })}
+                placeholder="Enter doctor's name"
+                required
+                readOnly={isDoctorFieldsLocked}
+                className={cn(
+                  isDoctorFieldsLocked && "bg-gray-50 text-gray-600 cursor-not-allowed"
+                )}
+              />
+              {isDoctorFieldsLocked && (
+                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              )}
+            </div>
+            {isDoctorFieldsLocked && (
+              <p className="text-xs text-gray-500">Doctor selection is locked for this appointment</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="doctorSpecialty">Specialty</Label>
-            <Select
-              value={formData.doctorSpecialty}
-              onValueChange={(value) => setFormData({ ...formData, doctorSpecialty: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select specialty" />
-              </SelectTrigger>
-              <SelectContent>
-                {specialties.map((specialty) => (
-                  <SelectItem key={specialty} value={specialty}>
-                    {specialty}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="doctorSpecialty" className="flex items-center gap-2">
+              Specialty
+              {isDoctorFieldsLocked && <Lock className="h-3 w-3 text-gray-500" />}
+            </Label>
+            {isDoctorFieldsLocked ? (
+              <div className="relative">
+                <Input
+                  value={formData.doctorSpecialty}
+                  readOnly
+                  className="bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
+                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              </div>
+            ) : (
+              <Select
+                value={formData.doctorSpecialty}
+                onValueChange={(value) => setFormData({ ...formData, doctorSpecialty: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select specialty" />
+                </SelectTrigger>
+                <SelectContent>
+                  {specialties.map((specialty) => (
+                    <SelectItem key={specialty} value={specialty}>
+                      {specialty}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {isDoctorFieldsLocked && (
+              <p className="text-xs text-gray-500">Specialty is locked based on selected doctor</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
