@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,8 @@ import { Calendar, Clock, MapPin, User, FileText } from "lucide-react";
 import { format, parseISO, isBefore } from 'date-fns';
 import { useAppointmentBooking } from '@/services/appointmentService';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface PatientAppointment {
   id: string;
@@ -35,22 +36,117 @@ const PatientAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<PatientAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const { getPatientAppointments } = useAppointmentBooking();
+  const { user, session } = useAuth();
+  const { toast } = useToast();
   const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
+        // Enhanced authentication validation
+        console.log('🔍 PatientAppointments: Starting authentication check...', {
+          hasUser: !!user,
+          hasSession: !!session,
+          userId: user?.id,
+          userEmail: user?.email
+        });
+
+        if (!user || !session) {
+          console.error('❌ PatientAppointments: User not authenticated', {
+            user: !!user,
+            session: !!session
+          });
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to view your appointments.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (!user.id) {
+          console.error('❌ PatientAppointments: User ID is missing', { user });
+          toast({
+            title: "Authentication Error",
+            description: "User identification is missing. Please try logging in again.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        console.log('✅ PatientAppointments: User authenticated, fetching appointments for user:', user.id);
+        
         const data = await getPatientAppointments();
-        setAppointments(data);
+        
+        console.log('📋 PatientAppointments: Raw appointments data received:', {
+          totalCount: data.length,
+          appointments: data.map(apt => ({
+            id: apt.id,
+            user_id: apt.user_id,
+            doctor_name: apt.doctor_name,
+            date: apt.date,
+            time: apt.time,
+            status: apt.status
+          }))
+        });
+
+        // Client-side filtering as backup security measure
+        const userAppointments = data.filter(appointment => {
+          const belongsToUser = appointment.user_id === user.id;
+          if (!belongsToUser) {
+            console.warn('⚠️ PatientAppointments: Found appointment not belonging to current user', {
+              appointmentId: appointment.id,
+              appointmentUserId: appointment.user_id,
+              currentUserId: user.id,
+              doctorName: appointment.doctor_name
+            });
+          }
+          return belongsToUser;
+        });
+
+        console.log('✅ PatientAppointments: Filtered appointments for current user:', {
+          originalCount: data.length,
+          filteredCount: userAppointments.length,
+          userId: user.id
+        });
+
+        if (userAppointments.length !== data.length) {
+          console.error('🚨 PatientAppointments: SECURITY ISSUE - Some appointments were filtered out!', {
+            originalCount: data.length,
+            filteredCount: userAppointments.length,
+            difference: data.length - userAppointments.length
+          });
+          
+          toast({
+            title: "Data Security Notice",
+            description: "Some data was filtered for security. If you're missing appointments, please contact support.",
+            variant: "destructive",
+          });
+        }
+
+        setAppointments(userAppointments);
       } catch (error) {
-        console.error('Error fetching appointments:', error);
+        console.error('❌ PatientAppointments: Error fetching appointments:', error);
+        toast({
+          title: "Error Loading Appointments",
+          description: "Failed to load your appointments. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAppointments();
-  }, []);
+    // Only fetch if we have a user
+    if (user) {
+      fetchAppointments();
+    } else {
+      console.log('⏳ PatientAppointments: Waiting for user authentication...');
+      setLoading(false);
+    }
+  }, [user, session]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -66,6 +162,21 @@ const PatientAppointments: React.FC = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Authentication guard
+  if (!user || !session) {
+    return (
+      <Card className="modern-card">
+        <CardContent className="text-center py-8">
+          <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <p className="text-gray-600 mb-4">Please log in to view your appointments</p>
+          <Button onClick={() => window.location.href = '/login'}>
+            Go to Login
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const today = new Date();
   const upcomingAppointments = appointments.filter(apt => 
