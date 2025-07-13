@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -65,6 +64,56 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
     }
   }, [selectedDoctor]);
 
+  const findOrCreateDoctorId = async (doctorName: string, doctorSpecialty?: string): Promise<string> => {
+    console.log('🔍 Finding or creating doctor ID for:', { doctorName, doctorSpecialty });
+    
+    // First, try to find an existing verified doctor
+    const { data: existingDoctor, error: searchError } = await supabase
+      .from('doctors')
+      .select('id, name, verified')
+      .eq('name', doctorName)
+      .eq('verified', true)
+      .maybeSingle();
+
+    if (searchError) {
+      console.error('❌ Error searching for doctor:', searchError);
+      throw new Error('Failed to search for doctor');
+    }
+
+    if (existingDoctor) {
+      console.log('✅ Found existing verified doctor:', existingDoctor);
+      return existingDoctor.id;
+    }
+
+    console.log('⚠️ No verified doctor found, creating placeholder...');
+    
+    // If no verified doctor found, create a placeholder entry
+    const { data: newDoctor, error: createError } = await supabase
+      .from('doctors')
+      .insert([{
+        name: doctorName,
+        specialization: doctorSpecialty || 'General Medicine',
+        hospital: 'To be verified',
+        address: 'To be verified',
+        region: 'To be verified',
+        degrees: 'To be verified',
+        experience: 0,
+        registration_number: 'PENDING_VERIFICATION',
+        verified: false,
+        available: false
+      }])
+      .select('id')
+      .single();
+
+    if (createError) {
+      console.error('❌ Error creating doctor placeholder:', createError);
+      throw new Error('Failed to create doctor record');
+    }
+
+    console.log('✅ Created new doctor placeholder:', newDoctor);
+    return newDoctor.id;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -86,6 +135,43 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
         throw new Error('User not authenticated');
       }
 
+      console.log('🚀 Starting appointment booking process...');
+      console.log('👤 User ID:', user.id);
+      console.log('👨‍⚕️ Selected doctor:', selectedDoctor);
+      console.log('📝 Form data:', formData);
+
+      // CRITICAL: Get or create doctor_id with proper validation
+      let doctorId: string;
+      
+      if (selectedDoctor?.id) {
+        console.log('✅ Using provided doctor ID:', selectedDoctor.id);
+        doctorId = selectedDoctor.id;
+        
+        // Verify the doctor exists and is verified
+        const { data: doctorVerification, error: verifyError } = await supabase
+          .from('doctors')
+          .select('id, name, verified')
+          .eq('id', doctorId)
+          .single();
+
+        if (verifyError || !doctorVerification) {
+          console.error('❌ Doctor verification failed:', verifyError);
+          throw new Error('Selected doctor not found or not verified');
+        }
+        
+        console.log('✅ Doctor verified:', doctorVerification);
+      } else {
+        console.log('⚠️ No doctor ID provided, finding or creating...');
+        doctorId = await findOrCreateDoctorId(formData.doctorName, formData.doctorSpecialty);
+      }
+
+      // CRITICAL: Final validation that we have a valid doctor_id
+      if (!doctorId) {
+        throw new Error('CRITICAL ERROR: Failed to obtain valid doctor ID');
+      }
+
+      console.log('🎯 Final doctor ID for appointment:', doctorId);
+
       // Prepare reason with health check summary if available
       let appointmentReason = formData.reason;
       if (healthCheckData) {
@@ -94,24 +180,43 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
         appointmentReason = `Health Check Follow-up: ${symptomsText}${urgencyText}${formData.reason ? ' - ' + formData.reason : ''}`;
       }
 
-      // Create appointment
+      // Create appointment with GUARANTEED doctor_id
+      const appointmentData = {
+        user_id: user.id,
+        doctor_id: doctorId, // CRITICAL: This is now guaranteed to be set
+        doctor_name: formData.doctorName,
+        doctor_specialty: formData.doctorSpecialty || null,
+        date: format(date, 'yyyy-MM-dd'),
+        time: formData.time,
+        reason: appointmentReason,
+        notes: formData.notes || null,
+        status: 'pending'
+      };
+
+      console.log('📋 Final appointment data:', appointmentData);
+
+      // Final validation before insertion
+      if (!appointmentData.doctor_id) {
+        throw new Error('CRITICAL ERROR: doctor_id is null before insertion');
+      }
+
       const { data: appointment, error: appointmentError } = await supabase
         .from('appointments')
-        .insert([{
-          user_id: user.id,
-          doctor_name: formData.doctorName,
-          doctor_specialty: formData.doctorSpecialty || null,
-          date: format(date, 'yyyy-MM-dd'),
-          time: formData.time,
-          reason: appointmentReason,
-          notes: formData.notes || null,
-          status: 'pending'
-        }])
+        .insert([appointmentData])
         .select()
         .single();
 
       if (appointmentError) {
+        console.error('❌ Error creating appointment:', appointmentError);
         throw appointmentError;
+      }
+
+      console.log('✅ Appointment created successfully:', appointment);
+
+      // Verify the appointment was created with doctor_id
+      if (!appointment.doctor_id) {
+        console.error('🚨 CRITICAL: Appointment created but doctor_id is null!');
+        throw new Error('Appointment created but doctor assignment failed');
       }
 
       // If health check data exists, send it to the doctor
@@ -120,7 +225,7 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
           const success = await sendHealthCheckToDoctor(
             healthCheckData,
             appointment.id,
-            selectedDoctor?.id || 'doctor-placeholder'
+            doctorId
           );
           
           if (success) {
@@ -144,7 +249,7 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
       } else {
         toast({
           title: "Appointment Booked Successfully",
-          description: "Your appointment has been scheduled",
+          description: `Your appointment with ${formData.doctorName} has been scheduled for ${format(date, 'PPP')} at ${formData.time}`,
         });
       }
 
@@ -160,10 +265,10 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
       onOpenChange(false);
       
     } catch (error) {
-      console.error('Error booking appointment:', error);
+      console.error('❌ Error booking appointment:', error);
       toast({
         title: "Booking Failed",
-        description: "Failed to book appointment. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to book appointment. Please try again.",
         variant: "destructive"
       });
     } finally {
