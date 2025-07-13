@@ -264,9 +264,53 @@ export const useAppointmentBooking = () => {
 
   const getPatientAppointments = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      console.log('🔍 getPatientAppointments: Starting authentication check...');
+      
+      // Enhanced authentication validation
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('❌ getPatientAppointments: Authentication error:', authError);
+        throw new Error('Authentication failed: ' + authError.message);
+      }
 
+      if (!user) {
+        console.error('❌ getPatientAppointments: No authenticated user found');
+        throw new Error('User not authenticated');
+      }
+
+      if (!user.id) {
+        console.error('❌ getPatientAppointments: User ID is missing from user object:', user);
+        throw new Error('User ID is missing');
+      }
+
+      console.log('✅ getPatientAppointments: User authenticated successfully:', {
+        userId: user.id,
+        userEmail: user.email,
+        userRole: user.role
+      });
+
+      // Get current session to verify it's still valid
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ getPatientAppointments: Session error:', sessionError);
+        throw new Error('Session validation failed: ' + sessionError.message);
+      }
+
+      if (!session) {
+        console.error('❌ getPatientAppointments: No valid session found');
+        throw new Error('No valid session found');
+      }
+
+      console.log('✅ getPatientAppointments: Session validated successfully:', {
+        sessionId: session.access_token.substring(0, 20) + '...',
+        expiresAt: session.expires_at
+      });
+
+      // Query appointments with explicit user_id filtering
+      console.log('🔍 getPatientAppointments: Querying appointments for user_id:', user.id);
+      
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
@@ -274,11 +318,55 @@ export const useAppointmentBooking = () => {
         .order('date')
         .order('time');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ getPatientAppointments: Database query error:', error);
+        throw error;
+      }
+
+      console.log('📊 getPatientAppointments: Raw query results:', {
+        queryUserId: user.id,
+        totalResults: data?.length || 0,
+        results: data?.map(apt => ({
+          id: apt.id,
+          user_id: apt.user_id,
+          doctor_name: apt.doctor_name,
+          date: apt.date,
+          time: apt.time,
+          status: apt.status,
+          matchesCurrentUser: apt.user_id === user.id
+        })) || []
+      });
+
+      // Validate that all returned appointments belong to the current user
+      const invalidAppointments = data?.filter(apt => apt.user_id !== user.id) || [];
+      
+      if (invalidAppointments.length > 0) {
+        console.error('🚨 CRITICAL SECURITY ISSUE: Found appointments not belonging to current user:', {
+          currentUserId: user.id,
+          invalidAppointments: invalidAppointments.map(apt => ({
+            id: apt.id,
+            user_id: apt.user_id,
+            doctor_name: apt.doctor_name
+          }))
+        });
+        
+        // Filter out invalid appointments as a security measure
+        const validAppointments = data?.filter(apt => apt.user_id === user.id) || [];
+        
+        console.log('✅ getPatientAppointments: Filtered to valid appointments only:', {
+          originalCount: data?.length || 0,
+          validCount: validAppointments.length
+        });
+        
+        return validAppointments;
+      }
+
+      console.log('✅ getPatientAppointments: All appointments validated successfully for user:', user.id);
+      
       return data || [];
     } catch (error) {
-      console.error('Error fetching patient appointments:', error);
-      return [];
+      console.error('❌ getPatientAppointments: Function failed with error:', error);
+      throw error;
     }
   };
 
@@ -291,7 +379,6 @@ export const useAppointmentBooking = () => {
   };
 };
 
-// Add the missing useAvailableSlots hook
 export const useAvailableSlots = (doctorId: string) => {
   const [slots, setSlots] = useState<DoctorSlot[]>([]);
   const [loading, setLoading] = useState(true);
