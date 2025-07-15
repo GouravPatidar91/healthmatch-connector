@@ -10,7 +10,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,40 +22,6 @@ import { UploadCloud, X } from "lucide-react";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
 
-// Medical specializations list
-const MEDICAL_SPECIALIZATIONS = [
-  "General Practice",
-  "Internal Medicine", 
-  "Pediatrics",
-  "Obstetrics and Gynecology",
-  "Surgery",
-  "Cardiology",
-  "Dermatology",
-  "Neurology",
-  "Psychiatry",
-  "Orthopedics",
-  "Ophthalmology",
-  "ENT (Ear, Nose, Throat)",
-  "Radiology",
-  "Anesthesiology",
-  "Emergency Medicine",
-  "Family Medicine",
-  "Gastroenterology",
-  "Endocrinology",
-  "Pulmonology",
-  "Nephrology",
-  "Oncology",
-  "Rheumatology",
-  "Urology",
-  "Pathology",
-  "Physical Medicine and Rehabilitation",
-  "Plastic Surgery",
-  "Infectious Disease",
-  "Geriatrics",
-  "Sports Medicine",
-  "Pain Management"
-];
-
 const doctorFormSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
@@ -64,8 +29,8 @@ const doctorFormSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  specialization: z.string().min(1, {
-    message: "Please select a specialization.",
+  specialization: z.string().min(2, {
+    message: "Specialization must be at least 2 characters.",
   }),
   hospital: z.string().min(2, {
     message: "Hospital name must be at least 2 characters.",
@@ -303,20 +268,9 @@ const DoctorRegistration = () => {
                     <FormLabel>
                       Specialization <span className="text-red-500">*</span>
                     </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your medical specialization" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {MEDICAL_SPECIALIZATIONS.map((specialization) => (
-                          <SelectItem key={specialization} value={specialization}>
-                            {specialization}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input placeholder="Cardiology" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
