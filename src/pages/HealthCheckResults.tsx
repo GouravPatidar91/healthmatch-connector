@@ -36,6 +36,8 @@ interface HealthCheckData {
   comprehensive_analysis?: boolean;
   urgency_level?: string;
   overall_assessment?: string;
+  height?: string;
+  weight?: string;
 }
 
 const HealthCheckResults = () => {
@@ -273,7 +275,7 @@ const HealthCheckResults = () => {
         </Card>
       )}
 
-      {/* Enhanced Summary Card with urgency level */}
+      {/* Enhanced Summary Card with urgency level and patient measurements */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -333,6 +335,25 @@ const HealthCheckResults = () => {
               </div>
             </div>
           </div>
+
+          {/* Patient Measurements Section */}
+          {(healthCheckData.height || healthCheckData.weight) && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+              <h3 className="font-medium text-green-800 mb-2">Patient Measurements</h3>
+              <div className="grid gap-2 md:grid-cols-2 text-sm text-green-700">
+                {healthCheckData.height && (
+                  <div>
+                    <span className="font-medium">Height:</span> {healthCheckData.height}
+                  </div>
+                )}
+                {healthCheckData.weight && (
+                  <div>
+                    <span className="font-medium">Weight:</span> {healthCheckData.weight}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Enhanced Medical History Display */}
           {(healthCheckData.previous_conditions?.length || healthCheckData.medications?.length) && (
