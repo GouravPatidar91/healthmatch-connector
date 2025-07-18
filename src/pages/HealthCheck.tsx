@@ -12,7 +12,7 @@ import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera, X } from 'luc
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// Updated symptom categories with dental symptoms
+// Updated symptom categories with dental symptoms and expanded digestive symptoms
 const symptomCategories = [
   {
     category: "General",
@@ -39,8 +39,15 @@ const symptomCategories = [
     symptoms: ["Chest pain", "Shortness of breath", "Palpitations", "Cough", "Wheezing"]
   },
   {
-    category: "Abdomen",
-    symptoms: ["Abdominal pain", "Nausea", "Vomiting", "Diarrhea", "Constipation", "Bloating", "Loss of appetite"]
+    category: "Abdomen & Digestive",
+    symptoms: [
+      "Abdominal pain", "Nausea", "Vomiting", "Diarrhea", "Constipation", "Bloating", 
+      "Loss of appetite", "Gas/Flatulence", "Stomach cramps", "Acid reflux/Heartburn", 
+      "Indigestion", "Stomach burning", "Excessive burping", "Stomach growling", 
+      "Food intolerance", "Difficulty swallowing", "Stomach fullness", "Intestinal pain",
+      "Blood in stool", "Black stool", "Mucus in stool", "Frequent urination",
+      "Painful urination", "Changes in bowel habits"
+    ]
   },
   {
     category: "Musculoskeletal",
