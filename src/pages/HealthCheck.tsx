@@ -6,12 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useUserHealthChecks } from '@/services/userDataService';
 import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// Symptom categories for selection
+// Updated symptom categories with dental symptoms
 const symptomCategories = [
   {
     category: "General",
@@ -24,6 +25,12 @@ const symptomCategories = [
   {
     category: "Eyes",
     symptoms: ["Blurry vision", "Eye redness", "Eye pain", "Dry eyes", "Watery eyes", "Eye discharge", "Light sensitivity", "Double vision", "Eye strain"],
+    supportsPhoto: true,
+    photoRecommended: true
+  },
+  {
+    category: "Dental",
+    symptoms: ["Tooth pain", "Gum bleeding", "Tooth sensitivity", "Bad breath", "Loose teeth", "Jaw pain", "Tooth decay", "Gum swelling", "Cracked tooth", "Wisdom tooth pain"],
     supportsPhoto: true,
     photoRecommended: true
   },
@@ -70,6 +77,8 @@ const HealthCheck = () => {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [severity, setSeverity] = useState<string>("");
   const [duration, setDuration] = useState<string>("");
+  const [height, setHeight] = useState<string>("");
+  const [weight, setWeight] = useState<string>("");
   const [previousConditions, setPreviousConditions] = useState<string>("");
   const [medications, setMedications] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
@@ -349,12 +358,14 @@ const HealthCheck = () => {
         photo: symptomPhotos[symptom] || null
       }));
       
-      // Enhanced analysis request with all patient information
+      // Enhanced analysis request with all patient information including height/weight
       const response = await supabase.functions.invoke('analyze-symptoms', {
         body: { 
           symptoms: selectedSymptoms,
           severity,
           duration,
+          height: height ? parseFloat(height) : null,
+          weight: weight ? parseFloat(weight) : null,
           symptomDetails: symptomsWithPhotos,
           previousConditions: previousConditions ? previousConditions.split(',').map(item => item.trim()).filter(item => item) : [],
           medications: medications ? medications.split(',').map(item => item.trim()).filter(item => item) : [],
@@ -375,6 +386,7 @@ const HealthCheck = () => {
           if (response.data.includedMedications) analysisFactors.push("current medications");
           if (response.data.includedNotes) analysisFactors.push("additional notes");
           if (response.data.visualAnalysisIncluded) analysisFactors.push("photo analysis");
+          if (height && weight) analysisFactors.push("physical measurements");
           
           if (analysisFactors.length > 0) {
             toastMessage += ` based on symptoms, ${analysisFactors.join(", ")}.`;
@@ -386,11 +398,13 @@ const HealthCheck = () => {
           description: toastMessage,
         });
 
-        // Navigate with enhanced health check data
+        // Navigate with enhanced health check data including height/weight
         const healthCheckData = {
           symptoms: selectedSymptoms,
           severity,
           duration,
+          height: height ? parseFloat(height) : null,
+          weight: weight ? parseFloat(weight) : null,
           previous_conditions: previousConditions ? previousConditions.split(',').map(item => item.trim()).filter(item => item) : [],
           medications: medications ? medications.split(',').map(item => item.trim()).filter(item => item) : [],
           notes,
@@ -460,6 +474,40 @@ const HealthCheck = () => {
       </div>
       
       <form className="space-y-8">
+        {/* Patient Physical Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Physical Information</CardTitle>
+            <CardDescription>Your height and weight help provide more accurate analysis</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="height">Height (cm)</Label>
+              <Input 
+                id="height" 
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="e.g., 170"
+                min="50"
+                max="250"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="weight">Weight (kg)</Label>
+              <Input 
+                id="weight" 
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="e.g., 70"
+                min="10"
+                max="300"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Symptoms</CardTitle>
