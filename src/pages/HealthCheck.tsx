@@ -12,7 +12,7 @@ import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera, X } from 'luc
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// Updated symptom categories with dental symptoms and expanded digestive symptoms
+// Updated symptom categories with expanded dental symptoms based on dental departments
 const symptomCategories = [
   {
     category: "General",
@@ -30,7 +30,28 @@ const symptomCategories = [
   },
   {
     category: "Dental",
-    symptoms: ["Tooth pain", "Gum bleeding", "Tooth sensitivity", "Bad breath", "Loose teeth", "Jaw pain", "Tooth decay", "Gum swelling", "Cracked tooth", "Wisdom tooth pain"],
+    symptoms: [
+      // General Dental
+      "Tooth pain", "Gum bleeding", "Tooth sensitivity", "Bad breath", "Loose teeth", "Jaw pain", "Tooth decay", "Gum swelling", "Cracked tooth", "Wisdom tooth pain",
+      // Oral Medicine and Radiology
+      "Mouth ulcers", "Oral lesions", "Tongue pain", "Dry mouth", "Burning mouth sensation", "Oral infections",
+      // Oral and Maxillofacial Surgery
+      "Facial swelling", "Jaw stiffness", "TMJ disorders", "Facial trauma", "Impacted teeth", "Oral cysts",
+      // Oral Pathology and Oral Microbiology  
+      "White patches in mouth", "Red patches in mouth", "Oral cancer symptoms", "Unusual growths in mouth", "Recurring mouth infections",
+      // Prosthodontics and Crown & Bridge
+      "Denture problems", "Crown pain", "Bridge discomfort", "Missing teeth", "Bite problems", "Chewing difficulties",
+      // Conservative Dentistry and Endodontics
+      "Root canal pain", "Filling sensitivity", "Cavity pain", "Tooth nerve pain", "Post-treatment sensitivity",
+      // Pediatric & Preventive Dentistry
+      "Children's dental pain", "Teething problems", "Dental development issues", "Early childhood caries",
+      // Periodontology
+      "Gum disease", "Gum recession", "Periodontal pockets", "Gum inflammation", "Plaque buildup", "Tartar formation",
+      // Public Health Dentistry
+      "Oral hygiene issues", "Preventive care needs", "Community dental problems",
+      // Orthodontics & Dentofacial Orthopedics
+      "Crooked teeth", "Overbite", "Underbite", "Crossbite", "Spacing issues", "Jaw alignment problems", "Braces pain"
+    ],
     supportsPhoto: true,
     photoRecommended: true
   },
@@ -364,8 +385,12 @@ const HealthCheck = () => {
         name: symptom,
         photo: symptomPhotos[symptom] || null
       }));
+
+      // Check if there are dental symptoms for specialized analysis
+      const dentalSymptoms = selectedSymptoms.filter(symptom => isDentalSymptom(symptom));
+      const hasDentalSymptoms = dentalSymptoms.length > 0;
       
-      // Enhanced analysis request with all patient information including height/weight
+      // Enhanced analysis request with comprehensive diagnosis instructions
       const response = await supabase.functions.invoke('analyze-symptoms', {
         body: { 
           symptoms: selectedSymptoms,
@@ -376,16 +401,33 @@ const HealthCheck = () => {
           symptomDetails: symptomsWithPhotos,
           previousConditions: previousConditions ? previousConditions.split(',').map(item => item.trim()).filter(item => item) : [],
           medications: medications ? medications.split(',').map(item => item.trim()).filter(item => item) : [],
-          notes: notes.trim() || null
+          notes: notes.trim() || null,
+          // Enhanced analysis instructions
+          analysisInstructions: {
+            requireComprehensiveDiagnosis: true,
+            includeDifferentialDiagnosis: true,
+            provideDetailedExplanations: true,
+            specialFocus: hasDentalSymptoms ? 'dental' : 'general',
+            dentalSymptoms: dentalSymptoms,
+            requestedAnalysisDepth: 'comprehensive',
+            includeTreatmentRecommendations: true,
+            includePreventiveMeasures: true,
+            includeMedicalSpecialistReferrals: true,
+            analysisType: 'high_detail_diagnostic_report'
+          }
         }
       });
 
-      console.log("Enhanced analysis response:", response);
+      console.log("Enhanced comprehensive analysis response:", response);
 
       if (response.data && response.data.conditions) {
         
-        // Enhanced toast message based on comprehensive analysis
-        let toastMessage = `Found ${response.data.conditions.length} potential conditions`;
+        // Enhanced toast message for comprehensive diagnosis
+        let toastMessage = `Generated comprehensive diagnosis report with ${response.data.conditions.length} potential conditions`;
+        
+        if (hasDentalSymptoms) {
+          toastMessage += ` including specialized dental analysis for ${dentalSymptoms.length} dental symptoms`;
+        }
         
         if (response.data.comprehensiveAnalysis) {
           const analysisFactors = [];
@@ -396,16 +438,16 @@ const HealthCheck = () => {
           if (height && weight) analysisFactors.push("physical measurements");
           
           if (analysisFactors.length > 0) {
-            toastMessage += ` based on symptoms, ${analysisFactors.join(", ")}.`;
+            toastMessage += ` based on ${analysisFactors.join(", ")}.`;
           }
         }
         
         toast({
-          title: "Comprehensive analysis complete",
+          title: "Comprehensive Diagnosis Complete",
           description: toastMessage,
         });
 
-        // Navigate with enhanced health check data including height/weight
+        // Navigate with enhanced health check data
         const healthCheckData = {
           symptoms: selectedSymptoms,
           severity,
@@ -419,7 +461,9 @@ const HealthCheck = () => {
           symptom_photos: symptomPhotos,
           comprehensive_analysis: response.data.comprehensiveAnalysis,
           urgency_level: response.data.urgencyLevel,
-          overall_assessment: response.data.overallAssessment
+          overall_assessment: response.data.overallAssessment,
+          dental_analysis_included: hasDentalSymptoms,
+          specialized_analysis_type: hasDentalSymptoms ? 'dental_comprehensive' : 'general_comprehensive'
         };
         
         navigate('/health-check-results', { 
@@ -632,7 +676,7 @@ const HealthCheck = () => {
             <CardHeader>
               <CardTitle>Symptom Photos (Optional)</CardTitle>
               <CardDescription>
-                Adding photos can help provide more accurate analysis for visual symptoms like eye and skin conditions
+                Adding photos can help provide more accurate analysis for visual symptoms like eye, skin, and dental conditions
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -713,12 +757,14 @@ const HealthCheck = () => {
                         </div>
                       )}
                       
-                      {symptomPhotos[symptom] && (isEyeSymptom(symptom) || isSkinSymptom(symptom)) && (
+                      {symptomPhotos[symptom] && (isEyeSymptom(symptom) || isSkinSymptom(symptom) || isDentalSymptom(symptom)) && (
                         <div className="p-2 bg-blue-50 border border-blue-100 rounded">
                           <p className="text-sm text-blue-700">
                             {isEyeSymptom(symptom) 
                               ? "Eye photo will be analyzed for conditions like conjunctivitis, dry eye, or irritation" 
-                              : "Skin photo will be analyzed for rash patterns, discoloration, and other visual characteristics"}
+                              : isSkinSymptom(symptom)
+                              ? "Skin photo will be analyzed for rash patterns, discoloration, and other visual characteristics"
+                              : "Dental photo will be analyzed for tooth decay, gum disease, oral lesions, and other dental conditions"}
                           </p>
                         </div>
                       )}
@@ -818,10 +864,11 @@ const HealthCheck = () => {
             >
               {analyzing ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  Generating Comprehensive Diagnosis...
                 </>
               ) : (
-                'Analyze Symptoms'
+                'Generate Comprehensive Health Analysis'
               )}
             </Button>
           </CardFooter>
@@ -847,6 +894,22 @@ function isSkinSymptom(symptom: string): boolean {
     "Sores", "Changes in mole"
   ];
   return skinSymptoms.includes(symptom);
+}
+
+function isDentalSymptom(symptom: string): boolean {
+  const dentalSymptoms = [
+    "Tooth pain", "Gum bleeding", "Tooth sensitivity", "Bad breath", "Loose teeth", "Jaw pain", "Tooth decay", "Gum swelling", "Cracked tooth", "Wisdom tooth pain",
+    "Mouth ulcers", "Oral lesions", "Tongue pain", "Dry mouth", "Burning mouth sensation", "Oral infections",
+    "Facial swelling", "Jaw stiffness", "TMJ disorders", "Facial trauma", "Impacted teeth", "Oral cysts",
+    "White patches in mouth", "Red patches in mouth", "Oral cancer symptoms", "Unusual growths in mouth", "Recurring mouth infections",
+    "Denture problems", "Crown pain", "Bridge discomfort", "Missing teeth", "Bite problems", "Chewing difficulties",
+    "Root canal pain", "Filling sensitivity", "Cavity pain", "Tooth nerve pain", "Post-treatment sensitivity",
+    "Children's dental pain", "Teething problems", "Dental development issues", "Early childhood caries",
+    "Gum disease", "Gum recession", "Periodontal pockets", "Gum inflammation", "Plaque buildup", "Tartar formation",
+    "Oral hygiene issues", "Preventive care needs", "Community dental problems",
+    "Crooked teeth", "Overbite", "Underbite", "Crossbite", "Spacing issues", "Jaw alignment problems", "Braces pain"
+  ];
+  return dentalSymptoms.includes(symptom);
 }
 
 export default HealthCheck;
