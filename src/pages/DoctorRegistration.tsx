@@ -30,6 +30,7 @@ const MEDICAL_SPECIALIZATIONS = [
   "Pediatrics",
   "Obstetrics and Gynecology",
   "Surgery",
+  "Dentist",
   "Cardiology",
   "Dermatology",
   "Neurology",
