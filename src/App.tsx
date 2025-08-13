@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import Settings from "./pages/Settings";
 import Emergency from "./pages/Emergency";
 import MedicalReports from "./pages/MedicalReports";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import InternshipTerms from "./pages/InternshipTerms";
 import NotFound from "./pages/NotFound";
 import DoctorRegistration from "./pages/DoctorRegistration";
 import DoctorDashboard from "./pages/DoctorDashboard";
@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/internship-terms" element={<InternshipTerms />} />
             
             {/* Protected routes with auth check */}
             <Route element={<RequireAuth><MainLayout /></RequireAuth>}>
