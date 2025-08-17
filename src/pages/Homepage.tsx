@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 const Homepage = () => {
-  const GOOGLE_FORM_URL = "https://forms.google.com/your-waitlist-form"; // Replace with your actual Google Form URL
+  const GOOGLE_FORM_URL = "https://forms.gle/7ieasY5cpjigTRPo9"; // Replace with your actual Google Form URL
 
   const handleJoinWaitlist = () => {
     window.open(GOOGLE_FORM_URL, '_blank');
