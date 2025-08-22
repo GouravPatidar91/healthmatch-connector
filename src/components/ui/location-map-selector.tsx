@@ -1,21 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import React, { useState, useEffect, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Navigation } from 'lucide-react';
-import 'leaflet/dist/leaflet.css';
 
-// Create a custom icon for markers
-const customIcon = new L.Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+// Fix for Leaflet default icons in Webpack
+const DefaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+
+// Set the default icon
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface LocationMapSelectorProps {
   onLocationSelect: (location: { latitude: number; longitude: number; address: string; city: string }) => void;
@@ -23,23 +25,20 @@ interface LocationMapSelectorProps {
   className?: string;
 }
 
-// Component to handle map clicks and center updates
-function LocationMarker({ onLocationSelect, initialLocation }: {
+// Simple marker component that handles clicks
+function ClickableMap({ onLocationSelect }: {
   onLocationSelect: (location: { latitude: number; longitude: number; address: string; city: string }) => void;
-  initialLocation?: { latitude: number; longitude: number };
 }) {
-  const [position, setPosition] = useState<[number, number] | null>(
-    initialLocation ? [initialLocation.latitude, initialLocation.longitude] : null
-  );
+  const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(null);
 
-  const reverseGeocode = async (latitude: number, longitude: number) => {
+  const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
       );
       const data = await response.json();
       
-      if (data && data.display_name) {
+      if (data?.display_name) {
         const address = data.address || {};
         const detailedAddress = [
           address.house_number,
@@ -56,7 +55,10 @@ function LocationMarker({ onLocationSelect, initialLocation }: {
         };
       }
       
-      throw new Error('No address found');
+      return {
+        formattedAddress: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+        city: ''
+      };
     } catch (error) {
       console.error('Reverse geocoding error:', error);
       return {
@@ -64,68 +66,41 @@ function LocationMarker({ onLocationSelect, initialLocation }: {
         city: ''
       };
     }
-  };
+  }, []);
 
-  const map = useMapEvents({
-    click: async (e) => {
-      const { lat, lng } = e.latlng;
-      setPosition([lat, lng]);
-      
-      try {
-        const addressData = await reverseGeocode(lat, lng);
-        onLocationSelect({
-          latitude: lat,
-          longitude: lng,
-          address: addressData.formattedAddress,
-          city: addressData.city
-        });
-      } catch (error) {
-        onLocationSelect({
-          latitude: lat,
-          longitude: lng,
-          address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-          city: ''
-        });
-      }
-    },
+  const handleMapClick = useCallback(async (e: any) => {
+    const { lat, lng } = e.latlng;
+    const position: [number, number] = [lat, lng];
+    setMarkerPosition(position);
+    
+    const addressData = await reverseGeocode(lat, lng);
+    onLocationSelect({
+      latitude: lat,
+      longitude: lng,
+      address: addressData.formattedAddress,
+      city: addressData.city
+    });
+  }, [onLocationSelect, reverseGeocode]);
+
+  useMapEvents({
+    click: handleMapClick,
   });
 
-  // Set initial position if provided
-  useEffect(() => {
-    if (initialLocation && map) {
-      const newPos: [number, number] = [initialLocation.latitude, initialLocation.longitude];
-      setPosition(newPos);
-      map.flyTo(newPos, 15);
-    }
-  }, [initialLocation, map]);
-
-  return position === null ? null : (
-    <Marker position={position} icon={customIcon} />
-  );
-}
-
-// Component to handle map centering
-function MapCenter({ location }: { location: [number, number] }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (location) {
-      map.flyTo(location, 15);
-    }
-  }, [location, map]);
-
-  return null;
+  return markerPosition ? <Marker position={markerPosition} /> : null;
 }
 
 export function LocationMapSelector({ onLocationSelect, initialLocation, className }: LocationMapSelectorProps) {
-  const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(
-    initialLocation ? [initialLocation.latitude, initialLocation.longitude] : null
-  );
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [mapKey, setMapKey] = useState(0); // Force re-render key
+
+  const defaultCenter: [number, number] = initialLocation 
+    ? [initialLocation.latitude, initialLocation.longitude] 
+    : [28.6139, 77.2090]; // Default to New Delhi
 
   const getCurrentLocation = async () => {
     try {
       setIsGettingLocation(true);
+      
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
@@ -135,9 +110,10 @@ export function LocationMapSelector({ onLocationSelect, initialLocation, classNa
       });
 
       const { latitude, longitude } = position.coords;
-      const newLocation: [number, number] = [latitude, longitude];
-      setCurrentLocation(newLocation);
-
+      
+      // Force map re-render with new center
+      setMapKey(prev => prev + 1);
+      
       // Automatically geocode and update
       try {
         const response = await fetch(
@@ -145,7 +121,7 @@ export function LocationMapSelector({ onLocationSelect, initialLocation, classNa
         );
         const data = await response.json();
         
-        if (data && data.display_name) {
+        if (data?.display_name) {
           const address = data.address || {};
           const detailedAddress = [
             address.house_number,
@@ -178,8 +154,6 @@ export function LocationMapSelector({ onLocationSelect, initialLocation, classNa
     }
   };
 
-  const defaultCenter: [number, number] = currentLocation || [28.6139, 77.2090]; // Default to New Delhi
-
   return (
     <Card className={className}>
       <CardHeader>
@@ -199,17 +173,18 @@ export function LocationMapSelector({ onLocationSelect, initialLocation, classNa
       <CardContent>
         <div className="h-[400px] w-full rounded-lg overflow-hidden border">
           <MapContainer
+            key={mapKey}
             center={defaultCenter}
             zoom={13}
             scrollWheelZoom={true}
             className="h-full w-full"
+            style={{ height: '400px', width: '100%' }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <LocationMarker onLocationSelect={onLocationSelect} initialLocation={initialLocation} />
-            {currentLocation && <MapCenter location={currentLocation} />}
+            <ClickableMap onLocationSelect={onLocationSelect} />
           </MapContainer>
         </div>
         <p className="text-sm text-muted-foreground mt-2">

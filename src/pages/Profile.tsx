@@ -14,6 +14,7 @@ import { getWorldCities, getCurrentPosition, getNearbyCities } from "@/utils/geo
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MapPin, Loader2 } from "lucide-react";
 import { LocationMapSelector } from "@/components/ui/location-map-selector";
+import "@/components/ui/leaflet-styles.css";
 
 const Profile = () => {
   const { toast } = useToast();
