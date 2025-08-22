@@ -13,6 +13,7 @@ import { useUserProfile, Profile as ProfileType } from "@/services/userDataServi
 import { getWorldCities, getCurrentPosition, getNearbyCities } from "@/utils/geolocation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MapPin, Loader2 } from "lucide-react";
+import { LocationMapSelector } from "@/components/ui/location-map-selector";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -35,6 +36,7 @@ const Profile = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [showMapSelector, setShowMapSelector] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     password: "",
     confirmPassword: ""
@@ -155,6 +157,19 @@ const Profile = () => {
       console.error('Reverse geocoding error:', error);
       throw error;
     }
+  };
+
+  const handleMapLocationSelect = (location: { latitude: number; longitude: number; address: string; city: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      address: location.address,
+      city: location.city
+    }));
+
+    toast({
+      title: "Location Selected",
+      description: `Address: ${location.address}${location.city ? `, City: ${location.city}` : ''}`,
+    });
   };
 
   const handleGetLocation = async () => {
@@ -373,7 +388,7 @@ const Profile = () => {
                       value={formData.address}
                       onChange={handleChange}
                       className="text-sm md:text-base flex-1"
-                      placeholder="Enter your address or use GPS location"
+                      placeholder="Enter your address or use map selector"
                     />
                     <Button
                       type="button"
@@ -390,10 +405,33 @@ const Profile = () => {
                         <MapPin className="h-4 w-4" />
                       )}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowMapSelector(!showMapSelector)}
+                      className="shrink-0"
+                      title="Select location on map"
+                    >
+                      Map
+                    </Button>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Click the GPS icon to automatically fill your detailed address including area/colony name
+                    Use GPS for quick location or open map for precise selection
                   </p>
+                  
+                  {showMapSelector && (
+                    <div className="mt-4">
+                      <LocationMapSelector
+                        onLocationSelect={handleMapLocationSelect}
+                        initialLocation={
+                          formData.address && formData.address.includes(',') 
+                            ? undefined // Let it use current location or default
+                            : undefined
+                        }
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="city" className="text-sm md:text-base">City</Label>
