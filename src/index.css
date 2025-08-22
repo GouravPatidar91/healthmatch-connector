@@ -3,9 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Leaflet CSS - Import for OpenStreetMap */
-@import 'leaflet/dist/leaflet.css';
-
 @layer base {
   :root {
     --background: 0 0% 98%;
