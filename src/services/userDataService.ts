@@ -8,6 +8,7 @@ import { Json } from "@/integrations/supabase/types";
 export interface Appointment {
   id?: string;
   user_id?: string;
+  doctor_id?: string; // Add doctor_id property
   doctor_name: string;
   doctor_specialty?: string;
   date: string;
@@ -409,6 +410,7 @@ export const useUserAppointments = () => {
       const appointmentWithUserId = {
         ...newAppointment,
         user_id: user.id,
+        doctor_id: newAppointment.doctor_id || '', // Ensure doctor_id is always present
         status: validateAppointmentStatus(newAppointment.status || 'pending'),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

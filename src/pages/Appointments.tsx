@@ -14,6 +14,7 @@ import PatientAppointments from "@/components/appointments/PatientAppointments";
 import DoctorSlots from "@/components/appointments/DoctorSlots";
 import { BookAppointmentDialog } from "@/components/appointments/BookAppointmentDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { NearbyDoctorsView } from "@/components/appointments/NearbyDoctorsView";
 
 const specializations = [
   "Cardiology",
@@ -203,20 +204,7 @@ const Appointments = () => {
           </TabsContent>
           
           <TabsContent value="nearby" className="space-y-4 md:space-y-6">
-            <Card className="modern-card">
-              <CardHeader>
-                <CardTitle className="text-gray-900 text-lg md:text-xl">Find Doctors Near You</CardTitle>
-                <CardDescription className="text-sm md:text-base">
-                  Allow location access to find doctors closest to your current location
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={handleFindNearbyDoctors} className="btn-modern w-full text-sm md:text-base">
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Find Nearby Doctors
-                </Button>
-              </CardContent>
-            </Card>
+            <NearbyDoctorsView />
           </TabsContent>
         </Tabs>
 
