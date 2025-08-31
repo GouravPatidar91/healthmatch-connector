@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +12,13 @@ import { useUserProfile, Profile as ProfileType } from "@/services/userDataServi
 import { getWorldCities, getCurrentPosition, getNearbyCities } from "@/utils/geolocation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MapPin, Loader2 } from "lucide-react";
-import { LocationMapSelector } from "@/components/ui/location-map-selector";
-import "@/components/ui/leaflet-styles.css";
+
+// Lazy load the map component to avoid initial loading issues
+const LocationMapSelector = React.lazy(() => 
+  import("@/components/ui/location-map-selector").then(module => ({
+    default: module.LocationMapSelector
+  }))
+);
 
 const Profile = () => {
   const { toast } = useToast();
@@ -422,15 +426,17 @@ const Profile = () => {
                   
                   {showMapSelector && (
                     <div className="mt-4">
-                      <LocationMapSelector
-                        onLocationSelect={handleMapLocationSelect}
-                        initialLocation={
-                          formData.address && formData.address.includes(',') 
-                            ? undefined // Let it use current location or default
-                            : undefined
-                        }
-                        className="w-full"
-                      />
+                      <React.Suspense fallback={<div className="h-[400px] flex items-center justify-center border rounded-lg">Loading map...</div>}>
+                        <LocationMapSelector
+                          onLocationSelect={handleMapLocationSelect}
+                          initialLocation={
+                            formData.address && formData.address.includes(',') 
+                              ? undefined // Let it use current location or default
+                              : undefined
+                          }
+                          className="w-full"
+                        />
+                      </React.Suspense>
                     </div>
                   )}
                 </div>

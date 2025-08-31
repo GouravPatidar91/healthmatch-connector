@@ -1,23 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Navigation } from 'lucide-react';
 
-// Fix for Leaflet default icons in Webpack
-const DefaultIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+// Simple icon configuration without complex setup
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-
-// Set the default icon
-L.Marker.prototype.options.icon = DefaultIcon;
 
 interface LocationMapSelectorProps {
   onLocationSelect: (location: { latitude: number; longitude: number; address: string; city: string }) => void;
@@ -25,8 +20,7 @@ interface LocationMapSelectorProps {
   className?: string;
 }
 
-// Simple marker component that handles clicks
-function ClickableMap({ onLocationSelect }: {
+function MapClickHandler({ onLocationSelect }: {
   onLocationSelect: (location: { latitude: number; longitude: number; address: string; city: string }) => void;
 }) {
   const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(null);
@@ -44,7 +38,6 @@ function ClickableMap({ onLocationSelect }: {
           address.house_number,
           address.road || address.street,
           address.neighbourhood || address.suburb || address.village,
-          address.city_district || address.town || address.municipality,
         ].filter(Boolean).join(', ');
         
         const city = address.city || address.town || address.village || address.municipality || '';
@@ -68,22 +61,20 @@ function ClickableMap({ onLocationSelect }: {
     }
   }, []);
 
-  const handleMapClick = useCallback(async (e: any) => {
-    const { lat, lng } = e.latlng;
-    const position: [number, number] = [lat, lng];
-    setMarkerPosition(position);
-    
-    const addressData = await reverseGeocode(lat, lng);
-    onLocationSelect({
-      latitude: lat,
-      longitude: lng,
-      address: addressData.formattedAddress,
-      city: addressData.city
-    });
-  }, [onLocationSelect, reverseGeocode]);
-
   useMapEvents({
-    click: handleMapClick,
+    click: async (e) => {
+      const { lat, lng } = e.latlng;
+      const position: [number, number] = [lat, lng];
+      setMarkerPosition(position);
+      
+      const addressData = await reverseGeocode(lat, lng);
+      onLocationSelect({
+        latitude: lat,
+        longitude: lng,
+        address: addressData.formattedAddress,
+        city: addressData.city
+      });
+    },
   });
 
   return markerPosition ? <Marker position={markerPosition} /> : null;
@@ -91,7 +82,6 @@ function ClickableMap({ onLocationSelect }: {
 
 export function LocationMapSelector({ onLocationSelect, initialLocation, className }: LocationMapSelectorProps) {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [mapKey, setMapKey] = useState(0); // Force re-render key
 
   const defaultCenter: [number, number] = initialLocation 
     ? [initialLocation.latitude, initialLocation.longitude] 
@@ -111,9 +101,6 @@ export function LocationMapSelector({ onLocationSelect, initialLocation, classNa
 
       const { latitude, longitude } = position.coords;
       
-      // Force map re-render with new center
-      setMapKey(prev => prev + 1);
-      
       // Automatically geocode and update
       try {
         const response = await fetch(
@@ -127,7 +114,6 @@ export function LocationMapSelector({ onLocationSelect, initialLocation, classNa
             address.house_number,
             address.road || address.street,
             address.neighbourhood || address.suburb || address.village,
-            address.city_district || address.town || address.municipality,
           ].filter(Boolean).join(', ');
           
           const city = address.city || address.town || address.village || address.municipality || '';
@@ -173,7 +159,6 @@ export function LocationMapSelector({ onLocationSelect, initialLocation, classNa
       <CardContent>
         <div className="h-[400px] w-full rounded-lg overflow-hidden border">
           <MapContainer
-            key={mapKey}
             center={defaultCenter}
             zoom={13}
             scrollWheelZoom={true}
@@ -184,7 +169,7 @@ export function LocationMapSelector({ onLocationSelect, initialLocation, classNa
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <ClickableMap onLocationSelect={onLocationSelect} />
+            <MapClickHandler onLocationSelect={onLocationSelect} />
           </MapContainer>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
