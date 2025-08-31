@@ -18,7 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { UploadCloud, X } from "lucide-react";
+import { UploadCloud, X, MapPin } from "lucide-react";
+import { ClinicMapSelector } from "@/components/maps/ClinicMapSelector";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
@@ -106,6 +107,13 @@ const DoctorRegistration = () => {
   const { user } = useAuth();
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showMapSelector, setShowMapSelector] = useState(false);
+  const [clinicLocation, setClinicLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string;
+    name?: string;
+  } | null>(null);
   
   const form = useForm<DoctorFormValues>({
     resolver: zodResolver(doctorFormSchema),
@@ -173,7 +181,7 @@ const DoctorRegistration = () => {
       const lastName = userData?.last_name || user.user_metadata?.last_name || '';
       const displayName = firstName || lastName ? `${firstName} ${lastName}`.trim() : 'User';
       
-      // Insert doctor information with the file URL and the user's ID
+      // Insert doctor information with the file URL, user's ID, and clinic location
       const { error: doctorError } = await supabase
         .from('doctors')
         .insert({
@@ -189,7 +197,10 @@ const DoctorRegistration = () => {
           registration_number: data.registration_number,
           available: true,
           verified: false, // Initially set to false, pending admin approval
-          degree_verification_photo: publicUrl
+          degree_verification_photo: publicUrl,
+          clinic_latitude: clinicLocation?.latitude,
+          clinic_longitude: clinicLocation?.longitude,
+          clinic_address: clinicLocation?.address || data.address
         });
       
       if (doctorError) {
@@ -248,6 +259,16 @@ const DoctorRegistration = () => {
     setUploadedImage(null);
     form.setValue("degree_verification_photo", undefined as any);
     form.clearErrors("degree_verification_photo");
+  };
+
+  const handleLocationSelect = (location: { latitude: number; longitude: number; address: string; name?: string }) => {
+    setClinicLocation(location);
+    form.setValue("address", location.address);
+    
+    toast({
+      title: "Clinic Location Selected",
+      description: `Address: ${location.address}`,
+    });
   };
 
   return (
@@ -481,7 +502,46 @@ const DoctorRegistration = () => {
                     </FormItem>
                   )}
                 />
-              </div>
+               </div>
+               
+               {/* Clinic Location Section */}
+               <div className="space-y-4">
+                 <div className="flex items-center gap-2">
+                   <MapPin className="h-5 w-5 text-blue-600" />
+                   <h3 className="text-lg font-semibold">Clinic/Lab Location</h3>
+                 </div>
+                 <p className="text-sm text-gray-600 mb-4">
+                   Select the precise location of your clinic or lab on the map. This will help patients find and get directions to your facility.
+                 </p>
+                 
+                 <Button
+                   type="button"
+                   variant="outline"
+                   onClick={() => setShowMapSelector(!showMapSelector)}
+                   className="w-full"
+                 >
+                   <MapPin className="h-4 w-4 mr-2" />
+                   {showMapSelector ? 'Hide Map' : 'Select Location on Map'}
+                 </Button>
+                 
+                 {showMapSelector && (
+                   <div className="mt-4">
+                     <ClinicMapSelector
+                       onLocationSelect={handleLocationSelect}
+                       className="w-full"
+                     />
+                   </div>
+                 )}
+                 
+                 {clinicLocation && (
+                   <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                     <p className="text-sm text-green-800">
+                       <MapPin className="h-4 w-4 inline mr-1" />
+                       Selected Location: {clinicLocation.address}
+                     </p>
+                   </div>
+                 )}
+               </div>
               
               {/* Required Fields Notice */}
               <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mt-6">

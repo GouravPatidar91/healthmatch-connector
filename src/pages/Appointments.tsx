@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, User, MapPin, Phone, Stethoscope, Star, CalendarDays } from "lucide-react";
+import { Calendar, Clock, User, MapPin, Phone, Stethoscope, Star, CalendarDays, Route } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppointmentBooking } from "@/services/appointmentService";
 import { useDoctors } from "@/services/doctorService";
@@ -15,6 +15,7 @@ import DoctorSlots from "@/components/appointments/DoctorSlots";
 import { BookAppointmentDialog } from "@/components/appointments/BookAppointmentDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { NearbyDoctorsView } from "@/components/appointments/NearbyDoctorsView";
+import { DirectionsMap } from "@/components/maps/DirectionsMap";
 
 const specializations = [
   "Cardiology",
@@ -35,7 +36,9 @@ const Appointments = () => {
   const [activeTab, setActiveTab] = useState('browse');
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const [showDirections, setShowDirections] = useState<any>(null);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   
   const { doctors, loading, findNearbyDoctors } = useDoctors();
 
@@ -81,6 +84,23 @@ const Appointments = () => {
       setTimeout(() => {
         setSelectedDoctor(null);
       }, 300);
+    }
+  };
+
+  const handleShowDirections = (doctor: any) => {
+    if ((doctor as any).clinic_latitude && (doctor as any).clinic_longitude) {
+      setShowDirections({
+        latitude: (doctor as any).clinic_latitude,
+        longitude: (doctor as any).clinic_longitude,
+        name: doctor.hospital,
+        address: (doctor as any).clinic_address || doctor.address
+      });
+    } else {
+      toast({
+        title: "Location Not Available",
+        description: "This doctor hasn't set their clinic location on the map yet.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -183,11 +203,22 @@ const Appointments = () => {
 
                       <Button 
                         onClick={() => handleBookAppointment(doctor)}
-                        className="btn-modern w-full text-xs md:text-sm"
+                        className="btn-modern w-full text-xs md:text-sm mb-2"
                       >
                         <CalendarDays className="mr-2 h-3 w-3 md:h-4 md:w-4" />
                         Book Appointment
                       </Button>
+
+                      {(doctor as any).clinic_latitude && (doctor as any).clinic_longitude && (
+                        <Button 
+                          onClick={() => handleShowDirections(doctor)}
+                          variant="outline"
+                          className="w-full text-xs md:text-sm"
+                        >
+                          <Route className="mr-2 h-3 w-3 md:h-4 md:w-4" />
+                          Get Directions
+                        </Button>
+                      )}
 
                       <DoctorSlots doctor={doctor} />
                     </CardContent>
@@ -214,6 +245,30 @@ const Appointments = () => {
           onOpenChange={handleCloseBookingDialog}
           selectedDoctor={selectedDoctor}
         />
+        
+        {/* Directions Map Dialog */}
+        {showDirections && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="p-4 border-b flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Directions to Clinic</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDirections(null)}
+                >
+                  Close
+                </Button>
+              </div>
+              <div className="p-4">
+                <DirectionsMap
+                  clinicLocation={showDirections}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

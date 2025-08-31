@@ -1,4 +1,5 @@
 
+@import 'leaflet/dist/leaflet.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -169,6 +170,30 @@
 
   .mobile-card {
     @apply w-full max-w-none sm:max-w-md mx-auto;
+  }
+
+  /* Leaflet map styles */
+  .leaflet-container {
+    @apply rounded-lg overflow-hidden;
+    font-family: inherit;
+  }
+
+  .leaflet-popup-content-wrapper {
+    @apply bg-white shadow-lg border border-gray-200;
+    border-radius: var(--radius);
+  }
+
+  .leaflet-popup-tip {
+    @apply bg-white;
+  }
+
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out {
+    @apply bg-white border border-gray-300 text-gray-700 hover:bg-gray-50;
+  }
+
+  .leaflet-control-attribution {
+    @apply bg-white/90 text-xs text-gray-600;
   }
 }
 
