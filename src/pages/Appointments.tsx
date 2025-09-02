@@ -209,17 +209,6 @@ const Appointments = () => {
                         Book Appointment
                       </Button>
 
-                      {(doctor as any).clinic_latitude && (doctor as any).clinic_longitude && (
-                        <Button 
-                          onClick={() => handleShowDirections(doctor)}
-                          variant="outline"
-                          className="w-full text-xs md:text-sm"
-                        >
-                          <Route className="mr-2 h-3 w-3 md:h-4 md:w-4" />
-                          Get Directions
-                        </Button>
-                      )}
-
                       <DoctorSlots doctor={doctor} />
                     </CardContent>
                   </Card>
