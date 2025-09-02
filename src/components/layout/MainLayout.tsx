@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard, Shield, FileText } from "lucide-react";
+import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard, Shield, FileText, Pill } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,6 +71,7 @@ const MainLayout = () => {
     { name: "Health Check", path: "/health-check", icon: Heart },
     { name: "Medical Reports", path: "/medical-reports", icon: FileText },
     { name: "Appointments", path: "/appointments", icon: Calendar },
+    { name: "Medicine", path: "/medicine", icon: Pill },
     { name: "Emergency", path: "/emergency", icon: PhoneCall },
     { name: "Profile", path: "/profile", icon: User },
     { name: "Settings", path: "/settings", icon: Settings },
