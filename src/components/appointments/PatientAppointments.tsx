@@ -11,12 +11,13 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, MapPin, User, FileText } from "lucide-react";
+import { Calendar, Clock, MapPin, User, FileText, Route } from "lucide-react";
 import { format, parseISO, isBefore } from 'date-fns';
 import { useAppointmentBooking } from '@/services/appointmentService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { DirectionsMap } from '@/components/maps/DirectionsMap';
 
 interface PatientAppointment {
   id: string;
@@ -30,11 +31,18 @@ interface PatientAppointment {
   notes?: string;
   created_at: string;
   updated_at: string;
+  doctors?: {
+    clinic_latitude?: number;
+    clinic_longitude?: number;
+    clinic_address?: string;
+    hospital?: string;
+  };
 }
 
 const PatientAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<PatientAppointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDirections, setShowDirections] = useState<any>(null);
   const { getPatientAppointments } = useAppointmentBooking();
   const { user, session } = useAuth();
   const { toast } = useToast();
@@ -163,6 +171,24 @@ const PatientAppointments: React.FC = () => {
     }
   };
 
+  const handleShowDirections = (appointment: PatientAppointment) => {
+    const doctor = appointment.doctors;
+    if (doctor?.clinic_latitude && doctor?.clinic_longitude) {
+      setShowDirections({
+        latitude: doctor.clinic_latitude,
+        longitude: doctor.clinic_longitude,
+        name: doctor.hospital || appointment.doctor_name,
+        address: doctor.clinic_address || 'Clinic Location'
+      });
+    } else {
+      toast({
+        title: "Location Not Available",
+        description: "This doctor hasn't set their clinic location on the map yet.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Authentication guard
   if (!user || !session) {
     return (
@@ -221,6 +247,18 @@ const PatientAppointments: React.FC = () => {
           {appointment.reason || 'General consultation'}
         </div>
       </div>
+      
+      {appointment.status === 'confirmed' && appointment.doctors?.clinic_latitude && appointment.doctors?.clinic_longitude && (
+        <Button 
+          onClick={() => handleShowDirections(appointment)}
+          variant="outline"
+          size="sm"
+          className="w-full mt-2"
+        >
+          <Route className="mr-2 h-3 w-3" />
+          Get Directions
+        </Button>
+      )}
     </div>
   );
 
@@ -263,9 +301,21 @@ const PatientAppointments: React.FC = () => {
                 </div>
               </TableCell>
               <TableCell>
-                <Badge className={getStatusColor(appointment.status)}>
-                  {appointment.status}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className={getStatusColor(appointment.status)}>
+                    {appointment.status}
+                  </Badge>
+                  {appointment.status === 'confirmed' && appointment.doctors?.clinic_latitude && appointment.doctors?.clinic_longitude && (
+                    <Button 
+                      onClick={() => handleShowDirections(appointment)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Route className="mr-1 h-3 w-3" />
+                      Directions
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -327,6 +377,30 @@ const PatientAppointments: React.FC = () => {
           </TabsContent>
         </Tabs>
       </CardContent>
+      
+      {/* Directions Map Dialog */}
+      {showDirections && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Directions to Clinic</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDirections(null)}
+              >
+                Close
+              </Button>
+            </div>
+            <div className="p-4">
+              <DirectionsMap
+                clinicLocation={showDirections}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

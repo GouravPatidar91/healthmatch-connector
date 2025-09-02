@@ -313,7 +313,15 @@ export const useAppointmentBooking = () => {
       
       const { data, error } = await supabase
         .from('appointments')
-        .select('*')
+        .select(`
+          *,
+          doctors:doctor_id (
+            clinic_latitude,
+            clinic_longitude,
+            clinic_address,
+            hospital
+          )
+        `)
         .eq('user_id', user.id)
         .order('date')
         .order('time');
