@@ -137,6 +137,63 @@ export type Database = {
           },
         ]
       }
+      delivery_partners: {
+        Row: {
+          created_at: string
+          current_latitude: number | null
+          current_longitude: number | null
+          id: string
+          is_available: boolean | null
+          is_verified: boolean | null
+          license_number: string | null
+          max_delivery_radius_km: number | null
+          name: string
+          phone: string
+          rating: number | null
+          total_deliveries: number | null
+          updated_at: string
+          user_id: string
+          vehicle_number: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
+          id?: string
+          is_available?: boolean | null
+          is_verified?: boolean | null
+          license_number?: string | null
+          max_delivery_radius_km?: number | null
+          name: string
+          phone: string
+          rating?: number | null
+          total_deliveries?: number | null
+          updated_at?: string
+          user_id: string
+          vehicle_number: string
+          vehicle_type: string
+        }
+        Update: {
+          created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
+          id?: string
+          is_available?: boolean | null
+          is_verified?: boolean | null
+          license_number?: string | null
+          max_delivery_radius_km?: number | null
+          name?: string
+          phone?: string
+          rating?: number | null
+          total_deliveries?: number | null
+          updated_at?: string
+          user_id?: string
+          vehicle_number?: string
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
       doctor_notifications: {
         Row: {
           appointment_id: string
@@ -380,6 +437,382 @@ export type Database = {
           },
         ]
       }
+      medicine_order_items: {
+        Row: {
+          created_at: string
+          discount_amount: number | null
+          id: string
+          medicine_id: string
+          order_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+          vendor_medicine_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_amount?: number | null
+          id?: string
+          medicine_id: string
+          order_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+          vendor_medicine_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_amount?: number | null
+          id?: string
+          medicine_id?: string
+          order_id?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+          vendor_medicine_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medicine_order_items_medicine_id_fkey"
+            columns: ["medicine_id"]
+            isOneToOne: false
+            referencedRelation: "medicines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicine_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicine_order_items_vendor_medicine_id_fkey"
+            columns: ["vendor_medicine_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_medicines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medicine_orders: {
+        Row: {
+          created_at: string
+          customer_phone: string
+          delivered_at: string | null
+          delivery_address: string
+          delivery_fee: number | null
+          delivery_latitude: number | null
+          delivery_longitude: number | null
+          delivery_partner_id: string | null
+          discount_amount: number | null
+          estimated_delivery_time: string | null
+          final_amount: number
+          id: string
+          order_number: string
+          order_status: string | null
+          payment_method: string
+          payment_status: string | null
+          prescription_required: boolean | null
+          prescription_status: string | null
+          prescription_url: string | null
+          rejection_reason: string | null
+          total_amount: number
+          updated_at: string
+          user_id: string
+          vendor_id: string
+          vendor_notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_phone: string
+          delivered_at?: string | null
+          delivery_address: string
+          delivery_fee?: number | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          delivery_partner_id?: string | null
+          discount_amount?: number | null
+          estimated_delivery_time?: string | null
+          final_amount: number
+          id?: string
+          order_number: string
+          order_status?: string | null
+          payment_method: string
+          payment_status?: string | null
+          prescription_required?: boolean | null
+          prescription_status?: string | null
+          prescription_url?: string | null
+          rejection_reason?: string | null
+          total_amount: number
+          updated_at?: string
+          user_id: string
+          vendor_id: string
+          vendor_notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_phone?: string
+          delivered_at?: string | null
+          delivery_address?: string
+          delivery_fee?: number | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          delivery_partner_id?: string | null
+          discount_amount?: number | null
+          estimated_delivery_time?: string | null
+          final_amount?: number
+          id?: string
+          order_number?: string
+          order_status?: string | null
+          payment_method?: string
+          payment_status?: string | null
+          prescription_required?: boolean | null
+          prescription_status?: string | null
+          prescription_url?: string | null
+          rejection_reason?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string
+          vendor_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medicine_orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medicine_vendors: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          delivery_radius_km: number | null
+          email: string | null
+          id: string
+          is_available: boolean | null
+          is_verified: boolean | null
+          latitude: number | null
+          license_document_url: string | null
+          license_number: string
+          longitude: number | null
+          operating_hours: Json | null
+          owner_name: string
+          pharmacy_name: string
+          phone: string
+          region: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          delivery_radius_km?: number | null
+          email?: string | null
+          id?: string
+          is_available?: boolean | null
+          is_verified?: boolean | null
+          latitude?: number | null
+          license_document_url?: string | null
+          license_number: string
+          longitude?: number | null
+          operating_hours?: Json | null
+          owner_name: string
+          pharmacy_name: string
+          phone: string
+          region: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          delivery_radius_km?: number | null
+          email?: string | null
+          id?: string
+          is_available?: boolean | null
+          is_verified?: boolean | null
+          latitude?: number | null
+          license_document_url?: string | null
+          license_number?: string
+          longitude?: number | null
+          operating_hours?: Json | null
+          owner_name?: string
+          pharmacy_name?: string
+          phone?: string
+          region?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      medicines: {
+        Row: {
+          brand: string
+          category: string
+          composition: string | null
+          contraindications: string | null
+          created_at: string
+          description: string | null
+          dosage: string
+          drug_schedule: string | null
+          form: string
+          generic_name: string | null
+          id: string
+          image_url: string | null
+          manufacturer: string
+          mrp: number
+          name: string
+          pack_size: string
+          prescription_required: boolean | null
+          side_effects: string | null
+          storage_instructions: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          category: string
+          composition?: string | null
+          contraindications?: string | null
+          created_at?: string
+          description?: string | null
+          dosage: string
+          drug_schedule?: string | null
+          form: string
+          generic_name?: string | null
+          id?: string
+          image_url?: string | null
+          manufacturer: string
+          mrp: number
+          name: string
+          pack_size: string
+          prescription_required?: boolean | null
+          side_effects?: string | null
+          storage_instructions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          category?: string
+          composition?: string | null
+          contraindications?: string | null
+          created_at?: string
+          description?: string | null
+          dosage?: string
+          drug_schedule?: string | null
+          form?: string
+          generic_name?: string | null
+          id?: string
+          image_url?: string | null
+          manufacturer?: string
+          mrp?: number
+          name?: string
+          pack_size?: string
+          prescription_required?: boolean | null
+          side_effects?: string | null
+          storage_instructions?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      order_tracking: {
+        Row: {
+          created_at: string
+          id: string
+          location_latitude: number | null
+          location_longitude: number | null
+          notes: string | null
+          order_id: string
+          status: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location_latitude?: number | null
+          location_longitude?: number | null
+          notes?: string | null
+          order_id: string
+          status: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location_latitude?: number | null
+          location_longitude?: number | null
+          notes?: string | null
+          order_id?: string
+          status?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescription_uploads: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          order_id: string | null
+          upload_status: string | null
+          user_id: string
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          order_id?: string | null
+          upload_status?: string | null
+          user_id: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          order_id?: string | null
+          upload_status?: string | null
+          user_id?: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_uploads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -449,11 +882,137 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_medicines: {
+        Row: {
+          batch_number: string | null
+          created_at: string
+          discount_percentage: number | null
+          expiry_date: string | null
+          id: string
+          is_available: boolean | null
+          medicine_id: string
+          selling_price: number
+          stock_quantity: number
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          batch_number?: string | null
+          created_at?: string
+          discount_percentage?: number | null
+          expiry_date?: string | null
+          id?: string
+          is_available?: boolean | null
+          medicine_id: string
+          selling_price: number
+          stock_quantity?: number
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          batch_number?: string | null
+          created_at?: string
+          discount_percentage?: number | null
+          expiry_date?: string | null
+          id?: string
+          is_available?: boolean | null
+          medicine_id?: string
+          selling_price?: number
+          stock_quantity?: number
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_medicines_medicine_id_fkey"
+            columns: ["medicine_id"]
+            isOneToOne: false
+            referencedRelation: "medicines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_medicines_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          order_id: string | null
+          priority: string | null
+          read_at: string | null
+          title: string
+          type: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          order_id?: string | null
+          priority?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          order_id?: string | null
+          priority?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_notifications_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      find_nearby_medicine_vendors: {
+        Args: { radius_km?: number; user_lat: number; user_lng: number }
+        Returns: {
+          address: string
+          delivery_radius_km: number
+          distance_km: number
+          id: string
+          is_available: boolean
+          pharmacy_name: string
+          phone: string
+        }[]
+      }
       find_nearest_doctor: {
         Args: { lat: number; long: number; specialization_filter?: string }
         Returns: {
@@ -464,6 +1023,10 @@ export type Database = {
           name: string
           specialization: string
         }[]
+      }
+      generate_order_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_patient_display_name: {
         Args: { user_uuid: string }
