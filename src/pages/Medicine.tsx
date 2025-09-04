@@ -1,459 +1,478 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Search, 
-  ShoppingCart, 
-  Plus, 
-  Minus, 
-  Star,
-  Clock,
-  Truck,
-  Shield,
-  MapPin,
-  Pill,
-  Heart,
-  Brain,
-  Bone,
-  Eye,
-  FileText,
-  Camera
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
-
-interface Medicine {
-  id: string;
-  name: string;
-  brand: string;
-  category: string;
-  price: number;
-  originalPrice?: number;
-  description: string;
-  image: string;
-  inStock: boolean;
-  rating: number;
-  reviewCount: number;
-  prescriptionRequired: boolean;
-  fastDelivery: boolean;
-  discount?: number;
-}
-
-interface CartItem extends Medicine {
-  quantity: number;
-}
+import { Search, Filter, ShoppingCart, Plus, Minus, Upload, Star, Badge, MapPin, Clock, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge as UIBadge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { useMedicines } from '@/hooks/useMedicines';
+import { useCart, CartItem } from '@/hooks/useCart';
+import { VendorMedicine, type Medicine } from '@/services/medicineService';
+import { medicineService } from '@/services/medicineService';
 
 const categories = [
-  { id: 'all', name: 'All Categories', icon: Pill },
-  { id: 'pain-relief', name: 'Pain Relief', icon: Heart },
-  { id: 'vitamins', name: 'Vitamins & Supplements', icon: Shield },
-  { id: 'digestive', name: 'Digestive Health', icon: Heart },
-  { id: 'respiratory', name: 'Respiratory', icon: Brain },
-  { id: 'orthopedic', name: 'Orthopedic', icon: Bone },
-  { id: 'eye-care', name: 'Eye Care', icon: Eye },
-  { id: 'skin-care', name: 'Skin Care', icon: Heart }
+  { name: 'All Categories', icon: '🏥', value: 'all' },
+  { name: 'Pain Relief', icon: '💊', value: 'Pain Relief' },
+  { name: 'Cold & Cough', icon: '🤧', value: 'Cold & Cough' },
+  { name: 'Fever', icon: '🌡️', value: 'Fever' },
+  { name: 'Digestive Health', icon: '🥗', value: 'Digestive Health' },
+  { name: 'Heart & BP', icon: '❤️', value: 'Cardiovascular' },
+  { name: 'Diabetes', icon: '🩺', value: 'Diabetes' },
+  { name: 'Vitamins', icon: '💪', value: 'Vitamins & Supplements' },
+  { name: 'Skin Care', icon: '✨', value: 'Dermatology' },
+  { name: 'Baby Care', icon: '👶', value: 'Pediatric' },
+  { name: 'First Aid', icon: '🩹', value: 'First Aid' },
 ];
 
-const mockMedicines: Medicine[] = [
-  {
-    id: '1',
-    name: 'Paracetamol 500mg',
-    brand: 'Crocin',
-    category: 'pain-relief',
-    price: 25.50,
-    originalPrice: 30.00,
-    description: 'Effective pain relief and fever reducer',
-    image: '/api/placeholder/200/200',
-    inStock: true,
-    rating: 4.5,
-    reviewCount: 128,
-    prescriptionRequired: false,
-    fastDelivery: true,
-    discount: 15
-  },
-  {
-    id: '2',
-    name: 'Vitamin D3 60K',
-    brand: 'HealthKart',
-    category: 'vitamins',
-    price: 145.00,
-    description: 'Bone health and immunity booster',
-    image: '/api/placeholder/200/200',
-    inStock: true,
-    rating: 4.8,
-    reviewCount: 95,
-    prescriptionRequired: false,
-    fastDelivery: true
-  },
-  {
-    id: '3',
-    name: 'Omeprazole 20mg',
-    brand: 'Omez',
-    category: 'digestive',
-    price: 89.25,
-    originalPrice: 95.00,
-    description: 'Acid reflux and stomach ulcer treatment',
-    image: '/api/placeholder/200/200',
-    inStock: true,
-    rating: 4.3,
-    reviewCount: 67,
-    prescriptionRequired: true,
-    fastDelivery: false,
-    discount: 6
-  },
-  {
-    id: '4',
-    name: 'Cetirizine 10mg',
-    brand: 'Zyrtec',
-    category: 'respiratory',
-    price: 32.00,
-    description: 'Allergy relief antihistamine',
-    image: '/api/placeholder/200/200',
-    inStock: false,
-    rating: 4.6,
-    reviewCount: 156,
-    prescriptionRequired: false,
-    fastDelivery: true
-  },
-  {
-    id: '5',
-    name: 'Calcium + Magnesium',
-    brand: 'Shelcal',
-    category: 'orthopedic',
-    price: 167.50,
-    originalPrice: 185.00,
-    description: 'Bone strength and joint health',
-    image: '/api/placeholder/200/200',
-    inStock: true,
-    rating: 4.4,
-    reviewCount: 89,
-    prescriptionRequired: false,
-    fastDelivery: true,
-    discount: 9
-  },
-  {
-    id: '6',
-    name: 'Eye Drops Refresh',
-    brand: 'Systane',
-    category: 'eye-care',
-    price: 78.00,
-    description: 'Dry eye relief lubricating drops',
-    image: '/api/placeholder/200/200',
-    inStock: true,
-    rating: 4.7,
-    reviewCount: 43,
-    prescriptionRequired: false,
-    fastDelivery: true
-  }
-];
-
-const Medicine = () => {
+export default function Medicine() {
+  const { toast } = useToast();
+  const { medicines, loading, searchMedicines } = useMedicines();
+  const { 
+    cartItems, 
+    addToCart, 
+    updateQuantity, 
+    removeFromCart, 
+    getTotalItems, 
+    getTotalPrice, 
+    getSubtotal, 
+    getTotalDiscount 
+  } = useCart();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [showPrescriptionUpload, setShowPrescriptionUpload] = useState(false);
-  const isMobile = useIsMobile();
-  const { toast } = useToast();
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  const filteredMedicines = mockMedicines.filter(medicine => {
-    const matchesSearch = medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         medicine.brand.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || medicine.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  useEffect(() => {
+    // Initial load
+    searchMedicines('', selectedCategory === 'all' ? undefined : selectedCategory);
+  }, []);
 
-  const addToCart = (medicine: Medicine) => {
-    if (!medicine.inStock) {
-      toast({
-        title: "Out of Stock",
-        description: "This medicine is currently unavailable.",
-        variant: "destructive"
-      });
-      return;
-    }
+  useEffect(() => {
+    // Search when term or category changes
+    const delayedSearch = setTimeout(() => {
+      searchMedicines(searchTerm, selectedCategory === 'all' ? undefined : selectedCategory);
+    }, 300);
 
-    if (medicine.prescriptionRequired) {
-      setShowPrescriptionUpload(true);
-      return;
-    }
+    return () => clearTimeout(delayedSearch);
+  }, [searchTerm, selectedCategory]);
 
-    setCart(prev => {
-      const existing = prev.find(item => item.id === medicine.id);
-      if (existing) {
-        return prev.map(item => 
-          item.id === medicine.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+  const handleUploadPrescription = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await medicineService.uploadPrescription(file);
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Prescription uploaded successfully.",
+        });
+        setIsUploadModalOpen(false);
       }
-      return [...prev, { ...medicine, quantity: 1 }];
-    });
-
-    toast({
-      title: "Added to Cart",
-      description: `${medicine.name} has been added to your cart.`
-    });
+    } catch (error) {
+      // Error already handled in service
+    }
   };
 
-  const updateQuantity = (medicineId: string, change: number) => {
-    setCart(prev => {
-      return prev.map(item => {
-        if (item.id === medicineId) {
-          const newQuantity = Math.max(0, item.quantity + change);
-          return newQuantity === 0 ? null : { ...item, quantity: newQuantity };
-        }
-        return item;
-      }).filter(Boolean) as CartItem[];
-    });
-  };
+  // Medicine Card Component
+  const MedicineCard = ({ medicine }: { medicine: Medicine | VendorMedicine }) => {
+    const isVendorMedicine = 'vendor_medicine_id' in medicine;
+    const cartItem = cartItems.find(item => 
+      isVendorMedicine 
+        ? item.vendor_medicine_id === (medicine as VendorMedicine).vendor_medicine_id
+        : item.id === (medicine as Medicine).id
+    );
+    
+    const price = isVendorMedicine ? (medicine as VendorMedicine).selling_price : (medicine as any).price || medicine.mrp;
+    const discountedPrice = isVendorMedicine 
+      ? price * (1 - (medicine as VendorMedicine).discount_percentage / 100)
+      : price;
+    const savings = medicine.mrp - discountedPrice;
 
-  const getTotalItems = () => cart.reduce((sum, item) => sum + item.quantity, 0);
-  const getTotalPrice = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-  const MedicineCard = ({ medicine }: { medicine: Medicine }) => (
-    <Card className="modern-card group hover:shadow-xl transition-all duration-300 overflow-hidden">
-      <CardHeader className="pb-3 relative">
-        <div className="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl mb-3 flex items-center justify-center relative overflow-hidden">
-          <Pill className="h-16 w-16 text-blue-400" />
-          {medicine.discount && (
-            <Badge className="absolute top-2 right-2 bg-red-500 text-white">
-              -{medicine.discount}%
-            </Badge>
-          )}
-          {medicine.fastDelivery && (
-            <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs">
-              <Truck className="h-3 w-3 mr-1" />
-              Fast
-            </Badge>
-          )}
-        </div>
-        
-        <div className="space-y-1">
-          <CardTitle className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-            {medicine.name}
-          </CardTitle>
-          <CardDescription className="text-sm text-gray-500">
-            by {medicine.brand}
-          </CardDescription>
-        </div>
-        
-        <div className="flex items-center gap-2 mt-2">
-          <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm font-medium">{medicine.rating}</span>
-            <span className="text-xs text-gray-500">({medicine.reviewCount})</span>
-          </div>
-          {medicine.prescriptionRequired && (
-            <Badge variant="outline" className="text-xs">
-              <FileText className="h-3 w-3 mr-1" />
-              Rx
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-0">
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-          {medicine.description}
-        </p>
-        
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-gray-900">₹{medicine.price}</span>
-            {medicine.originalPrice && (
-              <span className="text-sm text-gray-500 line-through">₹{medicine.originalPrice}</span>
+    return (
+      <Card className="h-full flex flex-col hover:shadow-lg transition-shadow duration-300">
+        <CardContent className="p-4 flex-1">
+          <div className="aspect-square w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
+            {medicine.image_url ? (
+              <img src={medicine.image_url} alt={medicine.name} className="w-full h-full object-cover rounded-lg" />
+            ) : (
+              <span className="text-4xl">💊</span>
             )}
           </div>
-          <Badge variant={medicine.inStock ? "default" : "secondary"} className="text-xs">
-            {medicine.inStock ? "In Stock" : "Out of Stock"}
-          </Badge>
-        </div>
-        
-        <Button 
-          onClick={() => addToCart(medicine)}
-          disabled={!medicine.inStock}
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-        >
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          Add to Cart
-        </Button>
-      </CardContent>
-    </Card>
-  );
+          
+          <div className="text-center mb-4">
+            <h3 className="font-semibold text-lg mb-1 line-clamp-2">{medicine.name}</h3>
+            <p className="text-sm text-muted-foreground mb-2">{medicine.brand}</p>
+            {medicine.description && (
+              <p className="text-xs text-muted-foreground line-clamp-2">{medicine.description}</p>
+            )}
+          </div>
 
-  const CartSummary = () => (
-    <Card className="modern-card sticky top-6">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5" />
-          Cart ({getTotalItems()})
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {cart.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">Your cart is empty</p>
-        ) : (
-          <>
-            <div className="space-y-3">
-              {cart.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{item.name}</p>
-                    <p className="text-xs text-gray-500">₹{item.price} each</p>
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-lg font-bold text-primary">₹{discountedPrice.toFixed(2)}</span>
+              {savings > 0 && (
+                <span className="text-sm text-muted-foreground line-through">₹{medicine.mrp.toFixed(2)}</span>
+              )}
+            </div>
+            {savings > 0 && (
+              <p className="text-xs text-green-600">Save ₹{savings.toFixed(2)}</p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between mb-3">
+            {isVendorMedicine && (
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  {(medicine as VendorMedicine).distance_km?.toFixed(1)} km
+                </span>
+              </div>
+            )}
+            <UIBadge 
+              variant={isVendorMedicine 
+                ? ((medicine as VendorMedicine).stock_quantity > 0 ? "default" : "destructive")
+                : "default"
+              } 
+              className="text-xs"
+            >
+              {isVendorMedicine 
+                ? ((medicine as VendorMedicine).stock_quantity > 0 ? "In Stock" : "Out of Stock")
+                : "Available"
+              }
+            </UIBadge>
+          </div>
+
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Pack Size:</span>
+              <span className="font-medium">{medicine.pack_size}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Dosage:</span>
+              <span className="font-medium">{medicine.dosage}</span>
+            </div>
+            {isVendorMedicine && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Pharmacy:</span>
+                <span className="font-medium text-xs">{(medicine as VendorMedicine).pharmacy_name}</span>
+              </div>
+            )}
+          </div>
+
+          {medicine.prescription_required && (
+            <UIBadge variant="outline" className="w-full justify-center mb-3 text-xs">
+              📋 Prescription Required
+            </UIBadge>
+          )}
+        </CardContent>
+        
+        <div className="p-4 pt-0">
+          {cartItem ? (
+            <div className="flex items-center justify-between bg-primary/5 rounded-lg p-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateQuantity(
+                  isVendorMedicine ? (medicine as VendorMedicine).vendor_medicine_id : (medicine as Medicine).id, 
+                  -1
+                )}
+                className="h-8 w-8 p-0"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="font-medium px-4">{cartItem.quantity}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateQuantity(
+                  isVendorMedicine ? (medicine as VendorMedicine).vendor_medicine_id : (medicine as Medicine).id, 
+                  1
+                )}
+                className="h-8 w-8 p-0"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={() => isVendorMedicine ? addToCart(medicine as VendorMedicine) : null}
+              className="w-full"
+              disabled={isVendorMedicine ? (medicine as VendorMedicine).stock_quantity === 0 : false}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Add to Cart
+            </Button>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
+  // Cart Summary Component
+  const CartSummary = () => {
+    if (cartItems.length === 0) return null;
+
+    const subtotal = getSubtotal();
+    const totalDiscount = getTotalDiscount();
+    const deliveryFee = subtotal > 500 ? 0 : 50;
+
+    return (
+      <Card className="sticky top-6">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Cart ({getTotalItems()})
+            </span>
+            <span className="text-lg font-bold text-primary">₹{getTotalPrice().toFixed(2)}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            {cartItems.map((item) => {
+              const isVendorMedicine = 'vendor_medicine_id' in item;
+              const price = isVendorMedicine 
+                ? (item as any).selling_price * (1 - (item as any).discount_percentage / 100) 
+                : (item as any).mrp;
+              const itemId = isVendorMedicine ? (item as any).vendor_medicine_id : (item as any).id;
+              
+              return (
+                <div key={itemId} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.brand}</p>
+                    {isVendorMedicine && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {(item as any).pharmacy_name}
+                      </p>
+                    )}
+                    <p className="text-sm font-bold text-primary">₹{price.toFixed(2)} × {item.quantity}</p>
                   </div>
-                  <div className="flex items-center gap-2 ml-3">
+                  <div className="flex items-center gap-2">
                     <Button
-                      size="sm"
                       variant="outline"
-                      onClick={() => updateQuantity(item.id, -1)}
-                      className="h-8 w-8 p-0"
+                      size="sm"
+                      onClick={() => updateQuantity(itemId, -1)}
+                      className="h-6 w-6 p-0"
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
-                    <span className="text-sm font-medium min-w-[20px] text-center">
-                      {item.quantity}
-                    </span>
+                    <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                     <Button
-                      size="sm"
                       variant="outline"
-                      onClick={() => updateQuantity(item.id, 1)}
-                      className="h-8 w-8 p-0"
+                      size="sm"
+                      onClick={() => updateQuantity(itemId, 1)}
+                      className="h-6 w-6 p-0"
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Subtotal ({getTotalItems()} items):</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
-            
-            <div className="border-t pt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Subtotal:</span>
-                <span>₹{getTotalPrice().toFixed(2)}</span>
+            {totalDiscount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Discount:</span>
+                <span>-₹{totalDiscount.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>Delivery:</span>
-                <span className="text-green-600">Free</span>
-              </div>
-              <div className="flex justify-between font-bold text-base border-t pt-2">
-                <span>Total:</span>
-                <span>₹{getTotalPrice().toFixed(2)}</span>
-              </div>
+            )}
+            <div className="flex justify-between text-sm">
+              <span>Delivery Fee:</span>
+              <span className={deliveryFee === 0 ? 'text-green-600' : ''}>
+                {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
+              </span>
             </div>
-            
-            <Button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
-              <MapPin className="mr-2 h-4 w-4" />
+            <Separator />
+            <div className="flex justify-between font-bold">
+              <span>Total:</span>
+              <span className="text-primary">₹{(getTotalPrice() + deliveryFee).toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Button 
+              className="w-full" 
+              size="lg"
+              onClick={() => {
+                toast({
+                  title: "Checkout Coming Soon",
+                  description: "Full checkout functionality will be available soon.",
+                });
+              }}
+            >
               Proceed to Checkout
             </Button>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
+            
+            <p className="text-xs text-muted-foreground text-center">
+              {subtotal < 500 && `Add ₹${(500 - subtotal).toFixed(2)} more for free delivery`}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <div className="container mx-auto py-4 px-4 md:py-6 md:px-6">
-      <div className="flex flex-col space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center md:text-left">
-          <h1 className="text-2xl md:text-3xl font-bold gradient-text">Quick Medicine</h1>
-          <p className="text-gray-600 text-sm md:text-base">Order medicines and healthcare products online</p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Quick Medicine</h1>
+          <p className="text-muted-foreground">
+            Order medicines and healthcare products from nearby verified pharmacies
+          </p>
         </div>
 
-        {/* Search and Filters */}
-        <Card className="modern-card">
-          <CardContent className="p-4 md:p-6">
+        {/* Search and Filter Section */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search medicines, brands, or health conditions..."
+                  placeholder="Search medicines, brands, or symptoms..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-blue-200 focus:ring-blue-500"
+                  className="pl-10"
                 />
               </div>
-              <div className="w-full md:w-64">
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="border-blue-200 focus:ring-blue-500">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-blue-200">
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        <div className="flex items-center gap-2">
-                          <category.icon className="h-4 w-4" />
-                          {category.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full md:w-64">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      <div className="flex items-center gap-2">
+                        <span>{category.icon}</span>
+                        {category.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="modern-card hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Camera className="h-6 w-6 text-white" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+            <DialogTrigger asChild>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Upload className="h-6 w-6 text-primary" />
+                  </div>
+                  <p className="font-medium">Upload Prescription</p>
+                  <p className="text-xs text-muted-foreground">For Rx medicines</p>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload Prescription</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="prescription">Select prescription image or PDF</Label>
+                  <Input
+                    id="prescription"
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleUploadPrescription}
+                    className="mt-2"
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <p>• Supported formats: JPG, PNG, PDF</p>
+                  <p>• Maximum file size: 10MB</p>
+                  <p>• Ensure the prescription is clearly visible</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button onClick={() => setIsUploadModalOpen(false)} variant="outline" className="flex-1">
+                    Cancel
+                  </Button>
+                </div>
               </div>
-              <p className="font-medium text-sm">Upload Prescription</p>
+            </DialogContent>
+          </Dialog>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Clock className="h-6 w-6 text-green-600" />
+              </div>
+              <p className="font-medium">Fast Delivery</p>
+              <p className="text-xs text-muted-foreground">Within 30 mins</p>
             </CardContent>
           </Card>
-          
-          <Card className="modern-card hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Truck className="h-6 w-6 text-white" />
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Phone className="h-6 w-6 text-blue-600" />
               </div>
-              <p className="font-medium text-sm">Fast Delivery</p>
+              <p className="font-medium">24/7 Support</p>
+              <p className="text-xs text-muted-foreground">Always available</p>
             </CardContent>
           </Card>
-          
-          <Card className="modern-card hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Clock className="h-6 w-6 text-white" />
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Badge className="h-6 w-6 text-purple-600" />
               </div>
-              <p className="font-medium text-sm">24/7 Support</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="modern-card hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <p className="font-medium text-sm">Authentic Meds</p>
+              <p className="font-medium">Verified Meds</p>
+              <p className="text-xs text-muted-foreground">100% authentic</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Products Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Medicine Grid */}
           <div className="lg:col-span-3">
-            {filteredMedicines.length > 0 ? (
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredMedicines.map((medicine) => (
-                  <MedicineCard key={medicine.id} medicine={medicine} />
-                ))}
+            {/* Medicine Grid */}
+            {loading ? (
+              <div className="col-span-full text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading medicines...</p>
               </div>
             ) : (
-              <Card className="modern-card">
-                <CardContent className="text-center py-8">
-                  <Pill className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-gray-600">No medicines found matching your criteria.</p>
-                </CardContent>
-              </Card>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {medicines.length > 0 ? (
+                  medicines.map((medicine) => (
+                    <MedicineCard 
+                      key={'vendor_medicine_id' in medicine ? medicine.vendor_medicine_id : medicine.id} 
+                      medicine={medicine} 
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12">
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className="text-xl font-semibold mb-2">No medicines found</h3>
+                    <p className="text-muted-foreground">
+                      Try adjusting your search terms or browse different categories.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -462,50 +481,7 @@ const Medicine = () => {
             <CartSummary />
           </div>
         </div>
-
-        {/* Prescription Upload Modal */}
-        {showPrescriptionUpload && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle>Upload Prescription</CardTitle>
-                <CardDescription>
-                  This medicine requires a prescription. Please upload your prescription to proceed.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-                  <Camera className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm text-gray-600">Click to upload or drag and drop your prescription</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowPrescriptionUpload(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      setShowPrescriptionUpload(false);
-                      toast({
-                        title: "Prescription Uploaded",
-                        description: "We'll review your prescription and contact you shortly."
-                      });
-                    }}
-                    className="flex-1"
-                  >
-                    Upload
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   );
-};
-
-export default Medicine;
+}

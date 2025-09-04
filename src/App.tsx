@@ -17,6 +17,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Emergency from "./pages/Emergency";
 import MedicalReports from "./pages/MedicalReports";
+import VendorDashboard from "./pages/VendorDashboard";
+import VendorRegistration from "./pages/VendorRegistration";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import InternshipTerms from "./pages/InternshipTerms";
 import NotFound from "./pages/NotFound";
@@ -52,6 +54,8 @@ const App = () => (
               <Route path="/health-check-history" element={<HealthCheckHistory />} />
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/medicine" element={<Medicine />} />
+              <Route path="/vendor-dashboard" element={<VendorDashboard />} />
+              <Route path="/vendor-registration" element={<VendorRegistration />} />
               <Route path="/medical-reports" element={<MedicalReports />} />
               <Route path="/emergency" element={<Emergency />} />
               <Route path="/profile" element={<Profile />} />
