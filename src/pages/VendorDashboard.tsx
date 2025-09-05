@@ -5,8 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bell, Package, ShoppingCart, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bell, Package, ShoppingCart, Eye, CheckCircle, XCircle, Clock, Plus, Edit, Trash2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { medicineService, Medicine, VendorMedicine } from '@/services/medicineService';
 
 interface VendorNotification {
   id: string;
@@ -44,8 +49,24 @@ export default function VendorDashboard() {
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<VendorNotification[]>([]);
   const [orders, setOrders] = useState<MedicineOrder[]>([]);
+  const [vendorMedicines, setVendorMedicines] = useState<VendorMedicine[]>([]);
+  const [allMedicines, setAllMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
   const [vendorInfo, setVendorInfo] = useState<any>(null);
+  const [isAddMedicineOpen, setIsAddMedicineOpen] = useState(false);
+  const [isEditMedicineOpen, setIsEditMedicineOpen] = useState(false);
+  const [editingMedicine, setEditingMedicine] = useState<VendorMedicine | null>(null);
+  const [medicineSearch, setMedicineSearch] = useState('');
+  
+  // Form state for adding medicines
+  const [newMedicine, setNewMedicine] = useState({
+    medicine_id: '',
+    selling_price: '',
+    stock_quantity: '',
+    discount_percentage: '0',
+    expiry_date: '',
+    batch_number: ''
+  });
 
   useEffect(() => {
     if (user) {
@@ -103,6 +124,14 @@ export default function VendorDashboard() {
       })) || [];
 
       setOrders(formattedOrders);
+
+      // Get vendor medicines
+      const vendorMeds = await medicineService.getVendorMedicines(vendor.id);
+      setVendorMedicines(vendorMeds);
+
+      // Get all medicines for adding new ones
+      const allMeds = await medicineService.getAllMedicines();
+      setAllMedicines(allMeds);
     } catch (error) {
       console.error('Error loading vendor data:', error);
       toast({
@@ -195,6 +224,119 @@ export default function VendorDashboard() {
     }
   };
 
+  const handleAddMedicine = async () => {
+    try {
+      if (!vendorInfo?.id || !newMedicine.medicine_id || !newMedicine.selling_price || !newMedicine.stock_quantity) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await medicineService.addVendorMedicine({
+        vendor_id: vendorInfo.id,
+        medicine_id: newMedicine.medicine_id,
+        selling_price: parseFloat(newMedicine.selling_price),
+        stock_quantity: parseInt(newMedicine.stock_quantity),
+        discount_percentage: parseFloat(newMedicine.discount_percentage) || 0,
+        expiry_date: newMedicine.expiry_date || undefined,
+        batch_number: newMedicine.batch_number || undefined
+      });
+
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Medicine added to your inventory.",
+        });
+        setIsAddMedicineOpen(false);
+        setNewMedicine({
+          medicine_id: '',
+          selling_price: '',
+          stock_quantity: '',
+          discount_percentage: '0',
+          expiry_date: '',
+          batch_number: ''
+        });
+        // Reload vendor medicines
+        const vendorMeds = await medicineService.getVendorMedicines(vendorInfo.id);
+        setVendorMedicines(vendorMeds);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add medicine. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditMedicine = async () => {
+    try {
+      if (!editingMedicine?.vendor_medicine_id) return;
+
+      const result = await medicineService.updateVendorMedicine(editingMedicine.vendor_medicine_id, {
+        selling_price: editingMedicine.selling_price,
+        stock_quantity: editingMedicine.stock_quantity,
+        discount_percentage: editingMedicine.discount_percentage,
+        is_available: editingMedicine.is_available,
+        expiry_date: editingMedicine.expiry_date,
+        batch_number: editingMedicine.batch_number
+      });
+
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Medicine updated successfully.",
+        });
+        setIsEditMedicineOpen(false);
+        setEditingMedicine(null);
+        // Reload vendor medicines
+        const vendorMeds = await medicineService.getVendorMedicines(vendorInfo.id);
+        setVendorMedicines(vendorMeds);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update medicine. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteMedicine = async (vendorMedicineId: string, medicineName: string) => {
+    if (!confirm(`Are you sure you want to remove ${medicineName} from your inventory?`)) {
+      return;
+    }
+
+    try {
+      const result = await medicineService.deleteVendorMedicine(vendorMedicineId);
+      
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Medicine removed from inventory.",
+        });
+        // Reload vendor medicines
+        const vendorMeds = await medicineService.getVendorMedicines(vendorInfo.id);
+        setVendorMedicines(vendorMeds);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove medicine. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'placed': return 'bg-blue-500';
@@ -208,6 +350,11 @@ export default function VendorDashboard() {
       default: return 'bg-gray-500';
     }
   };
+
+  const filteredMedicines = allMedicines.filter(medicine =>
+    medicine.name.toLowerCase().includes(medicineSearch.toLowerCase()) ||
+    medicine.brand.toLowerCase().includes(medicineSearch.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -304,6 +451,7 @@ export default function VendorDashboard() {
         <Tabs defaultValue="orders" className="space-y-6">
           <TabsList>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="inventory">Inventory ({vendorMedicines.length})</TabsTrigger>
             <TabsTrigger value="notifications">
               Notifications 
               {notifications.filter(n => !n.is_read).length > 0 && (
@@ -429,6 +577,272 @@ export default function VendorDashboard() {
               </Card>
             ))}
           </TabsContent>
+
+          <TabsContent value="inventory" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Medicine Inventory</h3>
+              <Dialog open={isAddMedicineOpen} onOpenChange={setIsAddMedicineOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Medicine
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add Medicine to Inventory</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="medicine-search">Search Medicine</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                          id="medicine-search"
+                          placeholder="Search medicines..."
+                          value={medicineSearch}
+                          onChange={(e) => setMedicineSearch(e.target.value)}
+                          className="pl-10 mb-2"
+                        />
+                      </div>
+                      <Select value={newMedicine.medicine_id} onValueChange={(value) => setNewMedicine({...newMedicine, medicine_id: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a medicine" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {filteredMedicines.map((medicine) => (
+                            <SelectItem key={medicine.id} value={medicine.id}>
+                              <div>
+                                <div className="font-medium">{medicine.name}</div>
+                                <div className="text-sm text-muted-foreground">{medicine.brand} - {medicine.dosage}</div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="selling-price">Selling Price (₹) *</Label>
+                        <Input
+                          id="selling-price"
+                          type="number"
+                          step="0.01"
+                          value={newMedicine.selling_price}
+                          onChange={(e) => setNewMedicine({...newMedicine, selling_price: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="stock-quantity">Stock Quantity *</Label>
+                        <Input
+                          id="stock-quantity"
+                          type="number"
+                          value={newMedicine.stock_quantity}
+                          onChange={(e) => setNewMedicine({...newMedicine, stock_quantity: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="discount">Discount (%)</Label>
+                        <Input
+                          id="discount"
+                          type="number"
+                          step="0.01"
+                          value={newMedicine.discount_percentage}
+                          onChange={(e) => setNewMedicine({...newMedicine, discount_percentage: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="expiry-date">Expiry Date</Label>
+                        <Input
+                          id="expiry-date"
+                          type="date"
+                          value={newMedicine.expiry_date}
+                          onChange={(e) => setNewMedicine({...newMedicine, expiry_date: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="batch-number">Batch Number</Label>
+                      <Input
+                        id="batch-number"
+                        value={newMedicine.batch_number}
+                        onChange={(e) => setNewMedicine({...newMedicine, batch_number: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleAddMedicine} className="flex-1">
+                        Add Medicine
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsAddMedicineOpen(false)} className="flex-1">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid gap-4">
+              {vendorMedicines.map((medicine) => (
+                <Card key={medicine.vendor_medicine_id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
+                            {medicine.image_url ? (
+                              <img src={medicine.image_url} alt={medicine.name} className="w-full h-full object-cover rounded-lg" />
+                            ) : (
+                              <span className="text-2xl">💊</span>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{medicine.name}</h4>
+                            <p className="text-sm text-muted-foreground">{medicine.brand} - {medicine.dosage}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Price:</span>
+                            <p className="font-medium">₹{medicine.selling_price}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Stock:</span>
+                            <p className="font-medium">{medicine.stock_quantity}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Discount:</span>
+                            <p className="font-medium">{medicine.discount_percentage}%</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Status:</span>
+                            <Badge variant={medicine.is_available && medicine.stock_quantity > 0 ? "default" : "destructive"}>
+                              {medicine.is_available && medicine.stock_quantity > 0 ? "Available" : "Out of Stock"}
+                            </Badge>
+                          </div>
+                        </div>
+                        {medicine.batch_number && (
+                          <p className="text-xs text-muted-foreground mt-2">Batch: {medicine.batch_number}</p>
+                        )}
+                        {medicine.expiry_date && (
+                          <p className="text-xs text-muted-foreground">Expires: {new Date(medicine.expiry_date).toLocaleDateString()}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingMedicine(medicine);
+                            setIsEditMedicineOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteMedicine(medicine.vendor_medicine_id, medicine.name)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {vendorMedicines.length === 0 && (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold mb-2">No medicines in inventory</h3>
+                    <p className="text-muted-foreground mb-4">Start by adding medicines to your inventory</p>
+                    <Button onClick={() => setIsAddMedicineOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Medicine
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Edit Medicine Dialog */}
+          <Dialog open={isEditMedicineOpen} onOpenChange={setIsEditMedicineOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit Medicine</DialogTitle>
+              </DialogHeader>
+              {editingMedicine && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium">{editingMedicine.name}</h4>
+                    <p className="text-sm text-muted-foreground">{editingMedicine.brand} - {editingMedicine.dosage}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-selling-price">Selling Price (₹)</Label>
+                      <Input
+                        id="edit-selling-price"
+                        type="number"
+                        step="0.01"
+                        value={editingMedicine.selling_price}
+                        onChange={(e) => setEditingMedicine({...editingMedicine, selling_price: parseFloat(e.target.value)})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-stock-quantity">Stock Quantity</Label>
+                      <Input
+                        id="edit-stock-quantity"
+                        type="number"
+                        value={editingMedicine.stock_quantity}
+                        onChange={(e) => setEditingMedicine({...editingMedicine, stock_quantity: parseInt(e.target.value)})}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-discount">Discount (%)</Label>
+                      <Input
+                        id="edit-discount"
+                        type="number"
+                        step="0.01"
+                        value={editingMedicine.discount_percentage}
+                        onChange={(e) => setEditingMedicine({...editingMedicine, discount_percentage: parseFloat(e.target.value)})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-expiry-date">Expiry Date</Label>
+                      <Input
+                        id="edit-expiry-date"
+                        type="date"
+                        value={editingMedicine.expiry_date || ''}
+                        onChange={(e) => setEditingMedicine({...editingMedicine, expiry_date: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-batch-number">Batch Number</Label>
+                    <Input
+                      id="edit-batch-number"
+                      value={editingMedicine.batch_number || ''}
+                      onChange={(e) => setEditingMedicine({...editingMedicine, batch_number: e.target.value})}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={handleEditMedicine} className="flex-1">
+                      Update Medicine
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsEditMedicineOpen(false)} className="flex-1">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
           <TabsContent value="notifications" className="space-y-4">
             {notifications.map((notification) => (

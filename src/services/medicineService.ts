@@ -281,6 +281,112 @@ class MedicineService {
     }
   }
 
+  async getVendorMedicines(vendorId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('vendor_medicines')
+        .select(`
+          *,
+          medicine:medicines(*)
+        `)
+        .eq('vendor_id', vendorId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map((vm: any) => ({
+        ...vm.medicine,
+        vendor_medicine_id: vm.id,
+        vendor_id: vm.vendor_id,
+        selling_price: vm.selling_price,
+        stock_quantity: vm.stock_quantity,
+        discount_percentage: vm.discount_percentage,
+        is_available: vm.is_available,
+        expiry_date: vm.expiry_date,
+        batch_number: vm.batch_number
+      }));
+    } catch (error) {
+      console.error('Error getting vendor medicines:', error);
+      throw error;
+    }
+  }
+
+  async addVendorMedicine(data: {
+    vendor_id: string;
+    medicine_id: string;
+    selling_price: number;
+    stock_quantity: number;
+    discount_percentage?: number;
+    expiry_date?: string;
+    batch_number?: string;
+  }) {
+    try {
+      const { data: result, error } = await supabase
+        .from('vendor_medicines')
+        .insert(data)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Error adding vendor medicine:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async updateVendorMedicine(vendorMedicineId: string, data: {
+    selling_price?: number;
+    stock_quantity?: number;
+    discount_percentage?: number;
+    is_available?: boolean;
+    expiry_date?: string;
+    batch_number?: string;
+  }) {
+    try {
+      const { error } = await supabase
+        .from('vendor_medicines')
+        .update(data)
+        .eq('id', vendorMedicineId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating vendor medicine:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async deleteVendorMedicine(vendorMedicineId: string) {
+    try {
+      const { error } = await supabase
+        .from('vendor_medicines')
+        .delete()
+        .eq('id', vendorMedicineId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting vendor medicine:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getAllMedicines() {
+    try {
+      const { data, error } = await supabase
+        .from('medicines')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error getting all medicines:', error);
+      throw error;
+    }
+  }
+
   private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
     const R = 6371; // Earth's radius in kilometers
     const dLat = (lat2 - lat1) * Math.PI / 180;
