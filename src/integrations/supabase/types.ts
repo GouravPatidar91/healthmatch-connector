@@ -513,6 +513,9 @@ export type Database = {
           order_status: string | null
           payment_method: string
           payment_status: string | null
+          prescription_approved_at: string | null
+          prescription_approved_by: string | null
+          prescription_rejection_reason: string | null
           prescription_required: boolean | null
           prescription_status: string | null
           prescription_url: string | null
@@ -540,6 +543,9 @@ export type Database = {
           order_status?: string | null
           payment_method: string
           payment_status?: string | null
+          prescription_approved_at?: string | null
+          prescription_approved_by?: string | null
+          prescription_rejection_reason?: string | null
           prescription_required?: boolean | null
           prescription_status?: string | null
           prescription_url?: string | null
@@ -567,6 +573,9 @@ export type Database = {
           order_status?: string | null
           payment_method?: string
           payment_status?: string | null
+          prescription_approved_at?: string | null
+          prescription_approved_by?: string | null
+          prescription_rejection_reason?: string | null
           prescription_required?: boolean | null
           prescription_status?: string | null
           prescription_url?: string | null
@@ -578,6 +587,13 @@ export type Database = {
           vendor_notes?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "medicine_orders_prescription_approved_by_fkey"
+            columns: ["prescription_approved_by"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "medicine_orders_vendor_id_fkey"
             columns: ["vendor_id"]
@@ -886,10 +902,27 @@ export type Database = {
         Row: {
           batch_number: string | null
           created_at: string
+          custom_medicine_brand: string | null
+          custom_medicine_category: string | null
+          custom_medicine_composition: string | null
+          custom_medicine_contraindications: string | null
+          custom_medicine_description: string | null
+          custom_medicine_dosage: string | null
+          custom_medicine_drug_schedule: string | null
+          custom_medicine_form: string | null
+          custom_medicine_generic_name: string | null
+          custom_medicine_image_url: string | null
+          custom_medicine_manufacturer: string | null
+          custom_medicine_mrp: number | null
+          custom_medicine_name: string | null
+          custom_medicine_pack_size: string | null
+          custom_medicine_side_effects: string | null
+          custom_medicine_storage_instructions: string | null
           discount_percentage: number | null
           expiry_date: string | null
           id: string
           is_available: boolean | null
+          is_custom_medicine: boolean | null
           medicine_id: string
           selling_price: number
           stock_quantity: number
@@ -899,10 +932,27 @@ export type Database = {
         Insert: {
           batch_number?: string | null
           created_at?: string
+          custom_medicine_brand?: string | null
+          custom_medicine_category?: string | null
+          custom_medicine_composition?: string | null
+          custom_medicine_contraindications?: string | null
+          custom_medicine_description?: string | null
+          custom_medicine_dosage?: string | null
+          custom_medicine_drug_schedule?: string | null
+          custom_medicine_form?: string | null
+          custom_medicine_generic_name?: string | null
+          custom_medicine_image_url?: string | null
+          custom_medicine_manufacturer?: string | null
+          custom_medicine_mrp?: number | null
+          custom_medicine_name?: string | null
+          custom_medicine_pack_size?: string | null
+          custom_medicine_side_effects?: string | null
+          custom_medicine_storage_instructions?: string | null
           discount_percentage?: number | null
           expiry_date?: string | null
           id?: string
           is_available?: boolean | null
+          is_custom_medicine?: boolean | null
           medicine_id: string
           selling_price: number
           stock_quantity?: number
@@ -912,10 +962,27 @@ export type Database = {
         Update: {
           batch_number?: string | null
           created_at?: string
+          custom_medicine_brand?: string | null
+          custom_medicine_category?: string | null
+          custom_medicine_composition?: string | null
+          custom_medicine_contraindications?: string | null
+          custom_medicine_description?: string | null
+          custom_medicine_dosage?: string | null
+          custom_medicine_drug_schedule?: string | null
+          custom_medicine_form?: string | null
+          custom_medicine_generic_name?: string | null
+          custom_medicine_image_url?: string | null
+          custom_medicine_manufacturer?: string | null
+          custom_medicine_mrp?: number | null
+          custom_medicine_name?: string | null
+          custom_medicine_pack_size?: string | null
+          custom_medicine_side_effects?: string | null
+          custom_medicine_storage_instructions?: string | null
           discount_percentage?: number | null
           expiry_date?: string | null
           id?: string
           is_available?: boolean | null
+          is_custom_medicine?: boolean | null
           medicine_id?: string
           selling_price?: number
           stock_quantity?: number
