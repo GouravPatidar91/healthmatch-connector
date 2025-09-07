@@ -55,7 +55,7 @@ export function useMedicines() {
           title: "Success",
           description: "Prescription uploaded successfully.",
         });
-        return result.url;
+        return result;
       } else {
         throw new Error(result.error);
       }

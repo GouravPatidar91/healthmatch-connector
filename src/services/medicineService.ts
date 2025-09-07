@@ -267,7 +267,7 @@ class MedicineService {
     }
   }
 
-  async uploadPrescription(file: File, orderId?: string): Promise<{ success: boolean; url?: string; error?: string }> {
+  async uploadPrescription(file: File, orderId?: string): Promise<{ success: boolean; url?: string; prescription?: any; error?: string }> {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
@@ -284,7 +284,7 @@ class MedicineService {
         .getPublicUrl(filePath);
 
       // Save prescription record
-      const { error: recordError } = await supabase
+      const { data: prescriptionData, error: recordError } = await supabase
         .from('prescription_uploads')
         .insert({
           user_id: (await supabase.auth.getUser()).data.user?.id,
@@ -292,14 +292,70 @@ class MedicineService {
           file_url: data.publicUrl,
           file_name: file.name,
           file_size: file.size
-        });
+        })
+        .select()
+        .single();
 
       if (recordError) throw recordError;
 
-      return { success: true, url: data.publicUrl };
+      return { success: true, url: data.publicUrl, prescription: prescriptionData };
     } catch (error) {
       console.error('Error uploading prescription:', error);
       return { success: false, error: (error as Error).message };
+    }
+  }
+
+  async forwardPrescriptionToVendors(prescriptionId: string, userLat?: number, userLng?: number) {
+    try {
+      const nearbyVendors = await this.getNearbyVendors(userLat || 0, userLng || 0, 10);
+      if (nearbyVendors.length === 0) {
+        return { success: false, error: 'No nearby vendors found' };
+      }
+
+      const responseDeadline = new Date(Date.now() + 45 * 1000);
+      const { error: updateError } = await supabase
+        .from('prescription_uploads')
+        .update({
+          forwarded_at: new Date().toISOString(),
+          response_deadline: responseDeadline.toISOString(),
+          forwarding_status: 'forwarded'
+        })
+        .eq('id', prescriptionId);
+
+      if (updateError) throw updateError;
+
+      const vendorResponses = nearbyVendors.slice(0, 5).map(vendor => ({
+        prescription_id: prescriptionId,
+        vendor_id: vendor.id,
+        response_status: 'pending'
+      }));
+
+      const { error: responseError } = await supabase
+        .from('vendor_prescription_responses')
+        .insert(vendorResponses);
+
+      if (responseError) throw responseError;
+
+      return { success: true, vendorsCount: vendorResponses.length, deadline: responseDeadline };
+    } catch (error) {
+      console.error('Error forwarding prescription:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to forward prescription' };
+    }
+  }
+
+  async getPrescriptionResponses(prescriptionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('vendor_prescription_responses')
+        .select(`*, medicine_vendors(pharmacy_name, phone, address)`)
+        .eq('prescription_id', prescriptionId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return { success: true, responses: data };
+    } catch (error) {
+      console.error('Error getting prescription responses:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to get responses' };
     }
   }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ShoppingCart, Plus, Minus, Upload, Star, Badge, MapPin, Clock, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Filter, ShoppingCart, Plus, Minus, Upload, Star, Badge, MapPin, Clock, Phone, FileText, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import { useMedicines } from '@/hooks/useMedicines';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { VendorMedicine, type Medicine } from '@/services/medicineService';
 import { medicineService } from '@/services/medicineService';
+import PrescriptionProcessingModal from '@/components/prescription/PrescriptionProcessingModal';
 
 const categories = [
   { name: 'All Categories', icon: '🏥', value: 'all' },
@@ -29,8 +31,9 @@ const categories = [
 ];
 
 export default function Medicine() {
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const { medicines, loading, searchMedicines } = useMedicines();
+  const { medicines, loading, searchMedicines, userLocation } = useMedicines();
   const { 
     cartItems, 
     addToCart, 
@@ -45,6 +48,10 @@ export default function Medicine() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
+  const [currentPrescriptionId, setCurrentPrescriptionId] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     // Initial load
@@ -60,22 +67,75 @@ export default function Medicine() {
     return () => clearTimeout(delayedSearch);
   }, [searchTerm, selectedCategory]);
 
-  const handleUploadPrescription = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    
+    const file = event.dataTransfer.files?.[0];
+    if (file && (file.type.startsWith('image/') || file.type === 'application/pdf')) {
+      setSelectedFile(file);
+    } else {
+      toast({
+        title: "Invalid File",
+        description: "Please upload an image or PDF file.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubmitPrescription = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please select a prescription file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      const result = await medicineService.uploadPrescription(file);
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: "Prescription uploaded successfully.",
-        });
+      // Upload prescription first
+      const result = await medicineService.uploadPrescription(selectedFile);
+      if (result.success && result.prescription?.id) {
+        setCurrentPrescriptionId(result.prescription.id);
         setIsUploadModalOpen(false);
+        setIsProcessingModalOpen(true);
+        setSelectedFile(null);
       }
     } catch (error) {
       // Error already handled in service
     }
+  };
+
+  const handleProcessingSuccess = (vendorInfo: any) => {
+    setIsProcessingModalOpen(false);
+    
+    // Navigate to success page with vendor info
+    const params = new URLSearchParams({
+      orderNumber: `MED${Date.now()}`,
+      vendorName: vendorInfo.medicine_vendors?.pharmacy_name || 'Pharmacy',
+      vendorPhone: vendorInfo.medicine_vendors?.phone || '',
+      vendorAddress: vendorInfo.medicine_vendors?.address || ''
+    });
+    
+    navigate(`/order-success?${params.toString()}`);
   };
 
   // Medicine Card Component
@@ -384,29 +444,109 @@ export default function Medicine() {
                 </CardContent>
               </Card>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Upload Prescription</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Upload Prescription
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="prescription">Select prescription image or PDF</Label>
-                  <Input
-                    id="prescription"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={handleUploadPrescription}
-                    className="mt-2"
-                  />
+              <div className="space-y-6">
+                {/* File Upload Area */}
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    isDragOver ? 'border-primary bg-primary/5' : 'border-border'
+                  } ${selectedFile ? 'border-green-500 bg-green-50' : ''}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  {selectedFile ? (
+                    <div className="space-y-2">
+                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto">
+                        <FileText className="h-6 w-6 text-green-600" />
+                      </div>
+                      <p className="font-medium text-green-700">{selectedFile.name}</p>
+                      <p className="text-sm text-green-600">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedFile(null)}
+                        className="mt-2"
+                      >
+                        Remove File
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
+                        <Upload className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Drop your prescription here</p>
+                        <p className="text-sm text-muted-foreground">or click to browse files</p>
+                      </div>
+                      <Label htmlFor="prescription" className="cursor-pointer">
+                        <Button variant="outline" className="mt-2" asChild>
+                          <span>
+                            <Camera className="h-4 w-4 mr-2" />
+                            Choose File
+                          </span>
+                        </Button>
+                      </Label>
+                      <Input
+                        id="prescription"
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  <p>• Supported formats: JPG, PNG, PDF</p>
-                  <p>• Maximum file size: 10MB</p>
-                  <p>• Ensure the prescription is clearly visible</p>
+
+                {/* File Requirements */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-800 mb-2">File Requirements:</h4>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>• Supported formats: JPG, PNG, PDF</p>
+                    <p>• Maximum file size: 10MB</p>
+                    <p>• Ensure prescription is clearly visible</p>
+                    <p>• Include doctor's signature and stamp</p>
+                  </div>
                 </div>
+
+                {/* Process Info */}
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <h4 className="font-medium text-orange-800 mb-2">What happens next?</h4>
+                  <div className="text-sm text-orange-700 space-y-1">
+                    <p>• Your prescription will be sent to nearby vendors</p>
+                    <p>• Vendors have 45 seconds to respond</p>
+                    <p>• First vendor to accept will prepare your order</p>
+                    <p>• You'll be redirected to order confirmation</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
                 <div className="flex gap-3">
-                  <Button onClick={() => setIsUploadModalOpen(false)} variant="outline" className="flex-1">
+                  <Button 
+                    onClick={() => {
+                      setIsUploadModalOpen(false);
+                      setSelectedFile(null);
+                    }} 
+                    variant="outline" 
+                    className="flex-1"
+                  >
                     Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSubmitPrescription}
+                    className="flex-1"
+                    disabled={!selectedFile}
+                  >
+                    Submit Prescription
                   </Button>
                 </div>
               </div>

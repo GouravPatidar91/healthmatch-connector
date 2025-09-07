@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 import DoctorRegistration from "./pages/DoctorRegistration";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import OrderSuccess from "./pages/OrderSuccess";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import RequireAuth from "./components/auth/RequireAuth";
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/doctor-registration" element={<DoctorRegistration />} />
               <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/order-success" element={<OrderSuccess />} />
             </Route>
             
             {/* Catch-all route */}

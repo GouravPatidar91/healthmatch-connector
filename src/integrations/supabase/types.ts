@@ -785,8 +785,11 @@ export type Database = {
           file_name: string
           file_size: number | null
           file_url: string
+          forwarded_at: string | null
+          forwarding_status: string | null
           id: string
           order_id: string | null
+          response_deadline: string | null
           upload_status: string | null
           user_id: string
           verification_notes: string | null
@@ -798,8 +801,11 @@ export type Database = {
           file_name: string
           file_size?: number | null
           file_url: string
+          forwarded_at?: string | null
+          forwarding_status?: string | null
           id?: string
           order_id?: string | null
+          response_deadline?: string | null
           upload_status?: string | null
           user_id: string
           verification_notes?: string | null
@@ -811,8 +817,11 @@ export type Database = {
           file_name?: string
           file_size?: number | null
           file_url?: string
+          forwarded_at?: string | null
+          forwarding_status?: string | null
           id?: string
           order_id?: string | null
+          response_deadline?: string | null
           upload_status?: string | null
           user_id?: string
           verification_notes?: string | null
@@ -1056,6 +1065,54 @@ export type Database = {
           },
           {
             foreignKeyName: "vendor_notifications_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_prescription_responses: {
+        Row: {
+          created_at: string | null
+          decline_reason: string | null
+          id: string
+          prescription_id: string | null
+          response_status: string | null
+          response_time: string | null
+          updated_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          decline_reason?: string | null
+          id?: string
+          prescription_id?: string | null
+          response_status?: string | null
+          response_time?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          decline_reason?: string | null
+          id?: string
+          prescription_id?: string | null
+          response_status?: string | null
+          response_time?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_prescription_responses_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescription_uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_prescription_responses_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "medicine_vendors"
