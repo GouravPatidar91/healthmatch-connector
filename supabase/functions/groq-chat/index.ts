@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, model = 'llama-3.1-8b-instant', temperature = 0.7, max_tokens = 1000 } = await req.json();
+    const { messages, model = 'llama3-8b-8192', temperature = 0.7, max_tokens = 1000 } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
