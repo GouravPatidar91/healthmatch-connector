@@ -77,8 +77,7 @@ serve(async (req) => {
     const hasVisualData = symptomDetails && symptomDetails.some(s => s.photo);
     const visualContext = hasVisualData ? "Visual symptoms documented with photos for enhanced analysis." : "";
 
-    const medicalPrompt = `
-You are an advanced medical AI providing comprehensive diagnostic analysis.
+    const medicalPrompt = `You are an advanced medical AI providing comprehensive diagnostic analysis.
 
 PATIENT PRESENTATION:
 Symptoms: ${symptomsText}
@@ -95,6 +94,8 @@ ANALYSIS REQUIREMENTS:
 - Include risk stratification and urgency assessment
 - Suggest appropriate investigations and management
 - Maintain focus within relevant medical specialties
+
+CRITICAL: You MUST respond with ONLY valid JSON in the exact format specified below. Do not include any markdown formatting, explanations, or text outside the JSON structure.
 
 Provide analysis in the following JSON format:
 {
@@ -126,8 +127,7 @@ Provide analysis in the following JSON format:
     "urgencyClassification": "Clinical urgency level",
     "recommendedActions": ["immediate steps to take"]
   }
-}
-`;
+}`;
 
     console.log("Sending medical analysis request to Groq");
 
@@ -142,7 +142,7 @@ Provide analysis in the following JSON format:
         messages: [
           {
             role: 'system',
-            content: 'You are a medical AI providing accurate, evidence-based diagnostic analysis. Focus on patient safety and clinical precision while maintaining appropriate medical specialty boundaries.'
+            content: 'You are a medical AI providing accurate, evidence-based diagnostic analysis. You MUST respond with valid JSON only. Do not include markdown formatting or any text outside the JSON structure.'
           },
           {
             role: 'user',
@@ -151,6 +151,7 @@ Provide analysis in the following JSON format:
         ],
         temperature: 0.1,
         max_tokens: 4000,
+        response_format: { type: "json_object" }
       }),
     });
 
@@ -167,7 +168,10 @@ Provide analysis in the following JSON format:
       throw new Error("Invalid response from AI service");
     }
 
-    const aiResponse = data.choices[0].message.content;
+    let aiResponse = data.choices[0].message.content;
+    
+    // Log the raw response for debugging
+    console.log("Raw AI response:", aiResponse);
     
     try {
       const analysisResult = JSON.parse(aiResponse);
