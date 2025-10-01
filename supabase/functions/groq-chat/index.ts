@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,57 +25,55 @@ serve(async (req) => {
       );
     }
 
-    if (!GEMINI_API_KEY) {
+    if (!GROQ_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "Gemini API key not configured" }),
+        JSON.stringify({ error: "Groq API key not configured" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log("Making request to Gemini API");
+    console.log("Making request to Groq API with model:", model);
 
-    // Call Gemini API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    // Call Groq API
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: messages.map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content }]
-        })),
-        generationConfig: {
-          temperature: temperature,
-          maxOutputTokens: max_tokens,
-        }
+        model: "llama-3.1-8b-instant",
+        messages: messages,
+        temperature: temperature,
+        max_tokens: max_tokens,
       }),
     });
 
     if (!response.ok) {
       const errorDetails = await response.text();
-      console.error("Gemini API error:", errorDetails);
-      throw new Error(`Gemini API returned error status: ${response.status}`);
+      console.error("Groq API error:", errorDetails);
+      throw new Error(`Groq API returned error status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("Received response from Gemini API");
+    console.log("Received response from Groq API");
     
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error("Unexpected response structure:", JSON.stringify(data));
-      throw new Error("Invalid response structure from Gemini API");
+      throw new Error("Invalid response structure from Groq API");
     }
 
     return new Response(
       JSON.stringify({
-        message: data.candidates[0].content.parts[0].text,
-        model: "gemini-1.5-flash"
+        message: data.choices[0].message.content,
+        usage: data.usage,
+        model: data.model
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error("Error in gemini-chat function:", error);
+    console.error("Error in groq-chat function:", error);
     
     return new Response(
       JSON.stringify({ 
