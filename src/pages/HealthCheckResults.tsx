@@ -496,7 +496,7 @@ const HealthCheckResults = () => {
                           <div>
                             <h4 className="font-medium text-sm text-gray-500">Matched Symptoms:</h4>
                             <div className="flex flex-wrap gap-2 mt-1">
-                              {condition.matchedSymptoms.map((symptom, i) => (
+                              {condition.matchedSymptoms?.map((symptom, i) => (
                                 <Badge key={i} variant="outline" className="flex items-center gap-1">
                                   {symptom}
                                   {healthCheckData.symptom_photos && healthCheckData.symptom_photos[symptom] && (
@@ -516,7 +516,7 @@ const HealthCheckResults = () => {
                               <h4 className="font-medium text-green-800">Visual Diagnostic Features</h4>
                               <p className="text-sm text-green-700 mt-1">The AI identified the following visual characteristics in your photos:</p>
                               <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-green-700">
-                                {condition.visualDiagnosticFeatures.map((feature, i) => (
+                                {condition.visualDiagnosticFeatures?.map((feature, i) => (
                                   <li key={i}>{feature}</li>
                                 ))}
                               </ul>
@@ -534,7 +534,7 @@ const HealthCheckResults = () => {
                           <div>
                             <h4 className="font-medium text-sm text-gray-500">Recommendations:</h4>
                             <ul className="list-disc pl-5 mt-1 space-y-1">
-                              {condition.recommendedActions.map((action, i) => (
+                              {condition.recommendedActions?.map((action, i) => (
                                 <li key={i}>{action}</li>
                               ))}
                             </ul>

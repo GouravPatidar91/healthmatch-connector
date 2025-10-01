@@ -180,15 +180,38 @@ Provide analysis in the following JSON format:
         throw new Error("Invalid analysis structure");
       }
       
+      // Map Groq response to match the expected AnalysisCondition interface
+      const mappedConditions = analysisResult.conditions.map((condition: any) => ({
+        name: condition.name,
+        description: condition.clinicalReasoning || condition.pathophysiology || '',
+        matchedSymptoms: condition.matchedSymptoms || [],
+        matchScore: condition.diagnosticScore || 0,
+        recommendedActions: [
+          ...(condition.investigationsRecommended || []),
+          condition.treatmentConsiderations || ''
+        ].filter(Boolean),
+        seekMedicalAttention: condition.urgencyLevel === 'High' || condition.urgencyLevel === 'Emergency' 
+          ? `Seek ${condition.urgencyLevel.toLowerCase()} medical attention` 
+          : undefined,
+        medicalSpecialty: condition.medicalSpecialty,
+        diagnosticConfidence: condition.diagnosticConfidence,
+        urgencyLevel: condition.urgencyLevel
+      }));
+      
       // Add metadata
-      analysisResult.comprehensiveAnalysis = true;
-      analysisResult.categoryConstrainedAnalysis = !!categoryContext;
-      analysisResult.visualAnalysisIncluded = hasVisualData;
-      analysisResult.analysisTimestamp = new Date().toISOString();
-      analysisResult.aiProvider = "Groq LLaMA 3.1";
+      const finalResult = {
+        medicalReasoningAnalysis: analysisResult.medicalReasoningAnalysis,
+        conditions: mappedConditions,
+        overallClinicalAssessment: analysisResult.overallClinicalAssessment,
+        comprehensiveAnalysis: true,
+        categoryConstrainedAnalysis: !!categoryContext,
+        visualAnalysisIncluded: hasVisualData,
+        analysisTimestamp: new Date().toISOString(),
+        aiProvider: "Groq LLaMA 3.1"
+      };
       
       return new Response(
-        JSON.stringify(analysisResult),
+        JSON.stringify(finalResult),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (jsonError) {
