@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,9 +36,9 @@ serve(async (req) => {
       );
     }
 
-    if (!GROQ_API_KEY) {
+    if (!GEMINI_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "Groq API key not configured" }),
+        JSON.stringify({ error: "Gemini API key not configured" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -129,46 +129,48 @@ Provide analysis in the following JSON format:
   }
 }`;
 
-    console.log("Sending medical analysis request to Groq");
+    console.log("Sending medical analysis request to Gemini");
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a medical AI providing accurate, evidence-based diagnostic analysis. You MUST respond with valid JSON only. Do not include markdown formatting or any text outside the JSON structure.'
-          },
-          {
-            role: 'user',
-            content: medicalPrompt
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 4000,
-        response_format: { type: "json_object" }
+        contents: [{
+          parts: [{
+            text: medicalPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          topK: 20,
+          topP: 0.9,
+          maxOutputTokens: 4000,
+          responseMimeType: "application/json"
+        },
+        systemInstruction: {
+          parts: [{
+            text: 'You are a medical AI providing accurate, evidence-based diagnostic analysis. Focus on patient safety and clinical precision while maintaining appropriate medical specialty boundaries. Respond with valid JSON only.'
+          }]
+        }
       }),
     });
 
     if (!response.ok) {
       const errorDetails = await response.text();
-      console.error("Groq API error:", errorDetails);
-      throw new Error(`Groq API error: ${response.status}`);
+      console.error("Gemini API error:", errorDetails);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
     
-    if (!data.choices?.[0]?.message?.content) {
-      console.error("Invalid Groq response structure");
+    if (!data.candidates?.[0]?.content?.parts?.[0]) {
+      console.error("Invalid Gemini response structure");
       throw new Error("Invalid response from AI service");
     }
 
-    let aiResponse = data.choices[0].message.content;
+    let aiResponse = data.candidates[0].content.parts[0].text;
     
     // Log the raw response for debugging
     console.log("Raw AI response:", aiResponse);
@@ -207,7 +209,7 @@ Provide analysis in the following JSON format:
         categoryConstrainedAnalysis: !!categoryContext,
         visualAnalysisIncluded: hasVisualData,
         analysisTimestamp: new Date().toISOString(),
-        aiProvider: "Groq LLaMA 3.1"
+        aiProvider: "Gemini 1.5 Pro"
       };
       
       return new Response(
