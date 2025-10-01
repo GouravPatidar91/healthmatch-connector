@@ -131,7 +131,7 @@ Provide analysis in the following JSON format:
 
     console.log("Sending medical analysis request to Gemini");
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ Provide analysis in the following JSON format:
         categoryConstrainedAnalysis: !!categoryContext,
         visualAnalysisIncluded: hasVisualData,
         analysisTimestamp: new Date().toISOString(),
-        aiProvider: "Gemini 1.5 Pro Latest"
+        aiProvider: "Gemini 1.5 Flash"
       };
       
       return new Response(
