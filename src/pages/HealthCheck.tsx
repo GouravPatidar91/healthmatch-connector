@@ -472,8 +472,6 @@ const HealthCheck = () => {
           symptoms: selectedSymptoms,
           severity,
           duration,
-          height: height ? parseFloat(height) : null,
-          weight: weight ? parseFloat(weight) : null,
           previous_conditions: previousConditions ? previousConditions.split(',').map(item => item.trim()).filter(item => item) : [],
           medications: medications ? medications.split(',').map(item => item.trim()).filter(item => item) : [],
           notes,
