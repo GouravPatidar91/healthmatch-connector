@@ -481,10 +481,7 @@ const HealthCheck = () => {
           symptom_photos: symptomPhotos,
           comprehensive_analysis: response.data.comprehensiveAnalysis,
           urgency_level: response.data.urgencyLevel,
-          overall_assessment: response.data.overallAssessment,
-          category_constrained_analysis: response.data.categoryConstrainedAnalysis,
-          specialty_focused_diagnosis: response.data.specialtyFocusedDiagnosis,
-          symptom_category_mapping: symptomCategoryMapping
+          overall_assessment: response.data.overallAssessment
         };
         
         navigate('/health-check-results', { 
