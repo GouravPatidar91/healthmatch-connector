@@ -269,45 +269,76 @@ class MedicineService {
 
   async uploadPrescription(file: File, orderId?: string): Promise<{ success: boolean; url?: string; prescription?: any; error?: string }> {
     try {
+      console.log('Starting prescription upload...', { fileName: file.name, fileSize: file.size });
+      
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user:', userError);
+        throw new Error('Failed to authenticate user');
+      }
+      
       if (!user) {
+        console.error('No user found');
         throw new Error('User not authenticated');
       }
+
+      console.log('User authenticated:', user.id);
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('prescriptions')
-        .upload(filePath, file);
+      console.log('Uploading to path:', filePath);
 
-      if (uploadError) throw uploadError;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('prescriptions')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      console.log('File uploaded successfully:', uploadData);
 
       const { data } = supabase.storage
         .from('prescriptions')
         .getPublicUrl(filePath);
+
+      console.log('Got public URL:', data.publicUrl);
 
       // Save prescription record
       const { data: prescriptionData, error: recordError } = await supabase
         .from('prescription_uploads')
         .insert({
           user_id: user.id,
-          order_id: orderId,
+          order_id: orderId || null,
           file_url: data.publicUrl,
           file_name: file.name,
-          file_size: file.size
+          file_size: file.size,
+          upload_status: 'uploaded',
+          forwarding_status: 'pending'
         })
         .select()
         .single();
 
-      if (recordError) throw recordError;
+      if (recordError) {
+        console.error('Database insert error:', recordError);
+        throw new Error(`Failed to save prescription record: ${recordError.message}`);
+      }
+
+      console.log('Prescription record saved:', prescriptionData);
 
       return { success: true, url: data.publicUrl, prescription: prescriptionData };
     } catch (error) {
       console.error('Error uploading prescription:', error);
-      return { success: false, error: (error as Error).message };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return { success: false, error: errorMessage };
     }
   }
 

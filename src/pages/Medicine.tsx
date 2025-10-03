@@ -111,16 +111,37 @@ export default function Medicine() {
     }
 
     try {
+      console.log('Attempting to upload prescription...');
+      
       // Upload prescription first
       const result = await medicineService.uploadPrescription(selectedFile);
+      
+      console.log('Upload result:', result);
+      
       if (result.success && result.prescription?.id) {
+        toast({
+          title: "Prescription Uploaded",
+          description: "Forwarding to nearby vendors...",
+        });
+        
         setCurrentPrescriptionId(result.prescription.id);
         setIsUploadModalOpen(false);
         setIsProcessingModalOpen(true);
         setSelectedFile(null);
+      } else {
+        toast({
+          title: "Upload Failed",
+          description: result.error || "Failed to upload prescription. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      // Error already handled in service
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        variant: "destructive",
+      });
     }
   };
 
