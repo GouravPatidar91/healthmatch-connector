@@ -269,9 +269,15 @@ class MedicineService {
 
   async uploadPrescription(file: File, orderId?: string): Promise<{ success: boolean; url?: string; prescription?: any; error?: string }> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('prescriptions')
@@ -287,7 +293,7 @@ class MedicineService {
       const { data: prescriptionData, error: recordError } = await supabase
         .from('prescription_uploads')
         .insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: user.id,
           order_id: orderId,
           file_url: data.publicUrl,
           file_name: file.name,
