@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface UserProfile {
   id: string;
@@ -42,53 +43,30 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isAdmin, loading: rolesLoading } = useUserRole();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [doctorApplications, setDoctorApplications] = useState<DoctorApplication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorApplication | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("users");
 
   // Check if current user is admin
   useEffect(() => {
-    const checkAdmin = async () => {
-      if (user) {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('is_admin')
-            .eq('id', user.id)
-            .single();
-          
-          if (error) {
-            console.error("Error checking admin status:", error);
-            navigate('/dashboard');
-            return;
-          }
-          
-          const hasAdminAccess = !!data?.is_admin;
-          setIsAdmin(hasAdminAccess);
-          
-          if (!hasAdminAccess) {
-            toast({
-              title: "Access Denied",
-              description: "You don't have administrator permissions.",
-              variant: "destructive"
-            });
-            navigate('/dashboard');
-          }
-        } catch (error) {
-          console.error("Error checking admin status:", error);
-          navigate('/dashboard');
-        }
-      } else {
-        navigate('/');
-      }
-    };
+    if (!user) {
+      navigate('/');
+      return;
+    }
     
-    checkAdmin();
-  }, [user, navigate, toast]);
+    if (!rolesLoading && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have administrator permissions.",
+        variant: "destructive"
+      });
+      navigate('/dashboard');
+    }
+  }, [user, isAdmin, rolesLoading, navigate, toast]);
 
   // Fetch all users
   useEffect(() => {
@@ -232,12 +210,12 @@ const AdminDashboard = () => {
     setViewDialogOpen(true);
   };
 
-  if (loading) {
+  if (rolesLoading || loading) {
     return (
       <div className="container mx-auto py-6 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading users...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );

@@ -8,69 +8,60 @@ import AppointmentSlots from '@/components/doctor/AppointmentSlots';
 import DoctorNotifications from '@/components/doctor/DoctorNotifications';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { checkDoctorAccess } from '@/services/doctorService';
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const DoctorDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { isPharmacy, loading: rolesLoading } = useUserRole();
   const [activeTab, setActiveTab] = useState("calendar");
-  const [hasAccess, setHasAccess] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [isPending, setIsPending] = useState(false);
 
-  // Check if user has doctor access
+  // Check if user has doctor/pharmacy access
   useEffect(() => {
+    if (!user) {
+      navigate('/');
+      return;
+    }
+    
     const checkAccess = async () => {
-      if (user) {
-        try {
-          const hasDocAccess = await checkDoctorAccess(user.id);
-          setHasAccess(hasDocAccess);
+      if (!rolesLoading) {
+        if (!isPharmacy) {
+          // Check if user has a pending doctor application
+          const { data, error } = await supabase
+            .from('doctors')
+            .select('verified')
+            .eq('id', user.id)
+            .maybeSingle();
           
-          if (!hasDocAccess) {
-            // Check if user has a pending doctor application
-            const { data, error } = await supabase
-              .from('doctors')
-              .select('verified')
-              .eq('id', user.id)
-              .maybeSingle();
-            
-            if (!error && data && data.verified === false) {
-              setIsPending(true);
-              toast({
-                title: "Application Pending",
-                description: "Your doctor application is still pending approval from an admin.",
-                variant: "default"
-              });
-            } else {
-              toast({
-                title: "Access Denied",
-                description: "You don't have permission to access the doctor dashboard.",
-                variant: "destructive"
-              });
-            }
-            
-            navigate('/dashboard');
+          if (!error && data && data.verified === false) {
+            setIsPending(true);
+            toast({
+              title: "Application Pending",
+              description: "Your doctor application is still pending approval from an admin.",
+              variant: "default"
+            });
+          } else {
+            toast({
+              title: "Access Denied",
+              description: "You don't have permission to access the doctor dashboard.",
+              variant: "destructive"
+            });
           }
-        } catch (error) {
-          console.error("Error checking doctor access:", error);
+          
           navigate('/dashboard');
-        } finally {
-          setLoading(false);
         }
-      } else {
-        setLoading(false);
-        navigate('/');
       }
     };
     
     checkAccess();
-  }, [user, navigate, toast]);
+  }, [user, isPharmacy, rolesLoading, navigate, toast]);
   
-  if (loading) {
+  if (rolesLoading) {
     return (
       <div className="container mx-auto py-6 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
@@ -81,7 +72,7 @@ const DoctorDashboard = () => {
     );
   }
   
-  if (!user || !hasAccess) {
+  if (!user || !isPharmacy) {
     return null;
   }
   

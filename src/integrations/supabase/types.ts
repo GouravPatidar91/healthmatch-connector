@@ -907,6 +907,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vendor_medicines: {
         Row: {
           batch_number: string | null
@@ -1156,6 +1180,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: string
       }
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
       get_verified_doctors: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1180,9 +1208,16 @@ export type Database = {
           verified: boolean | null
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "patient" | "pharmacy" | "admin" | "delivery_partner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1309,6 +1344,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["patient", "pharmacy", "admin", "delivery_partner"],
+    },
   },
 } as const

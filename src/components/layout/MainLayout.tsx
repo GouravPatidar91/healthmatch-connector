@@ -5,45 +5,27 @@ import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 import Footer from "./Footer";
 
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDoctor, setIsDoctor] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [hasPendingDoctorApplication, setHasPendingDoctorApplication] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { isAdmin, isPharmacy, loading: rolesLoading } = useUserRole();
   
   const isActive = (path: string) => location.pathname === path;
   
   // Check if footer should be shown (only on homepage for signed-in users)
   const shouldShowFooter = location.pathname === "/" && user;
   
-  // Check user roles
+  // Check for pending doctor application
   useEffect(() => {
-    if (user) {
-      // Check user roles
-      const checkUserRoles = async () => {
+    if (user && !rolesLoading) {
+      const checkPendingApplication = async () => {
         try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('is_doctor, is_admin')
-            .eq('id', user.id)
-            .single();
-            
-          if (error) {
-            console.error("Error fetching user roles:", error);
-            setIsDoctor(false);
-            setIsAdmin(false);
-            return;
-          }
-          
-          setIsDoctor(!!data?.is_doctor);
-          setIsAdmin(!!data?.is_admin);
-          
-          // Check if user has a pending doctor application
           const { data: doctorData, error: doctorError } = await supabase
             .from('doctors')
             .select('verified')
@@ -56,15 +38,14 @@ const MainLayout = () => {
             setHasPendingDoctorApplication(false);
           }
         } catch (error) {
-          console.error("Error checking user roles:", error);
-          setIsDoctor(false);
-          setIsAdmin(false);
+          console.error("Error checking doctor application:", error);
+          setHasPendingDoctorApplication(false);
         }
       };
       
-      checkUserRoles();
+      checkPendingApplication();
     }
-  }, [user]);
+  }, [user, rolesLoading]);
   
   const navigationItems = [
     { name: "Dashboard", path: "/dashboard", icon: BarChart },
@@ -78,7 +59,7 @@ const MainLayout = () => {
   ];
   
   // Add role-specific navigation items
-  if (isDoctor) {
+  if (isPharmacy) {
     navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
   } else if (hasPendingDoctorApplication) {
     // Show a disabled version or an indicator that application is pending
