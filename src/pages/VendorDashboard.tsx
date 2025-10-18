@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Bell, Package, ShoppingCart, Eye, CheckCircle, XCircle, Clock, Plus, Edit, Trash2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { medicineService, Medicine, VendorMedicine, CustomMedicine } from '@/services/medicineService';
+import { PrescriptionNotificationModal } from '@/components/pharmacy/PrescriptionNotificationModal';
 
 interface VendorNotification {
   id: string;
@@ -58,6 +59,7 @@ export default function VendorDashboard() {
   const [editingMedicine, setEditingMedicine] = useState<VendorMedicine | null>(null);
   const [medicineSearch, setMedicineSearch] = useState('');
   const [isCustomMedicine, setIsCustomMedicine] = useState(false);
+  const [activeNotification, setActiveNotification] = useState<any>(null);
   
   // Form state for adding medicines
   const [newMedicine, setNewMedicine] = useState({
@@ -95,6 +97,49 @@ export default function VendorDashboard() {
       loadVendorData();
     }
   }, [user]);
+
+  // Real-time subscription for prescription notifications
+  useEffect(() => {
+    if (!vendorInfo) return;
+
+    const channel = supabase
+      .channel('vendor-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'vendor_notifications',
+          filter: `vendor_id=eq.${vendorInfo.id}`
+        },
+        (payload) => {
+          const newNotif = payload.new as any;
+          
+          // If it's a prescription notification, show modal immediately
+          if (newNotif.type === 'prescription_upload' && newNotif.priority === 'high') {
+            setActiveNotification({
+              id: newNotif.id,
+              broadcast_id: newNotif.metadata?.broadcast_id,
+              prescription_id: newNotif.metadata?.prescription_id,
+              order_id: newNotif.order_id,
+              patient_latitude: newNotif.metadata?.patient_latitude,
+              patient_longitude: newNotif.metadata?.patient_longitude,
+              distance_km: newNotif.metadata?.distance_km,
+              timeout_at: newNotif.metadata?.timeout_at,
+              prescription_url: newNotif.metadata?.prescription_url
+            });
+          }
+          
+          // Add to notifications list
+          setNotifications(prev => [newNotif, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [vendorInfo]);
 
   const loadVendorData = async () => {
     try {
@@ -1070,6 +1115,15 @@ export default function VendorDashboard() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Real-time Prescription Notification Modal */}
+        {activeNotification && vendorInfo && (
+          <PrescriptionNotificationModal
+            notification={activeNotification}
+            vendorId={vendorInfo.id}
+            onClose={() => setActiveNotification(null)}
+          />
+        )}
       </div>
     </div>
   );

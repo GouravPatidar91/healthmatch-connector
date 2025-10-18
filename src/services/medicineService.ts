@@ -267,7 +267,11 @@ class MedicineService {
     }
   }
 
-  async uploadPrescription(file: File, orderId?: string): Promise<{ success: boolean; url?: string; prescription?: any; error?: string }> {
+  async uploadPrescription(
+    file: File, 
+    orderId?: string,
+    userLocation?: { latitude: number; longitude: number }
+  ): Promise<{ success: boolean; url?: string; prescription?: any; broadcast_id?: string; error?: string }> {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -303,6 +307,42 @@ class MedicineService {
         .single();
 
       if (recordError) throw recordError;
+
+      // NEW: Trigger real-time broadcast to nearby pharmacies
+      if (userLocation && orderId) {
+        try {
+          const { data: broadcastData, error: broadcastError } = await supabase.functions.invoke(
+            'prescription-broadcast',
+            {
+              body: {
+                prescription_id: prescriptionData.id,
+                order_id: orderId,
+                patient_id: user.id,
+                patient_latitude: userLocation.latitude,
+                patient_longitude: userLocation.longitude,
+                max_distance_km: 5,
+                pharmacies_per_round: 5
+              }
+            }
+          );
+
+          if (broadcastError) {
+            console.error('Broadcast error:', broadcastError);
+            // Don't throw - prescription still uploaded successfully
+          } else if (broadcastData?.success) {
+            console.log('Broadcast initiated:', broadcastData);
+            return { 
+              success: true, 
+              url: data.publicUrl, 
+              prescription: prescriptionData,
+              broadcast_id: broadcastData.broadcast_id
+            };
+          }
+        } catch (broadcastError) {
+          console.error('Failed to broadcast prescription:', broadcastError);
+          // Don't throw - prescription still uploaded successfully
+        }
+      }
 
       return { success: true, url: data.publicUrl, prescription: prescriptionData };
     } catch (error) {

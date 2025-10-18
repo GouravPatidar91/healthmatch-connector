@@ -50,7 +50,7 @@ export default function Medicine() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
-  const [currentPrescriptionId, setCurrentPrescriptionId] = useState<string | null>(null);
+  const [currentBroadcastId, setCurrentBroadcastId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
@@ -110,32 +110,59 @@ export default function Medicine() {
       return;
     }
 
+    if (!userLocation) {
+      toast({
+        title: "Location Required",
+        description: "Please enable location access to find nearby pharmacies.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // Upload prescription first
-      const result = await medicineService.uploadPrescription(selectedFile);
-      if (result.success && result.prescription?.id) {
-        setCurrentPrescriptionId(result.prescription.id);
+      // Upload prescription with user location to trigger broadcast
+      const result = await medicineService.uploadPrescription(
+        selectedFile, 
+        undefined, // no order_id yet
+        { latitude: userLocation.lat, longitude: userLocation.lng }
+      );
+      
+      if (result.success && result.broadcast_id) {
+        setCurrentBroadcastId(result.broadcast_id);
         setIsUploadModalOpen(false);
         setIsProcessingModalOpen(true);
         setSelectedFile(null);
+        
+        toast({
+          title: "Prescription Uploaded",
+          description: "Searching for nearby pharmacies...",
+        });
+      } else if (result.success) {
+        // Prescription uploaded but no broadcast (no order_id or location)
+        toast({
+          title: "Prescription Uploaded",
+          description: "Your prescription has been saved successfully.",
+        });
+        setIsUploadModalOpen(false);
+        setSelectedFile(null);
       }
     } catch (error) {
-      // Error already handled in service
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload prescription. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleProcessingSuccess = (vendorInfo: any) => {
+  const handleProcessingSuccess = (vendorId: string) => {
     setIsProcessingModalOpen(false);
+    setCurrentBroadcastId(null);
     
-    // Navigate to success page with vendor info
-    const params = new URLSearchParams({
-      orderNumber: `MED${Date.now()}`,
-      vendorName: vendorInfo.medicine_vendors?.pharmacy_name || 'Pharmacy',
-      vendorPhone: vendorInfo.medicine_vendors?.phone || '',
-      vendorAddress: vendorInfo.medicine_vendors?.address || ''
+    toast({
+      title: "Success!",
+      description: "Your prescription order has been accepted by a pharmacy.",
     });
-    
-    navigate(`/order-success?${params.toString()}`);
   };
 
   // Medicine Card Component
@@ -621,6 +648,17 @@ export default function Medicine() {
             <CartSummary />
           </div>
         </div>
+
+        {/* Prescription Processing Modal */}
+        <PrescriptionProcessingModal
+          isOpen={isProcessingModalOpen}
+          onClose={() => {
+            setIsProcessingModalOpen(false);
+            setCurrentBroadcastId(null);
+          }}
+          broadcastId={currentBroadcastId}
+          onSuccess={handleProcessingSuccess}
+        />
       </div>
     </div>
   );

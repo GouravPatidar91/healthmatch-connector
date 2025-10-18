@@ -779,6 +779,121 @@ export type Database = {
           },
         ]
       }
+      pharmacy_notification_queue: {
+        Row: {
+          broadcast_id: string | null
+          id: string
+          notification_status: string | null
+          notified_at: string | null
+          rejection_reason: string | null
+          responded_at: string | null
+          response_type: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          broadcast_id?: string | null
+          id?: string
+          notification_status?: string | null
+          notified_at?: string | null
+          rejection_reason?: string | null
+          responded_at?: string | null
+          response_type?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          broadcast_id?: string | null
+          id?: string
+          notification_status?: string | null
+          notified_at?: string | null
+          rejection_reason?: string | null
+          responded_at?: string | null
+          response_type?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_notification_queue_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "prescription_broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pharmacy_notification_queue_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescription_broadcasts: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_vendor_id: string | null
+          broadcast_round: number | null
+          created_at: string | null
+          id: string
+          order_id: string | null
+          patient_id: string
+          patient_latitude: number
+          patient_longitude: number
+          prescription_id: string | null
+          status: string | null
+          timeout_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_vendor_id?: string | null
+          broadcast_round?: number | null
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          patient_id: string
+          patient_latitude: number
+          patient_longitude: number
+          prescription_id?: string | null
+          status?: string | null
+          timeout_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_vendor_id?: string | null
+          broadcast_round?: number | null
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          patient_id?: string
+          patient_latitude?: number
+          patient_longitude?: number
+          prescription_id?: string | null
+          status?: string | null
+          timeout_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_broadcasts_accepted_by_vendor_id_fkey"
+            columns: ["accepted_by_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_broadcasts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_broadcasts_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescription_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescription_uploads: {
         Row: {
           created_at: string
