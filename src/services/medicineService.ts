@@ -624,6 +624,41 @@ class MedicineService {
   private deg2rad(deg: number): number {
     return deg * (Math.PI / 180);
   }
+
+  async extractMedicinesFromPrescription(prescriptionId: string, imageUrl: string) {
+    try {
+      const { data, error } = await supabase.functions.invoke('ocr-prescription', {
+        body: {
+          prescription_id: prescriptionId,
+          image_url: imageUrl
+        }
+      });
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('OCR extraction error:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  async getMedicineAlternatives(medicineId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('medicine_alternatives')
+        .select(`
+          *,
+          alternative:medicines!alternative_medicine_id(*)
+        `)
+        .eq('primary_medicine_id', medicineId);
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching alternatives:', error);
+      return [];
+    }
+  }
 }
 
 export const medicineService = new MedicineService();

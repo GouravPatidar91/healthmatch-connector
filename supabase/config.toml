@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.groq-chat]
 verify_jwt = false
+
+[functions.ocr-prescription]
+verify_jwt = false
