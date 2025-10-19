@@ -437,6 +437,57 @@ export type Database = {
           },
         ]
       }
+      medicine_alternatives: {
+        Row: {
+          alternative_medicine_id: string | null
+          composition: string
+          created_at: string | null
+          id: string
+          price_difference_percentage: number | null
+          primary_medicine_id: string | null
+          verification_notes: string | null
+          verified_by: string | null
+          verified_by_pharmacist: boolean | null
+        }
+        Insert: {
+          alternative_medicine_id?: string | null
+          composition: string
+          created_at?: string | null
+          id?: string
+          price_difference_percentage?: number | null
+          primary_medicine_id?: string | null
+          verification_notes?: string | null
+          verified_by?: string | null
+          verified_by_pharmacist?: boolean | null
+        }
+        Update: {
+          alternative_medicine_id?: string | null
+          composition?: string
+          created_at?: string | null
+          id?: string
+          price_difference_percentage?: number | null
+          primary_medicine_id?: string | null
+          verification_notes?: string | null
+          verified_by?: string | null
+          verified_by_pharmacist?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medicine_alternatives_alternative_medicine_id_fkey"
+            columns: ["alternative_medicine_id"]
+            isOneToOne: false
+            referencedRelation: "medicines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicine_alternatives_primary_medicine_id_fkey"
+            columns: ["primary_medicine_id"]
+            isOneToOne: false
+            referencedRelation: "medicines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medicine_order_items: {
         Row: {
           created_at: string
@@ -894,6 +945,50 @@ export type Database = {
           },
         ]
       }
+      prescription_ocr_logs: {
+        Row: {
+          api_provider: string | null
+          confidence_scores: Json | null
+          created_at: string | null
+          error_details: string | null
+          extracted_medicines: Json | null
+          id: string
+          prescription_id: string | null
+          processing_time_ms: number | null
+          raw_text: string | null
+        }
+        Insert: {
+          api_provider?: string | null
+          confidence_scores?: Json | null
+          created_at?: string | null
+          error_details?: string | null
+          extracted_medicines?: Json | null
+          id?: string
+          prescription_id?: string | null
+          processing_time_ms?: number | null
+          raw_text?: string | null
+        }
+        Update: {
+          api_provider?: string | null
+          confidence_scores?: Json | null
+          created_at?: string | null
+          error_details?: string | null
+          extracted_medicines?: Json | null
+          id?: string
+          prescription_id?: string | null
+          processing_time_ms?: number | null
+          raw_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_ocr_logs_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescription_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescription_uploads: {
         Row: {
           created_at: string
@@ -903,6 +998,12 @@ export type Database = {
           forwarded_at: string | null
           forwarding_status: string | null
           id: string
+          medicines_detected: number | null
+          ocr_confidence_score: number | null
+          ocr_error_message: string | null
+          ocr_extracted_data: Json | null
+          ocr_processed_at: string | null
+          ocr_status: string | null
           order_id: string | null
           response_deadline: string | null
           upload_status: string | null
@@ -919,6 +1020,12 @@ export type Database = {
           forwarded_at?: string | null
           forwarding_status?: string | null
           id?: string
+          medicines_detected?: number | null
+          ocr_confidence_score?: number | null
+          ocr_error_message?: string | null
+          ocr_extracted_data?: Json | null
+          ocr_processed_at?: string | null
+          ocr_status?: string | null
           order_id?: string | null
           response_deadline?: string | null
           upload_status?: string | null
@@ -935,6 +1042,12 @@ export type Database = {
           forwarded_at?: string | null
           forwarding_status?: string | null
           id?: string
+          medicines_detected?: number | null
+          ocr_confidence_score?: number | null
+          ocr_error_message?: string | null
+          ocr_extracted_data?: Json | null
+          ocr_processed_at?: string | null
+          ocr_status?: string | null
           order_id?: string | null
           response_deadline?: string | null
           upload_status?: string | null
