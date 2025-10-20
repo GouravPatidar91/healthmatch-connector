@@ -16,11 +16,6 @@ import {
 } from "lucide-react";
 
 const Homepage = () => {
-  const GOOGLE_FORM_URL = "https://forms.gle/7ieasY5cpjigTRPo9"; // Replace with your actual Google Form URL
-
-  const handleJoinWaitlist = () => {
-    window.open(GOOGLE_FORM_URL, '_blank');
-  };
 
   const features = [
     {
@@ -75,12 +70,13 @@ const Homepage = () => {
               <a href="#contact" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
                 Contact
               </a>
-              <Button
-                onClick={handleJoinWaitlist}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg hover:shadow-xl"
-              >
-                Join Waitlist
-              </Button>
+              <Link to="/login">
+                <Button
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg hover:shadow-xl"
+                >
+                  Login
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -107,21 +103,24 @@ const Homepage = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-6">
-                <Button
-                  onClick={handleJoinWaitlist}
-                  size="xl" 
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-10 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
-                >
-                  Get Started Today
-                  <ArrowRight className="ml-3 h-6 w-6" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="xl"
-                  className="border-2 border-blue-200 text-blue-600 hover:bg-blue-50 px-10 py-6 rounded-2xl text-lg font-semibold hover:border-blue-300 transition-all"
-                >
-                  Learn More
-                </Button>
+                <Link to="/login">
+                  <Button
+                    size="xl" 
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-10 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+                  >
+                    Sign Up
+                    <ArrowRight className="ml-3 h-6 w-6" />
+                  </Button>
+                </Link>
+                <Link to="/login">
+                  <Button 
+                    variant="outline" 
+                    size="xl"
+                    className="border-2 border-blue-200 text-blue-600 hover:bg-blue-50 px-10 py-6 rounded-2xl text-lg font-semibold hover:border-blue-300 transition-all"
+                  >
+                    Login
+                  </Button>
+                </Link>
               </div>
 
               <div className="grid grid-cols-2 gap-6 pt-8">
@@ -238,14 +237,15 @@ const Homepage = () => {
             Join thousands of users who trust HealthMatch for intelligent, 
             personalized healthcare management.
           </p>
-          <Button
-            onClick={handleJoinWaitlist}
-            size="xl" 
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-16 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
-          >
-            Start Your Journey
-            <ArrowRight className="ml-3 h-6 w-6" />
-          </Button>
+          <Link to="/login">
+            <Button
+              size="xl" 
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-16 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+            >
+              Get Started
+              <ArrowRight className="ml-3 h-6 w-6" />
+            </Button>
+          </Link>
         </div>
       </section>
 
