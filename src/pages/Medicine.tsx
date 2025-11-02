@@ -16,6 +16,7 @@ import { VendorMedicine, type Medicine } from '@/services/medicineService';
 import { medicineService } from '@/services/medicineService';
 import PrescriptionProcessingModal from '@/components/prescription/PrescriptionProcessingModal';
 import { OcrResultsModal } from '@/components/prescription/OcrResultsModal';
+import { CheckoutDialog } from '@/components/medicine/CheckoutDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 const categories = [
@@ -57,10 +58,35 @@ export default function Medicine() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedMedicines, setExtractedMedicines] = useState<any[]>([]);
   const [showOcrResults, setShowOcrResults] = useState(false);
+  
+  // Checkout state
+  const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
 
   useEffect(() => {
     // Initial load
     searchMedicines('', selectedCategory === 'all' ? undefined : selectedCategory);
+    
+    // Fetch user profile for delivery info
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('address, phone')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) {
+          setDeliveryAddress(profile.address || '');
+          setCustomerPhone(profile.phone || '');
+        }
+      }
+    };
+    
+    fetchUserProfile();
   }, []);
 
   useEffect(() => {
@@ -209,6 +235,127 @@ export default function Medicine() {
       title: "Success!",
       description: "Your prescription order has been accepted by a pharmacy.",
     });
+  };
+
+  const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Please add items to cart before checkout",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCheckoutDialogOpen(true);
+  };
+
+  const handleConfirmOrder = async () => {
+    try {
+      setIsProcessingOrder(true);
+
+      // Check user authentication
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Not Logged In",
+          description: "Please login to place order",
+          variant: "destructive",
+        });
+        navigate('/login');
+        return;
+      }
+
+      // Validate inputs
+      if (!deliveryAddress || deliveryAddress.trim().length < 10) {
+        toast({
+          title: "Invalid Address",
+          description: "Please enter a valid delivery address",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!/^[6-9]\d{9}$/.test(customerPhone)) {
+        toast({
+          title: "Invalid Phone",
+          description: "Please enter a valid 10-digit phone number",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check for multiple vendors
+      const vendors = new Set(cartItems.map(item => item.vendor_id));
+      if (vendors.size > 1) {
+        toast({
+          title: "Multiple Vendors",
+          description: "You can only order from one pharmacy at a time. Please remove items from other pharmacies.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const vendorId = cartItems[0].vendor_id;
+      const subtotal = getSubtotal();
+      const totalDiscount = getTotalDiscount();
+      const deliveryFee = subtotal > 500 ? 0 : 50;
+      const finalAmount = getTotalPrice() + deliveryFee;
+
+      // Check if any item requires prescription
+      const prescriptionRequired = cartItems.some(item => item.prescription_required);
+
+      // Prepare order data
+      const orderData = {
+        vendor_id: vendorId,
+        total_amount: subtotal,
+        delivery_fee: deliveryFee,
+        discount_amount: totalDiscount,
+        final_amount: finalAmount,
+        payment_method: 'cod',
+        delivery_address: deliveryAddress,
+        customer_phone: customerPhone,
+        prescription_required: prescriptionRequired,
+        items: cartItems.map(item => ({
+          medicine_id: item.id,
+          vendor_medicine_id: item.vendor_medicine_id,
+          quantity: item.quantity,
+          unit_price: item.selling_price,
+          discount_amount: (item.selling_price * item.discount_percentage / 100) * item.quantity,
+          total_price: item.selling_price * (1 - item.discount_percentage / 100) * item.quantity
+        }))
+      };
+
+      // Create order
+      const result = await medicineService.createOrder(orderData);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create order');
+      }
+
+      // Clear cart
+      cartItems.forEach(item => removeFromCart(item.vendor_medicine_id));
+
+      toast({
+        title: "Order Placed Successfully! 🎉",
+        description: "Your order has been placed and the pharmacy has been notified.",
+      });
+
+      setIsCheckoutDialogOpen(false);
+      
+      // Navigate to order success page
+      navigate(`/order-success?orderId=${result.orderId}`);
+
+    } catch (error) {
+      console.error('Order creation error:', error);
+      toast({
+        title: "Order Failed",
+        description: error.message || "Failed to place order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingOrder(false);
+    }
   };
 
   // Medicine Card Component
@@ -441,12 +588,7 @@ export default function Medicine() {
             <Button 
               className="w-full" 
               size="lg"
-              onClick={() => {
-                toast({
-                  title: "Checkout Coming Soon",
-                  description: "Full checkout functionality will be available soon.",
-                });
-              }}
+              onClick={handleCheckout}
             >
               Proceed to Checkout
             </Button>
@@ -724,6 +866,23 @@ export default function Medicine() {
               description: `${medicine.name} added to your cart.`,
             });
           }}
+        />
+
+        {/* Checkout Dialog */}
+        <CheckoutDialog
+          open={isCheckoutDialogOpen}
+          onOpenChange={setIsCheckoutDialogOpen}
+          cartItems={cartItems}
+          subtotal={getSubtotal()}
+          totalDiscount={getTotalDiscount()}
+          deliveryFee={getSubtotal() > 500 ? 0 : 50}
+          total={getTotalPrice() + (getSubtotal() > 500 ? 0 : 50)}
+          deliveryAddress={deliveryAddress}
+          setDeliveryAddress={setDeliveryAddress}
+          customerPhone={customerPhone}
+          setCustomerPhone={setCustomerPhone}
+          onConfirmOrder={handleConfirmOrder}
+          isProcessing={isProcessingOrder}
         />
       </div>
     </div>
