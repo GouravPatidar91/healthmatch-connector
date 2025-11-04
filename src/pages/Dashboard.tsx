@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Activity, Calendar, Users, AlertTriangle, ArrowRight, Phone as PhoneIcon, TrendingUp, Heart, Zap, Plus, Sparkles } from "lucide-react";
+import { Activity, Calendar, Users, AlertTriangle, ArrowRight, Phone as PhoneIcon, TrendingUp, Heart, Zap, Plus, Sparkles, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserStats, useUserAppointments, useUserHealthChecks } from "@/services/userDataService";
+import { orderTrackingService } from "@/services/orderTrackingService";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -13,6 +15,29 @@ const Dashboard = () => {
   const { stats, loading: statsLoading } = useUserStats();
   const { appointments, loading: appointmentsLoading } = useUserAppointments();
   const { healthChecks, loading: healthChecksLoading } = useUserHealthChecks();
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadActiveOrders();
+    }
+  }, [user]);
+
+  const loadActiveOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const orders = await orderTrackingService.getUserOrders(user!.id);
+      const active = orders.filter(order => 
+        ['placed', 'confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery'].includes(order.order_status)
+      );
+      setActiveOrders(active);
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
   
   const userName = user?.user_metadata?.name || 
                    user?.email?.split('@')[0] || 
@@ -267,51 +292,54 @@ const Dashboard = () => {
             </Button>
           </CardContent>
         </Card>
-        
-        <Card className="bg-white/60 backdrop-blur-md border-green-100/50 rounded-2xl shadow-lg">
+
+        {/* My Orders Section */}
+        <Card className="bg-white/60 backdrop-blur-md border-purple-100/50 rounded-2xl shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-3 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-xl shadow-lg">
-                <Heart className="h-6 w-6 text-white" />
+              <div className="p-3 bg-gradient-to-r from-purple-400 to-purple-500 rounded-xl shadow-lg">
+                <Package className="h-6 w-6 text-white" />
               </div>
-              Next Appointment
+              My Orders
             </CardTitle>
-            <CardDescription className="text-gray-600">Your upcoming medical consultation</CardDescription>
+            <CardDescription className="text-gray-600">Track your medicine orders</CardDescription>
           </CardHeader>
           <CardContent>
-            {upcomingAppointment ? (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-lg text-gray-900">{recentAppointment.doctor_name}</h3>
-                      <p className="text-sm text-gray-600">{recentAppointment.doctor_specialty}</p>
+            {ordersLoading ? (
+              <p className="text-center text-gray-500 py-8">Loading orders...</p>
+            ) : activeOrders.length > 0 ? (
+              <div className="space-y-4">
+                {activeOrders.slice(0, 2).map((order) => (
+                  <div key={order.id} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-semibold text-gray-900">Order #{order.order_number}</p>
+                        <p className="text-sm text-gray-600">{order.vendor.pharmacy_name}</p>
+                      </div>
+                      <OrderStatusBadge status={order.order_status} />
                     </div>
-                    <div className="text-right space-y-1">
-                      <p className="font-semibold text-gray-900">{recentAppointment.date}</p>
-                      <p className="text-sm text-gray-600">{recentAppointment.time}</p>
-                    </div>
+                    <p className="text-sm text-gray-700 font-semibold">₹{order.final_amount}</p>
                   </div>
-                </div>
+                ))}
                 <Button 
                   variant="outline" 
-                  className="w-full border-2 border-emerald-200 text-emerald-600 hover:bg-emerald-50 rounded-xl py-3 hover:border-emerald-300 transition-all"
-                  onClick={navigateToMyAppointments}
+                  className="w-full border-2 border-purple-200 text-purple-600 hover:bg-purple-50 rounded-xl py-3 hover:border-purple-300 transition-all"
+                  onClick={() => navigate('/my-orders')}
                 >
-                  View Details
+                  View All Orders
                 </Button>
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="p-6 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl mb-6 inline-block">
-                  <Calendar className="h-16 w-16 text-gray-400" />
+                <div className="p-6 bg-gradient-to-br from-gray-50 to-purple-50 rounded-2xl mb-6 inline-block">
+                  <Package className="h-16 w-16 text-gray-400" />
                 </div>
-                <p className="text-gray-600 mb-6 text-lg">No upcoming appointments</p>
+                <p className="text-gray-600 mb-6 text-lg">No active orders</p>
                 <Button 
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl px-8 py-3 shadow-lg hover:shadow-xl transition-all"
-                  onClick={() => navigate('/appointments')}
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl px-8 py-3 shadow-lg hover:shadow-xl transition-all"
+                  onClick={() => navigate('/medicine')}
                 >
-                  Book Now
+                  Order Medicines
                 </Button>
               </div>
             )}
