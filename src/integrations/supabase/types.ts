@@ -546,6 +546,50 @@ export type Database = {
           },
         ]
       }
+      medicine_order_status_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          location_latitude: number | null
+          location_longitude: number | null
+          notes: string | null
+          order_id: string
+          status: string
+          updated_by: string | null
+          updated_by_role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          location_latitude?: number | null
+          location_longitude?: number | null
+          notes?: string | null
+          order_id: string
+          status: string
+          updated_by?: string | null
+          updated_by_role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          location_latitude?: number | null
+          location_longitude?: number | null
+          notes?: string | null
+          order_id?: string
+          status?: string
+          updated_by?: string | null
+          updated_by_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medicine_order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medicine_orders: {
         Row: {
           created_at: string
@@ -1400,20 +1444,14 @@ export type Database = {
           specialization: string
         }[]
       }
-      generate_order_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_patient_display_name: {
-        Args: { user_uuid: string }
-        Returns: string
-      }
+      generate_order_number: { Args: never; Returns: string }
+      get_patient_display_name: { Args: { user_uuid: string }; Returns: string }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
       }
       get_verified_doctors: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           address: string
           available: boolean
@@ -1435,6 +1473,12 @@ export type Database = {
           specialization: string
           verified: boolean | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "doctors"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       has_role: {
         Args: {
