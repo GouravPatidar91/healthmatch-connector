@@ -100,7 +100,7 @@ If no medicines are found, return: {"medicines": [], "overallConfidence": 0, "er
     console.log('Calling Gemini Vision API...');
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,8 +118,7 @@ If no medicines are found, return: {"medicines": [], "overallConfidence": 0, "er
           }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 2000,
-            responseMimeType: "application/json"
+            maxOutputTokens: 2000
           }
         })
       }
@@ -196,24 +195,6 @@ If no medicines are found, return: {"medicines": [], "overallConfidence": 0, "er
 
   } catch (error) {
     console.error('OCR error:', error);
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const bodyText = await req.text();
-    
-    try {
-      const body = JSON.parse(bodyText);
-      if (body.prescription_id) {
-        await supabase
-          .from('prescription_uploads')
-          .update({
-            ocr_status: 'failed',
-            ocr_error_message: error.message
-          })
-          .eq('id', body.prescription_id);
-      }
-    } catch (e) {
-      console.error('Failed to update error status:', e);
-    }
 
     return new Response(
       JSON.stringify({ 
