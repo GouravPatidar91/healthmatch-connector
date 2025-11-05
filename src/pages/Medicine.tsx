@@ -405,24 +405,29 @@ export default function Medicine() {
           </div>
 
           <div className="flex items-center justify-between mb-3">
-            {isVendorMedicine && (
+            {isVendorMedicine && (medicine as VendorMedicine).distance_km && (
               <div className="flex items-center gap-1">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">
-                  {(medicine as VendorMedicine).distance_km?.toFixed(1)} km
+                  {(medicine as VendorMedicine).distance_km.toFixed(1)} km
                 </span>
+              </div>
+            )}
+            {!isVendorMedicine && (
+              <div className="text-xs text-muted-foreground">
+                Enable location to see nearby vendors
               </div>
             )}
             <UIBadge 
               variant={isVendorMedicine 
                 ? ((medicine as VendorMedicine).stock_quantity > 0 ? "default" : "destructive")
-                : "default"
+                : "secondary"
               } 
               className="text-xs"
             >
               {isVendorMedicine 
                 ? ((medicine as VendorMedicine).stock_quantity > 0 ? "In Stock" : "Out of Stock")
-                : "Available"
+                : "Catalog Item"
               }
             </UIBadge>
           </div>
@@ -479,14 +484,26 @@ export default function Medicine() {
               </Button>
             </div>
           ) : (
-            <Button
-              onClick={() => isVendorMedicine ? addToCart(medicine as VendorMedicine) : null}
-              className="w-full"
-              disabled={isVendorMedicine ? (medicine as VendorMedicine).stock_quantity === 0 : false}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Add to Cart
-            </Button>
+            <>
+              {!isVendorMedicine ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled
+                >
+                  Not Available Nearby
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => addToCart(medicine as VendorMedicine)}
+                  className="w-full"
+                  disabled={(medicine as VendorMedicine).stock_quantity === 0}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Add to Cart
+                </Button>
+              )}
+            </>
           )}
         </div>
       </Card>
@@ -612,6 +629,32 @@ export default function Medicine() {
             Order medicines and healthcare products from nearby verified pharmacies
           </p>
         </div>
+
+        {/* Location Alert */}
+        {!userLocation && (
+          <Card className="mb-6 border-orange-500/50 bg-orange-50 dark:bg-orange-950">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <MapPin className="h-5 w-5 text-orange-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
+                    Enable Location for Better Shopping
+                  </h3>
+                  <p className="text-sm text-orange-800 dark:text-orange-200 mb-3">
+                    Allow location access to see medicines available at nearby pharmacies with real-time stock and pricing.
+                  </p>
+                  <Button 
+                    size="sm" 
+                    onClick={() => window.location.reload()}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    Enable Location Access
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Search and Filter Section */}
         <Card className="mb-8">
@@ -822,9 +865,17 @@ export default function Medicine() {
                   <div className="col-span-full text-center py-12">
                     <div className="text-6xl mb-4">🔍</div>
                     <h3 className="text-xl font-semibold mb-2">No medicines found</h3>
-                    <p className="text-muted-foreground">
-                      Try adjusting your search terms or browse different categories.
+                    <p className="text-muted-foreground mb-4">
+                      {!userLocation 
+                        ? "Please enable location access to see medicines from nearby pharmacies."
+                        : "Try adjusting your search terms or browse different categories."
+                      }
                     </p>
+                    {!userLocation && (
+                      <Button onClick={() => window.location.reload()}>
+                        Enable Location
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
