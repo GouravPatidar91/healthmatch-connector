@@ -13,6 +13,7 @@ import HealthCheckHistory from "./pages/HealthCheckHistory";
 import HealthCheckResults from "./pages/HealthCheckResults";
 import Appointments from "./pages/Appointments";
 import Medicine from "./pages/Medicine";
+import ComingSoon from "./pages/ComingSoon";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Emergency from "./pages/Emergency";
@@ -55,7 +56,7 @@ const App = () => (
               <Route path="/health-check-results" element={<HealthCheckResults />} />
               <Route path="/health-check-history" element={<HealthCheckHistory />} />
               <Route path="/appointments" element={<Appointments />} />
-              <Route path="/medicine" element={<Medicine />} />
+              <Route path="/medicine" element={<ComingSoon />} />
               <Route path="/vendor-dashboard" element={<VendorDashboard />} />
               <Route path="/vendor-registration" element={<VendorRegistration />} />
               <Route path="/medical-reports" element={<MedicalReports />} />
