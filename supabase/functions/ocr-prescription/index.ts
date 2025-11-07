@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -35,8 +35,8 @@ serve(async (req) => {
 
     console.log(`Starting OCR for prescription ${prescription_id}`);
 
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
+    if (!OPENROUTER_API_KEY) {
+      throw new Error('OPENROUTER_API_KEY not configured');
     }
 
     // Update status to processing
@@ -97,50 +97,68 @@ Return ONLY a valid JSON object with this exact structure:
 If no medicines are found, return: {"medicines": [], "overallConfidence": 0, "error": "No medicines detected"}
 `;
 
-    console.log('Calling Gemini Vision API...');
+    console.log('Calling OpenRouter API...');
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+    const openRouterResponse = await fetch(
+      'https://openrouter.ai/api/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': supabaseUrl,
+          'X-Title': 'Medical Prescription OCR'
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              {
-                inline_data: {
-                  mime_type: 'image/jpeg',
-                  data: imageData
+          model: 'google/gemini-2.0-flash-exp:free',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${imageData}`
+                  }
                 }
-              }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 2000
-          }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 2000
         })
       }
     );
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
+    if (!openRouterResponse.ok) {
+      const errorText = await openRouterResponse.text();
+      console.error('OpenRouter API error:', errorText);
+      throw new Error(`OpenRouter API error: ${openRouterResponse.status}`);
     }
 
-    const geminiData = await geminiResponse.json();
-    const extractedText = geminiData.candidates[0].content.parts[0].text;
+    const openRouterData = await openRouterResponse.json();
+    const extractedText = openRouterData.choices[0].message.content;
     
-    console.log('Raw Gemini response:', extractedText);
+    console.log('Raw OpenRouter response:', extractedText);
 
     let extractedData: any;
     try {
-      extractedData = JSON.parse(extractedText);
+      // Clean the response if it contains markdown code blocks
+      let cleanedText = extractedText.trim();
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.slice(7);
+      }
+      if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.slice(3);
+      }
+      if (cleanedText.endsWith('```')) {
+        cleanedText = cleanedText.slice(0, -3);
+      }
+      extractedData = JSON.parse(cleanedText.trim());
     } catch (parseError) {
-      console.error('Failed to parse Gemini response:', parseError);
-      throw new Error('Invalid JSON response from Gemini');
+      console.error('Failed to parse OpenRouter response:', parseError);
+      throw new Error('Invalid JSON response from OpenRouter');
     }
 
     if (!extractedData.medicines || !Array.isArray(extractedData.medicines)) {
@@ -176,7 +194,7 @@ If no medicines are found, return: {"medicines": [], "overallConfidence": 0, "er
         extracted_medicines: extractedData.medicines,
         confidence_scores: extractedData.overallConfidence,
         processing_time_ms: processingTime,
-        api_provider: 'gemini'
+        api_provider: 'openrouter'
       });
 
     console.log(`OCR completed in ${processingTime}ms. Found ${extractedData.medicines.length} medicines`);

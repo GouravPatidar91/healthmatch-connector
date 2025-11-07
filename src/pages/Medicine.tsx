@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ShoppingCart, Plus, Minus, Upload, Star, Badge, MapPin, Clock, Phone, FileText, Camera } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Plus, Minus, Upload, Star, Badge, MapPin, Clock, Phone, FileText, Camera, AlertCircle, Info, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Badge as UIBadge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useMedicines } from '@/hooks/useMedicines';
 import { useCart, CartItem } from '@/hooks/useCart';
@@ -36,7 +37,15 @@ const categories = [
 export default function Medicine() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { medicines, loading, searchMedicines, userLocation } = useMedicines();
+  const { 
+    medicines, 
+    loading, 
+    searchMedicines, 
+    userLocation, 
+    searchStrategy,
+    permissionState,
+    requestLocationPermission 
+  } = useMedicines();
   const { 
     cartItems, 
     addToCart, 
@@ -630,28 +639,49 @@ export default function Medicine() {
           </p>
         </div>
 
-        {/* Location Alert */}
+        {/* Location Permission Banner */}
         {!userLocation && (
-          <Card className="mb-6 border-orange-500/50 bg-orange-50 dark:bg-orange-950">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-orange-600 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
-                    Enable Location for Better Shopping
-                  </h3>
-                  <p className="text-sm text-orange-800 dark:text-orange-200 mb-3">
-                    Allow location access to see medicines available at nearby pharmacies with real-time stock and pricing.
-                  </p>
-                  <Button 
-                    size="sm" 
-                    onClick={() => window.location.reload()}
-                    className="bg-orange-600 hover:bg-orange-700"
-                  >
-                    Enable Location Access
-                  </Button>
+          <Card className="mb-6 border-2 border-primary/20">
+            <CardContent className="p-6">
+              {permissionState === 'prompt' && (
+                <div className="flex items-start gap-4">
+                  <MapPin className="h-8 w-8 text-primary mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg mb-2">
+                      Enable Location for Best Experience
+                    </h3>
+                    <p className="text-muted-foreground mb-4 text-sm">
+                      We'll show you medicines available at nearby pharmacies with
+                      accurate prices and stock. If no nearby pharmacies found, we'll search your entire city.
+                    </p>
+                    <Button onClick={requestLocationPermission} size="sm">
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Enable Location Access
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {permissionState === 'denied' && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Location Access Denied</AlertTitle>
+                  <AlertDescription>
+                    Please enable location in your browser settings to see nearby
+                    pharmacies. Without location, you'll see the medicine catalog only.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {permissionState === 'unavailable' && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Location Not Available</AlertTitle>
+                  <AlertDescription>
+                    Your browser doesn't support location services. Showing all available medicines.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         )}
@@ -841,6 +871,30 @@ export default function Medicine() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Search Strategy Indicator */}
+        {medicines.length > 0 && (
+          <div className="mb-4 flex items-center gap-2">
+            {searchStrategy === 'nearby' && (
+              <UIBadge variant="default" className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                Showing nearby pharmacies within 10km
+              </UIBadge>
+            )}
+            {searchStrategy === 'city' && (
+              <UIBadge variant="secondary" className="flex items-center gap-1">
+                <Building className="h-3 w-3" />
+                No nearby pharmacies found. Showing city-wide options
+              </UIBadge>
+            )}
+            {searchStrategy === 'catalog' && (
+              <UIBadge variant="outline" className="flex items-center gap-1">
+                <Info className="h-3 w-3" />
+                Showing medicine catalog (enable location for availability)
+              </UIBadge>
+            )}
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

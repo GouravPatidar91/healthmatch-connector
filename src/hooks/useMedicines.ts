@@ -1,41 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { medicineService, Medicine, VendorMedicine } from '@/services/medicineService';
 import { useToast } from '@/hooks/use-toast';
+import { useLocationPermission } from './useLocationPermission';
+
+export type SearchStrategy = 'nearby' | 'city' | 'catalog';
 
 export function useMedicines() {
   const [medicines, setMedicines] = useState<(Medicine | VendorMedicine)[]>([]);
   const [loading, setLoading] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchStrategy, setSearchStrategy] = useState<SearchStrategy>('catalog');
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Get user location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.log('Geolocation error:', error);
-          // Continue without location - will show all medicines without vendor info
-        }
-      );
-    }
-  }, []);
+  const { 
+    permissionState, 
+    location: userLocation, 
+    isLoading: locationLoading,
+    requestPermission: requestLocationPermission 
+  } = useLocationPermission();
 
   const searchMedicines = async (searchTerm: string, category?: string) => {
     setLoading(true);
     try {
-      const results = await medicineService.searchMedicines(
-        searchTerm, 
-        category, 
-        userLocation?.lat, 
-        userLocation?.lng
-      );
-      setMedicines(results);
+      if (userLocation) {
+        // Use fallback strategy
+        const results = await medicineService.searchMedicinesWithFallback(
+          searchTerm,
+          category,
+          userLocation
+        );
+        setMedicines(results.medicines);
+        setSearchStrategy(results.searchStrategy);
+      } else {
+        // No location - show catalog only
+        const results = await medicineService.searchMedicines(
+          searchTerm,
+          category
+        );
+        setMedicines(results);
+        setSearchStrategy('catalog');
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -73,6 +75,10 @@ export function useMedicines() {
     medicines,
     loading,
     userLocation,
+    searchStrategy,
+    permissionState,
+    locationLoading,
+    requestLocationPermission,
     searchMedicines,
     uploadPrescription
   };

@@ -195,6 +195,81 @@ class MedicineService {
     }
   }
 
+  async searchMedicinesWithFallback(
+    searchTerm: string,
+    category?: string,
+    userLocation?: { lat: number; lng: number }
+  ): Promise<{
+    medicines: VendorMedicine[];
+    searchStrategy: 'nearby' | 'city' | 'catalog';
+    vendorsCount: number;
+  }> {
+    try {
+      if (!userLocation) {
+        // No location - return catalog
+        const catalogMedicines = await this.searchMedicines(searchTerm, category);
+        return {
+          medicines: catalogMedicines as VendorMedicine[],
+          searchStrategy: 'catalog',
+          vendorsCount: 0
+        };
+      }
+
+      // Step 1: Try nearby vendors (10km radius)
+      const nearbyMedicines = await this.searchMedicines(
+        searchTerm,
+        category,
+        userLocation.lat,
+        userLocation.lng
+      );
+
+      if (nearbyMedicines.length > 0) {
+        return {
+          medicines: nearbyMedicines as VendorMedicine[],
+          searchStrategy: 'nearby',
+          vendorsCount: new Set(nearbyMedicines.map((m: any) => m.vendor_id)).size
+        };
+      }
+
+      // Step 2: Fallback to city-wide search (50km radius)
+      const cityMedicines = await this.searchMedicines(
+        searchTerm,
+        category,
+        userLocation.lat,
+        userLocation.lng
+      );
+
+      // Get vendors in wider radius
+      const cityVendors = await this.getNearbyVendors(userLocation.lat, userLocation.lng, 50);
+      
+      if (cityVendors.length > 0 && cityMedicines.length > 0) {
+        return {
+          medicines: cityMedicines as VendorMedicine[],
+          searchStrategy: 'city',
+          vendorsCount: cityVendors.length
+        };
+      }
+
+      // Step 3: Final fallback to catalog
+      const catalogMedicines = await this.searchMedicines(searchTerm, category);
+      return {
+        medicines: catalogMedicines as VendorMedicine[],
+        searchStrategy: 'catalog',
+        vendorsCount: 0
+      };
+
+    } catch (error) {
+      console.error('Error in searchMedicinesWithFallback:', error);
+      // On error, return catalog
+      const catalogMedicines = await this.searchMedicines(searchTerm, category);
+      return {
+        medicines: catalogMedicines as VendorMedicine[],
+        searchStrategy: 'catalog',
+        vendorsCount: 0
+      };
+    }
+  }
+
   async createOrder(orderData: MedicineOrder): Promise<{ success: boolean; orderId?: string; error?: string }> {
     try {
       // Generate order number
