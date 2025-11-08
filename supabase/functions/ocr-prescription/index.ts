@@ -57,27 +57,46 @@ serve(async (req) => {
         if (match) mimeType = match[1];
       }
     } else if (image_url) {
-      const imageResponse = await fetch(image_url);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+      // Extract bucket path from full URL
+      // URL format: https://.../storage/v1/object/public/prescriptions/path/to/file.webp
+      const urlParts = image_url.split('/storage/v1/object/public/');
+      if (urlParts.length < 2) {
+        throw new Error('Invalid storage URL format');
       }
       
-      // Detect mime type from URL or response
-      if (image_url.toLowerCase().includes('.webp')) {
+      const filePath = urlParts[1];
+      console.log('Downloading file from storage:', filePath);
+      
+      // Use Supabase client to download with authentication
+      const { data: fileData, error: downloadError } = await supabase
+        .storage
+        .from('prescriptions')
+        .download(filePath.replace('prescriptions/', ''));
+      
+      if (downloadError) {
+        console.error('Storage download error:', downloadError);
+        throw new Error(`Failed to download image: ${downloadError.message}`);
+      }
+      
+      // Detect mime type from file path
+      if (filePath.toLowerCase().includes('.webp')) {
         mimeType = 'image/webp';
-      } else if (image_url.toLowerCase().includes('.png')) {
+      } else if (filePath.toLowerCase().includes('.png')) {
         mimeType = 'image/png';
-      } else if (image_url.toLowerCase().includes('.jpg') || image_url.toLowerCase().includes('.jpeg')) {
+      } else if (filePath.toLowerCase().includes('.jpg') || filePath.toLowerCase().includes('.jpeg')) {
         mimeType = 'image/jpeg';
       }
       
-      const imageBlob = await imageResponse.arrayBuffer();
+      // Convert Blob to base64
+      const imageBlob = await fileData.arrayBuffer();
       const bytes = new Uint8Array(imageBlob);
       let binary = '';
       for (let i = 0; i < bytes.byteLength; i++) {
         binary += String.fromCharCode(bytes[i]);
       }
       imageData = btoa(binary);
+      
+      console.log('Image downloaded and encoded successfully');
     } else {
       throw new Error('No image data provided');
     }
