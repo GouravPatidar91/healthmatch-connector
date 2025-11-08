@@ -154,7 +154,7 @@ If no medicines are found, return: {"medicines": [], "overallConfidence": 0, "er
           'X-Title': 'Medical Prescription OCR'
         },
         body: JSON.stringify({
-          model: 'google/gemini-flash-1.5', // More reliable vision model
+          model: 'google/gemini-flash-1.5-8b', // Fast and reliable vision model
           messages: [
             {
               role: 'user',
