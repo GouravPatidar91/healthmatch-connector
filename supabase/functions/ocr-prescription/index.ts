@@ -47,12 +47,37 @@ serve(async (req) => {
 
     // Prepare image data
     let imageData: string;
+    let mimeType = 'image/jpeg';
+    
     if (image_base64) {
       imageData = image_base64.includes(',') ? image_base64.split(',')[1] : image_base64;
+      // Extract mime type from data URL if present
+      if (image_base64.includes(',')) {
+        const match = image_base64.match(/data:(image\/[^;]+);/);
+        if (match) mimeType = match[1];
+      }
     } else if (image_url) {
       const imageResponse = await fetch(image_url);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+      }
+      
+      // Detect mime type from URL or response
+      if (image_url.toLowerCase().includes('.webp')) {
+        mimeType = 'image/webp';
+      } else if (image_url.toLowerCase().includes('.png')) {
+        mimeType = 'image/png';
+      } else if (image_url.toLowerCase().includes('.jpg') || image_url.toLowerCase().includes('.jpeg')) {
+        mimeType = 'image/jpeg';
+      }
+      
       const imageBlob = await imageResponse.arrayBuffer();
-      imageData = btoa(String.fromCharCode(...new Uint8Array(imageBlob)));
+      const bytes = new Uint8Array(imageBlob);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      imageData = btoa(binary);
     } else {
       throw new Error('No image data provided');
     }
@@ -110,7 +135,7 @@ If no medicines are found, return: {"medicines": [], "overallConfidence": 0, "er
           'X-Title': 'Medical Prescription OCR'
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.0-flash-exp:free',
+          model: 'google/gemini-flash-1.5', // More reliable vision model
           messages: [
             {
               role: 'user',
@@ -119,7 +144,7 @@ If no medicines are found, return: {"medicines": [], "overallConfidence": 0, "er
                 {
                   type: 'image_url',
                   image_url: {
-                    url: `data:image/jpeg;base64,${imageData}`
+                    url: `data:${mimeType};base64,${imageData}`
                   }
                 }
               ]
