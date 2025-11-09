@@ -117,6 +117,10 @@ export default function VendorDashboard() {
           
           // If it's a prescription notification, show modal immediately
           if (newNotif.type === 'prescription_upload' && newNotif.priority === 'high') {
+            // Play notification sound
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKR5/g8r5sIQUxh9Hz04IzBh5uwO/jmVUUCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRC=');
+            audio.play().catch(() => {}); // Ignore if autoplay blocked
+            
             setActiveNotification({
               id: newNotif.id,
               broadcast_id: newNotif.metadata?.broadcast_id,
@@ -1121,7 +1125,10 @@ export default function VendorDashboard() {
           <PrescriptionNotificationModal
             notification={activeNotification}
             vendorId={vendorInfo.id}
-            onClose={() => setActiveNotification(null)}
+            onClose={() => {
+              setActiveNotification(null);
+              loadVendorData(); // Refresh orders and notifications
+            }}
           />
         )}
       </div>

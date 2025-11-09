@@ -10,9 +10,11 @@ import { OrderActionButtons } from './OrderActionButtons';
 import { CancelOrderDialog } from './CancelOrderDialog';
 import { orderTrackingService, OrderWithTracking } from '@/services/orderTrackingService';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MapPin, Phone } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Loader2, MapPin, Phone, CreditCard, Download } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface OrderTrackingDetailProps {
   open: boolean;
@@ -108,6 +110,55 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
 
             <Separator />
 
+            {/* Payment Details - Prominent Section */}
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Payment Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Payment Method</span>
+                  <Badge variant="secondary" className="text-sm">
+                    {order.payment_method.toUpperCase().replace('_', ' ')}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Payment Status</span>
+                  <Badge 
+                    variant={order.payment_status === 'paid' ? 'default' : 'secondary'}
+                    className="text-sm"
+                  >
+                    {order.payment_status.toUpperCase()}
+                  </Badge>
+                </div>
+                <Separator />
+                <div className="space-y-2 pt-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal</span>
+                    <span>₹{order.total_amount}</span>
+                  </div>
+                  {order.discount_amount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Discount</span>
+                      <span>-₹{order.discount_amount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span>Delivery Fee</span>
+                    <span>₹{order.delivery_fee || 50}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total Amount</span>
+                    <span className="text-primary">₹{order.final_amount}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Order Details */}
             <Card className="p-4">
               <h3 className="font-semibold mb-4">Order Details</h3>
@@ -128,24 +179,25 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
 
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>₹{order.total_amount}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Delivery Fee</span>
-                    <span>₹50</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                    <span>Total</span>
-                    <span>₹{order.final_amount}</span>
+                    <span>Items Total</span>
+                    <span>₹{order.items.reduce((sum, item) => sum + item.total_price, 0)}</span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t">
-                  <p className="text-sm">
-                    <span className="font-semibold">Payment Method:</span> {order.payment_method.toUpperCase()}
-                  </p>
-                </div>
+                {/* Prescription Download */}
+                {order.prescription_url && (
+                  <div className="pt-2 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => window.open(order.prescription_url, '_blank')}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Prescription
+                    </Button>
+                  </div>
+                )}
               </div>
             </Card>
 

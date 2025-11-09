@@ -19,8 +19,11 @@ export interface OrderWithTracking {
   payment_method: string;
   total_amount: number;
   final_amount: number;
+  discount_amount: number;
+  delivery_fee: number;
   delivery_address: string;
   customer_phone: string;
+  prescription_url?: string;
   estimated_delivery_time?: string;
   delivered_at?: string;
   created_at: string;

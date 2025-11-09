@@ -6,9 +6,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 const MyOrders: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [orders, setOrders] = useState<OrderWithTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -19,6 +21,15 @@ const MyOrders: React.FC = () => {
       loadOrders();
     }
   }, [user]);
+
+  // Check for ?track= parameter in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const trackOrderId = params.get('track');
+    if (trackOrderId && orders.length > 0) {
+      setSelectedOrderId(trackOrderId);
+    }
+  }, [location.search, orders]);
 
   const loadOrders = async () => {
     try {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface SearchingPharmaciesModalProps {
   broadcastId: string;
@@ -16,8 +17,10 @@ export const SearchingPharmaciesModal: React.FC<SearchingPharmaciesModalProps> =
   onAccepted,
   onFailed
 }) => {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<'searching' | 'accepted' | 'failed'>('searching');
   const [acceptedPharmacy, setAcceptedPharmacy] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!broadcastId) return;
@@ -39,7 +42,13 @@ export const SearchingPharmaciesModal: React.FC<SearchingPharmaciesModalProps> =
           if (broadcast.status === 'accepted') {
             setStatus('accepted');
             setAcceptedPharmacy(broadcast.accepted_by_vendor_id);
+            setOrderId(broadcast.order_id);
             onAccepted(broadcast.accepted_by_vendor_id);
+            
+            // Redirect to order tracking after 2 seconds
+            setTimeout(() => {
+              navigate(`/my-orders?track=${broadcast.order_id}`);
+            }, 2000);
           } else if (broadcast.status === 'failed') {
             setStatus('failed');
             onFailed();

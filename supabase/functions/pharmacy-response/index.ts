@@ -120,21 +120,92 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      // Rejection case - check if should re-broadcast
-      const { data: activeNotifications } = await supabase
+      // Rejection case - check if should re-broadcast to next vendors
+      const { data: allNotifications } = await supabase
         .from('pharmacy_notification_queue')
         .select('*')
-        .eq('broadcast_id', broadcast_id)
-        .eq('notification_status', 'sent');
+        .eq('broadcast_id', broadcast_id);
 
-      if (!activeNotifications || activeNotifications.length === 0) {
-        console.log('All pharmacies responded/timed out for broadcast', broadcast_id);
+      const activeNotifications = allNotifications?.filter(n => n.notification_status === 'sent') || [];
+
+      if (activeNotifications.length === 0) {
+        console.log('All notified pharmacies responded for broadcast', broadcast_id);
         
-        // Update broadcast to failed if no more active notifications
-        await supabase
-          .from('prescription_broadcasts')
-          .update({ status: 'failed' })
-          .eq('id', broadcast_id);
+        // Get next batch of vendors
+        const currentRound = broadcast.broadcast_round || 1;
+        const nextRound = currentRound + 1;
+        const radiusKm = 10 * nextRound; // Increase radius per round (10km, 20km, 30km)
+        
+        console.log(`Searching for next batch - Round ${nextRound}, Radius ${radiusKm}km`);
+        
+        const { data: nearbyVendors, error: vendorError } = await supabase
+          .rpc('find_nearby_medicine_vendors', {
+            user_lat: broadcast.patient_latitude,
+            user_lng: broadcast.patient_longitude,
+            radius_km: radiusKm
+          });
+
+        if (vendorError) {
+          console.error('Error finding vendors:', vendorError);
+        }
+
+        // Filter out already notified vendors
+        const existingVendorIds = allNotifications?.map(n => n.vendor_id) || [];
+        const newVendors = nearbyVendors?.filter(v => !existingVendorIds.includes(v.id)).slice(0, 5) || [];
+        
+        console.log(`Found ${newVendors.length} new vendors for round ${nextRound}`);
+
+        if (newVendors.length > 0 && nextRound <= 3) {
+          // Create new notifications
+          const newNotifications = newVendors.map(vendor => ({
+            broadcast_id,
+            vendor_id: vendor.id,
+            notification_status: 'sent'
+          }));
+
+          await supabase
+            .from('pharmacy_notification_queue')
+            .insert(newNotifications);
+
+          // Create vendor_notifications for real-time push
+          const vendorNotifications = newVendors.map(vendor => ({
+            vendor_id: vendor.id,
+            order_id: broadcast.order_id,
+            type: 'prescription_upload',
+            priority: 'high',
+            title: '🚨 NEW PRESCRIPTION ORDER',
+            message: `Review and respond within 3 minutes. Customer is ${vendor.distance_km.toFixed(1)}km away.`,
+            metadata: {
+              broadcast_id,
+              prescription_id: broadcast.prescription_id,
+              patient_latitude: broadcast.patient_latitude,
+              patient_longitude: broadcast.patient_longitude,
+              distance_km: vendor.distance_km,
+              timeout_at: new Date(Date.now() + 3 * 60 * 1000).toISOString(),
+              prescription_url: broadcast.prescription_url
+            }
+          }));
+
+          await supabase
+            .from('vendor_notifications')
+            .insert(vendorNotifications);
+
+          // Update broadcast round
+          await supabase
+            .from('prescription_broadcasts')
+            .update({ broadcast_round: nextRound })
+            .eq('id', broadcast_id);
+
+          console.log(`Re-broadcast successful - Notified ${newVendors.length} new pharmacies`);
+        } else {
+          console.log('No more vendors available or max rounds reached');
+          
+          // Mark broadcast as failed
+          await supabase
+            .from('prescription_broadcasts')
+            .update({ status: 'failed' })
+            .eq('id', broadcast_id);
+        }
       }
 
       return new Response(

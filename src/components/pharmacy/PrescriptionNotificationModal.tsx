@@ -198,16 +198,50 @@ export const PrescriptionNotificationModal: React.FC<PrescriptionNotificationPro
           </div>
         </div>
 
-        {/* Prescription Image */}
-        {notification.prescription_url && (
-          <div className="border rounded-lg overflow-hidden">
-            <img 
-              src={notification.prescription_url}
-              alt="Prescription"
-              className="w-full h-[400px] object-contain bg-gray-50"
-            />
-          </div>
-        )}
+        {/* Prescription File Viewer */}
+        {notification.prescription_url && (() => {
+          const fileExtension = notification.prescription_url.split('.').pop()?.toLowerCase() || '';
+          const isPDF = fileExtension === 'pdf';
+          const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes(fileExtension);
+          
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Prescription Document</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(notification.prescription_url, '_blank')}
+                >
+                  Download
+                </Button>
+              </div>
+              <div className="border rounded-lg overflow-hidden bg-gray-50">
+                {isImage && (
+                  <img 
+                    src={notification.prescription_url}
+                    alt="Prescription"
+                    className="w-full h-[400px] object-contain"
+                  />
+                )}
+                {isPDF && (
+                  <embed
+                    src={notification.prescription_url}
+                    type="application/pdf"
+                    className="w-full h-[500px]"
+                  />
+                )}
+                {!isImage && !isPDF && (
+                  <div className="flex items-center justify-center h-[200px]">
+                    <p className="text-muted-foreground">
+                      Unsupported file format. Please download to view.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Action Buttons */}
         {!showRejectForm ? (
