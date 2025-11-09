@@ -167,22 +167,37 @@ export default function Medicine() {
       );
       
       if (!uploadResult.success) {
-        throw new Error('Upload failed');
+        toast({
+          title: "Broadcast Failed",
+          description: uploadResult.error || "Could not find nearby pharmacies",
+          variant: "destructive",
+        });
+        setIsUploadModalOpen(false);
+        setSelectedFile(null);
+        return;
       }
-
-      toast({
-        title: "Prescription Uploaded",
-        description: "Searching for nearby pharmacies...",
-      });
 
       // Show processing modal if broadcast was initiated
       if (uploadResult.broadcast_id) {
+        toast({
+          title: "Prescription Uploaded",
+          description: "Searching for nearby pharmacies...",
+        });
+        
         setCurrentBroadcastId(uploadResult.broadcast_id);
         setIsProcessingModalOpen(true);
+        setIsUploadModalOpen(false);
+        setSelectedFile(null);
+      } else {
+        // This shouldn't happen with the new logic, but handle just in case
+        toast({
+          title: "Upload Complete",
+          description: "Prescription saved but no nearby pharmacies found",
+          variant: "destructive",
+        });
+        setIsUploadModalOpen(false);
+        setSelectedFile(null);
       }
-
-      setIsUploadModalOpen(false);
-      setSelectedFile(null);
 
     } catch (error) {
       console.error('Prescription upload error:', error);

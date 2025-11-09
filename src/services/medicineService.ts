@@ -403,20 +403,51 @@ class MedicineService {
 
           if (broadcastError) {
             console.error('Broadcast error:', broadcastError);
-          } else if (broadcastData?.success) {
             return { 
-              success: true, 
+              success: false, 
+              error: 'Failed to broadcast to pharmacies. Please try again.',
               url: data.publicUrl, 
-              prescription: prescriptionData,
-              broadcast_id: broadcastData.broadcast_id
+              prescription: prescriptionData 
             };
           }
+
+          if (!broadcastData?.success) {
+            // Check if it's because no pharmacies were found
+            const errorMessage = broadcastData?.message || 'No pharmacies available in your area';
+            console.log('Broadcast failed:', errorMessage);
+            return { 
+              success: false, 
+              error: errorMessage,
+              url: data.publicUrl, 
+              prescription: prescriptionData 
+            };
+          }
+
+          // Success with broadcast
+          return { 
+            success: true, 
+            url: data.publicUrl, 
+            prescription: prescriptionData,
+            broadcast_id: broadcastData.broadcast_id
+          };
         } catch (broadcastError) {
           console.error('Failed to broadcast prescription:', broadcastError);
+          return { 
+            success: false, 
+            error: 'Network error while broadcasting. Please try again.',
+            url: data.publicUrl, 
+            prescription: prescriptionData 
+          };
         }
       }
 
-      return { success: true, url: data.publicUrl, prescription: prescriptionData };
+      // No location provided
+      return { 
+        success: false, 
+        error: 'Location is required to find nearby pharmacies',
+        url: data.publicUrl, 
+        prescription: prescriptionData 
+      };
     } catch (error) {
       console.error('Error uploading prescription:', error);
       return { success: false, error: (error as Error).message };
