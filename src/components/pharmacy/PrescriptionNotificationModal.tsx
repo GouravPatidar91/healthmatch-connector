@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { MapPin, Clock, AlertCircle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface PrescriptionNotificationProps {
   notification: {
@@ -28,6 +29,7 @@ export const PrescriptionNotificationModal: React.FC<PrescriptionNotificationPro
   vendorId,
   onClose
 }) => {
+  const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isResponding, setIsResponding] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -98,10 +100,18 @@ export const PrescriptionNotificationModal: React.FC<PrescriptionNotificationPro
       if (data?.success) {
         toast({
           title: "Order Accepted!",
-          description: "The order has been assigned to your pharmacy.",
+          description: "Redirecting to order management...",
         });
         onClose();
-        window.location.reload();
+        
+        // Redirect to vendor order management page
+        if (data.order_id) {
+          setTimeout(() => {
+            navigate(`/vendor-dashboard/order/${data.order_id}`);
+          }, 1000);
+        } else {
+          window.location.reload();
+        }
       } else if (data?.success === false) {
         toast({
           title: "Cannot Accept Order",
