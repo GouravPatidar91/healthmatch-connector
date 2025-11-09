@@ -16,7 +16,6 @@ import { useCart, CartItem } from '@/hooks/useCart';
 import { VendorMedicine, type Medicine } from '@/services/medicineService';
 import { medicineService } from '@/services/medicineService';
 import PrescriptionProcessingModal from '@/components/prescription/PrescriptionProcessingModal';
-import { OcrResultsModal } from '@/components/prescription/OcrResultsModal';
 import { CheckoutDialog } from '@/components/medicine/CheckoutDialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -64,9 +63,7 @@ export default function Medicine() {
   const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
   const [currentBroadcastId, setCurrentBroadcastId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractedMedicines, setExtractedMedicines] = useState<any[]>([]);
-  const [showOcrResults, setShowOcrResults] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Checkout state
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
@@ -159,10 +156,10 @@ export default function Medicine() {
       return;
     }
 
-    setIsExtracting(true);
+    setIsUploading(true);
 
     try {
-      // 1. Upload prescription
+      // Upload prescription and immediately broadcast to nearby pharmacies
       const uploadResult = await medicineService.uploadPrescription(
         selectedFile,
         undefined,
@@ -175,47 +172,10 @@ export default function Medicine() {
 
       toast({
         title: "Prescription Uploaded",
-        description: "Extracting medicines from prescription...",
+        description: "Searching for nearby pharmacies...",
       });
 
-      // 2. Trigger OCR extraction
-      const { data: ocrResult, error: ocrError } = await supabase.functions.invoke(
-        'ocr-prescription',
-        {
-          body: {
-            prescription_id: uploadResult.prescription.id,
-            image_url: uploadResult.url
-          }
-        }
-      );
-
-      if (ocrError) throw ocrError;
-
-      if (ocrResult?.success) {
-        setExtractedMedicines(ocrResult.matched_medicines);
-        setShowOcrResults(true);
-        
-        toast({
-          title: "Medicines Extracted!",
-          description: `Found ${ocrResult.extracted_medicines.length} medicines. Review and add to cart.`,
-        });
-
-        // Auto-add high-confidence matches to cart
-        ocrResult.matched_medicines.forEach((item: any) => {
-          if (item.match_confidence > 0.8 && item.matches.length > 0) {
-            const medicine = item.matches[0];
-            addToCart({
-              ...medicine,
-              vendor_medicine_id: medicine.id,
-              selling_price: medicine.mrp,
-              discount_percentage: 0,
-              stock_quantity: 100
-            });
-          }
-        });
-      }
-
-      // 3. Continue with broadcast if broadcast_id exists
+      // Show processing modal if broadcast was initiated
       if (uploadResult.broadcast_id) {
         setCurrentBroadcastId(uploadResult.broadcast_id);
         setIsProcessingModalOpen(true);
@@ -225,14 +185,14 @@ export default function Medicine() {
       setSelectedFile(null);
 
     } catch (error) {
-      console.error('Prescription processing error:', error);
+      console.error('Prescription upload error:', error);
       toast({
-        title: "Processing Failed",
-        description: error.message || "Failed to process prescription",
+        title: "Upload Failed",
+        description: error.message || "Failed to upload prescription",
         variant: "destructive",
       });
     } finally {
-      setIsExtracting(false);
+      setIsUploading(false);
     }
   };
 
@@ -810,10 +770,10 @@ export default function Medicine() {
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                   <h4 className="font-medium text-orange-800 mb-2">What happens next?</h4>
                   <div className="text-sm text-orange-700 space-y-1">
-                    <p>• Your prescription will be sent to nearby vendors</p>
-                    <p>• Vendors have 45 seconds to respond</p>
-                    <p>• First vendor to accept will prepare your order</p>
-                    <p>• You'll be redirected to order confirmation</p>
+                    <p>• Your prescription will be sent to nearby pharmacies</p>
+                    <p>• Pharmacies will review your prescription manually</p>
+                    <p>• First pharmacy to accept will prepare your order</p>
+                    <p>• You'll be notified when a pharmacy accepts</p>
                   </div>
                 </div>
 
@@ -832,9 +792,9 @@ export default function Medicine() {
                   <Button 
                     onClick={handleSubmitPrescription}
                     className="flex-1"
-                    disabled={!selectedFile || isExtracting}
+                    disabled={!selectedFile || isUploading}
                   >
-                    {isExtracting ? "Processing..." : "Submit Prescription"}
+                    {isUploading ? "Uploading..." : "Submit Prescription"}
                   </Button>
                 </div>
               </div>
@@ -951,26 +911,6 @@ export default function Medicine() {
           }}
           broadcastId={currentBroadcastId}
           onSuccess={handleProcessingSuccess}
-        />
-
-        {/* OCR Results Modal */}
-        <OcrResultsModal
-          open={showOcrResults}
-          onClose={() => setShowOcrResults(false)}
-          extractedMedicines={extractedMedicines}
-          onAddToCart={(medicine, quantity) => {
-            addToCart({
-              ...medicine,
-              vendor_medicine_id: medicine.id,
-              selling_price: medicine.mrp,
-              discount_percentage: 0,
-              stock_quantity: 100
-            });
-            toast({
-              title: "Added to Cart",
-              description: `${medicine.name} added to your cart.`,
-            });
-          }}
         />
 
         {/* Checkout Dialog */}

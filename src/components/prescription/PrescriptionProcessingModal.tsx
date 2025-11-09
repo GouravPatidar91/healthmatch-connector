@@ -19,8 +19,8 @@ export default function PrescriptionProcessingModal({
 
   const handleAccepted = (vendorId: string) => {
     toast({
-      title: "Order Accepted!",
-      description: "A pharmacy has accepted your prescription order.",
+      title: "Prescription Accepted!",
+      description: "A pharmacy has reviewed and accepted your prescription.",
     });
     onSuccess(vendorId);
     setTimeout(() => {
@@ -31,7 +31,7 @@ export default function PrescriptionProcessingModal({
   const handleFailed = () => {
     toast({
       title: "No Response",
-      description: "No pharmacies responded. Please try again later.",
+      description: "No pharmacies responded. Please try again later or call the nearest pharmacy directly.",
       variant: "destructive",
     });
     onClose();

@@ -356,7 +356,7 @@ class MedicineService {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`; // Include user ID in path for RLS
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('prescriptions')
@@ -383,8 +383,8 @@ class MedicineService {
 
       if (recordError) throw recordError;
 
-      // NEW: Trigger real-time broadcast to nearby pharmacies
-      if (userLocation && orderId) {
+      // Immediately broadcast to nearby pharmacies (no OCR needed)
+      if (userLocation) {
         try {
           const { data: broadcastData, error: broadcastError } = await supabase.functions.invoke(
             'prescription-broadcast',
@@ -403,9 +403,7 @@ class MedicineService {
 
           if (broadcastError) {
             console.error('Broadcast error:', broadcastError);
-            // Don't throw - prescription still uploaded successfully
           } else if (broadcastData?.success) {
-            console.log('Broadcast initiated:', broadcastData);
             return { 
               success: true, 
               url: data.publicUrl, 
@@ -415,7 +413,6 @@ class MedicineService {
           }
         } catch (broadcastError) {
           console.error('Failed to broadcast prescription:', broadcastError);
-          // Don't throw - prescription still uploaded successfully
         }
       }
 
