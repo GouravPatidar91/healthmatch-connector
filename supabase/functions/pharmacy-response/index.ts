@@ -41,7 +41,7 @@ serve(async (req) => {
     // Step 1: Get broadcast details
     const { data: broadcast, error: broadcastError } = await supabase
       .from('prescription_broadcasts')
-      .select('*, medicine_orders!order_id(*)')
+      .select('*')
       .eq('id', broadcast_id)
       .single();
 
@@ -66,6 +66,20 @@ serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Validate order_id exists
+    if (!broadcast.order_id) {
+      console.error('Broadcast missing order_id:', broadcast_id);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Invalid broadcast: missing order_id' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Broadcast found with order_id:', broadcast.order_id);
 
     // Check if already accepted by someone else
     if (broadcast.status === 'accepted') {
@@ -97,7 +111,107 @@ serve(async (req) => {
     }
 
     if (response_type === 'accept') {
-      // Step 3: Update broadcast status
+      let orderId = broadcast.order_id;
+
+      // If no order exists (prescription-only flow), create one
+      if (!orderId) {
+        console.log('No existing order - creating new order for prescription');
+        
+        // Generate order number
+        const { data: orderNumber, error: orderNumberError } = await supabase
+          .rpc('generate_order_number');
+
+        if (orderNumberError) {
+          console.error('Order number generation error:', orderNumberError);
+          throw orderNumberError;
+        }
+
+        // Get prescription URL
+        const { data: prescriptionData } = await supabase
+          .from('prescription_uploads')
+          .select('file_url')
+          .eq('id', broadcast.prescription_id)
+          .single();
+
+        // Create medicine order
+        const { data: newOrder, error: createOrderError } = await supabase
+          .from('medicine_orders')
+          .insert({
+            user_id: broadcast.patient_id,
+            vendor_id,
+            order_number: orderNumber,
+            total_amount: 0, // Will be updated after vendor reviews prescription
+            delivery_fee: 0,
+            discount_amount: 0,
+            final_amount: 0,
+            payment_method: 'pending',
+            delivery_address: 'To be confirmed',
+            customer_phone: 'To be confirmed',
+            prescription_required: true,
+            prescription_url: prescriptionData?.file_url,
+            prescription_status: 'approved',
+            order_status: 'confirmed'
+          })
+          .select()
+          .single();
+
+        if (createOrderError) {
+          console.error('Order creation error:', createOrderError);
+          throw createOrderError;
+        }
+
+        orderId = newOrder.id;
+        console.log('Created new order:', orderId);
+
+        // Update broadcast with new order_id
+        await supabase
+          .from('prescription_broadcasts')
+          .update({ order_id: orderId })
+          .eq('id', broadcast_id);
+
+        // Update prescription_upload with order_id
+        await supabase
+          .from('prescription_uploads')
+          .update({ order_id: orderId })
+          .eq('id', broadcast.prescription_id);
+      } else {
+        // Verify the existing order
+        const { data: existingOrder, error: orderCheckError } = await supabase
+          .from('medicine_orders')
+          .select('id, order_status')
+          .eq('id', orderId)
+          .single();
+
+        if (orderCheckError || !existingOrder) {
+          console.error('Order not found or error:', orderCheckError);
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              error: `Order not found: ${orderId}` 
+            }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log('Order found, current status:', existingOrder.order_status);
+
+        // Update existing order with vendor assignment
+        const { error: orderUpdateError } = await supabase
+          .from('medicine_orders')
+          .update({
+            vendor_id,
+            order_status: 'confirmed',
+            prescription_status: 'approved'
+          })
+          .eq('id', orderId);
+
+        if (orderUpdateError) {
+          console.error('Order update error:', orderUpdateError);
+          throw orderUpdateError;
+        }
+      }
+
+      // Update broadcast status
       const { error: broadcastUpdateError } = await supabase
         .from('prescription_broadcasts')
         .update({
@@ -112,22 +226,9 @@ serve(async (req) => {
         throw broadcastUpdateError;
       }
 
-      // Step 4: Update order with vendor assignment
-      const { error: orderUpdateError } = await supabase
-        .from('medicine_orders')
-        .update({
-          vendor_id,
-          order_status: 'confirmed',
-          prescription_status: 'approved'
-        })
-        .eq('id', broadcast.order_id);
+      console.log('Order successfully assigned to vendor_id:', vendor_id);
 
-      if (orderUpdateError) {
-        console.error('Order update error:', orderUpdateError);
-        throw orderUpdateError;
-      }
-
-      // Step 5: Mark all other notifications as cancelled
+      // Mark all other notifications as cancelled
       const { error: cancelError } = await supabase
         .from('pharmacy_notification_queue')
         .update({ notification_status: 'cancelled' })
@@ -138,13 +239,13 @@ serve(async (req) => {
         console.error('Cancel notifications error:', cancelError);
       }
 
-      console.log(`Order ${broadcast.order_id} assigned to pharmacy ${vendor_id}`);
+      console.log(`Order ${orderId} assigned to pharmacy ${vendor_id}`);
 
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'Order accepted successfully',
-          order_id: broadcast.order_id
+          order_id: orderId
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
