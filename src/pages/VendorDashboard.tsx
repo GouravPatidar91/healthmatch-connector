@@ -98,6 +98,29 @@ export default function VendorDashboard() {
     }
   }, [user]);
 
+  // Auto-refresh notifications every 10 seconds
+  useEffect(() => {
+    if (!vendorInfo) return;
+
+    const refreshInterval = setInterval(async () => {
+      try {
+        const { data: notificationData, error: notifError } = await supabase
+          .from('vendor_notifications')
+          .select('*')
+          .eq('vendor_id', vendorInfo.id)
+          .order('created_at', { ascending: false });
+
+        if (!notifError && notificationData) {
+          setNotifications(notificationData);
+        }
+      } catch (error) {
+        console.error('Error refreshing notifications:', error);
+      }
+    }, 10000); // Refresh every 10 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [vendorInfo]);
+
   // Real-time subscription for prescription notifications
   useEffect(() => {
     if (!vendorInfo) return;

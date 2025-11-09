@@ -79,6 +79,8 @@ export const PrescriptionNotificationModal: React.FC<PrescriptionNotificationPro
 
     setIsResponding(true);
     try {
+      console.log('Accepting order with broadcast_id:', notification.broadcast_id);
+      
       const { data, error } = await supabase.functions.invoke('pharmacy-response', {
         body: {
           broadcast_id: notification.broadcast_id,
@@ -87,28 +89,34 @@ export const PrescriptionNotificationModal: React.FC<PrescriptionNotificationPro
         }
       });
 
-      if (error) throw error;
+      console.log('Accept response:', { data, error });
 
-      if (data.success) {
+      if (error) {
+        throw new Error(error.message || 'Failed to communicate with server');
+      }
+
+      if (data?.success) {
         toast({
           title: "Order Accepted!",
           description: "The order has been assigned to your pharmacy.",
         });
         onClose();
         window.location.reload();
-      } else {
+      } else if (data?.success === false) {
         toast({
-          title: "Already Accepted",
-          description: data.message,
+          title: "Cannot Accept Order",
+          description: data.message || "This order may have already been accepted by another pharmacy.",
           variant: "destructive",
         });
         onClose();
+      } else {
+        throw new Error('Invalid response from server');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Accept error:', error);
       toast({
-        title: "Error",
-        description: "Failed to accept order. Please try again.",
+        title: "Error Accepting Order",
+        description: error.message || "Failed to accept order. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
@@ -132,7 +140,9 @@ export const PrescriptionNotificationModal: React.FC<PrescriptionNotificationPro
 
     setIsResponding(true);
     try {
-      const { error } = await supabase.functions.invoke('pharmacy-response', {
+      console.log('Rejecting order with broadcast_id:', notification.broadcast_id);
+      
+      const { data, error } = await supabase.functions.invoke('pharmacy-response', {
         body: {
           broadcast_id: notification.broadcast_id,
           vendor_id: vendorId,
@@ -141,18 +151,22 @@ export const PrescriptionNotificationModal: React.FC<PrescriptionNotificationPro
         }
       });
 
-      if (error) throw error;
+      console.log('Reject response:', { data, error });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to communicate with server');
+      }
 
       toast({
         title: "Order Rejected",
         description: "Your response has been recorded.",
       });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Reject error:', error);
       toast({
-        title: "Error",
-        description: "Failed to reject order. Please try again.",
+        title: "Error Rejecting Order",
+        description: error.message || "Failed to reject order. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {

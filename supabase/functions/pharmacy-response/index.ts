@@ -26,6 +26,18 @@ serve(async (req) => {
 
     console.log(`Pharmacy ${vendor_id} ${response_type}ed broadcast ${broadcast_id}`);
 
+    // Validate required fields
+    if (!broadcast_id || !vendor_id || !response_type) {
+      console.error('Missing required fields:', { broadcast_id, vendor_id, response_type });
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Missing required fields: broadcast_id, vendor_id, or response_type' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Step 1: Get broadcast details
     const { data: broadcast, error: broadcastError } = await supabase
       .from('prescription_broadcasts')
@@ -35,7 +47,24 @@ serve(async (req) => {
 
     if (broadcastError) {
       console.error('Broadcast query error:', broadcastError);
-      throw broadcastError;
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Failed to fetch broadcast: ${broadcastError.message}` 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!broadcast) {
+      console.error('Broadcast not found:', broadcast_id);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Broadcast not found' 
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Check if already accepted by someone else
@@ -220,7 +249,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in pharmacy-response:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message || 'An unexpected error occurred'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
