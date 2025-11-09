@@ -403,16 +403,39 @@ class MedicineService {
 
           if (broadcastError) {
             console.error('Broadcast error:', broadcastError);
-          } else if (broadcastData?.success) {
+            return { 
+              success: false, 
+              error: `Failed to broadcast prescription: ${broadcastError.message}`,
+              url: data.publicUrl, 
+              prescription: prescriptionData
+            };
+          }
+
+          if (broadcastData?.success && broadcastData?.broadcast_id) {
+            console.log('Broadcast initiated successfully:', broadcastData.broadcast_id);
             return { 
               success: true, 
               url: data.publicUrl, 
               prescription: prescriptionData,
               broadcast_id: broadcastData.broadcast_id
             };
+          } else {
+            console.error('Broadcast failed:', broadcastData);
+            return { 
+              success: false, 
+              error: broadcastData?.message || 'Failed to find nearby pharmacies',
+              url: data.publicUrl, 
+              prescription: prescriptionData
+            };
           }
         } catch (broadcastError) {
           console.error('Failed to broadcast prescription:', broadcastError);
+          return { 
+            success: false, 
+            error: `Exception during broadcast: ${(broadcastError as Error).message}`,
+            url: data.publicUrl, 
+            prescription: prescriptionData
+          };
         }
       }
 

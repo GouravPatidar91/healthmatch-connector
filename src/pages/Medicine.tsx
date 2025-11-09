@@ -167,18 +167,30 @@ export default function Medicine() {
       );
       
       if (!uploadResult.success) {
-        throw new Error('Upload failed');
+        toast({
+          title: "Broadcast Failed",
+          description: uploadResult.error || "Failed to find nearby pharmacies. Please try again.",
+          variant: "destructive",
+        });
+        setIsUploading(false);
+        return;
       }
-
-      toast({
-        title: "Prescription Uploaded",
-        description: "Searching for nearby pharmacies...",
-      });
 
       // Show processing modal if broadcast was initiated
       if (uploadResult.broadcast_id) {
+        console.log('Opening modal with broadcast ID:', uploadResult.broadcast_id);
         setCurrentBroadcastId(uploadResult.broadcast_id);
         setIsProcessingModalOpen(true);
+        
+        toast({
+          title: "Prescription Uploaded",
+          description: "Searching for nearby pharmacies...",
+        });
+      } else {
+        toast({
+          title: "Prescription Uploaded",
+          description: "Your prescription has been saved but no broadcast was initiated.",
+        });
       }
 
       setIsUploadModalOpen(false);
