@@ -1012,10 +1012,31 @@ export default function VendorDashboard() {
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-4 rounded-lg border ${
+                      className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${
                         notification.is_read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'
                       }`}
-                      onClick={() => !notification.is_read && markNotificationAsRead(notification.id)}
+                      onClick={() => {
+                        // Handle prescription notifications
+                        if (notification.type === 'prescription_upload' && (notification as any).metadata) {
+                          const metadata = (notification as any).metadata;
+                          setActiveNotification({
+                            id: notification.id,
+                            broadcast_id: metadata?.broadcast_id,
+                            prescription_id: metadata?.prescription_id,
+                            order_id: notification.order_id,
+                            patient_latitude: metadata?.patient_latitude,
+                            patient_longitude: metadata?.patient_longitude,
+                            distance_km: metadata?.distance_km,
+                            timeout_at: metadata?.timeout_at,
+                            prescription_url: metadata?.prescription_url
+                          });
+                        }
+                        
+                        // Mark as read
+                        if (!notification.is_read) {
+                          markNotificationAsRead(notification.id);
+                        }
+                      }}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium">{notification.title}</h4>
@@ -1037,6 +1058,11 @@ export default function VendorDashboard() {
                       <p className="text-xs text-muted-foreground">
                         {new Date(notification.created_at).toLocaleString()}
                       </p>
+                      {notification.type === 'prescription_upload' && (
+                        <Badge variant="outline" className="mt-2">
+                          Click to view prescription
+                        </Badge>
+                      )}
                     </div>
                   ))}
 
