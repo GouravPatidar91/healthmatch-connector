@@ -137,6 +137,51 @@ export type Database = {
           },
         ]
       }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean | null
+          max_discount_amount: number | null
+          min_order_amount: number | null
+          usage_count: number | null
+          usage_limit: number | null
+          valid_from: string | null
+          valid_until: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean | null
+          max_discount_amount?: number | null
+          min_order_amount?: number | null
+          usage_count?: number | null
+          usage_limit?: number | null
+          valid_from?: string | null
+          valid_until: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_discount_amount?: number | null
+          min_order_amount?: number | null
+          usage_count?: number | null
+          usage_limit?: number | null
+          valid_from?: string | null
+          valid_until?: string
+        }
+        Relationships: []
+      }
       delivery_partners: {
         Row: {
           created_at: string
@@ -592,6 +637,8 @@ export type Database = {
       }
       medicine_orders: {
         Row: {
+          coupon_code: string | null
+          coupon_discount: number | null
           created_at: string
           customer_phone: string
           delivered_at: string | null
@@ -603,6 +650,7 @@ export type Database = {
           discount_amount: number | null
           estimated_delivery_time: string | null
           final_amount: number
+          handling_charges: number | null
           id: string
           order_number: string
           order_status: string | null
@@ -615,6 +663,7 @@ export type Database = {
           prescription_status: string | null
           prescription_url: string | null
           rejection_reason: string | null
+          tip_amount: number | null
           total_amount: number
           updated_at: string
           user_id: string
@@ -622,6 +671,8 @@ export type Database = {
           vendor_notes: string | null
         }
         Insert: {
+          coupon_code?: string | null
+          coupon_discount?: number | null
           created_at?: string
           customer_phone: string
           delivered_at?: string | null
@@ -633,6 +684,7 @@ export type Database = {
           discount_amount?: number | null
           estimated_delivery_time?: string | null
           final_amount: number
+          handling_charges?: number | null
           id?: string
           order_number: string
           order_status?: string | null
@@ -645,6 +697,7 @@ export type Database = {
           prescription_status?: string | null
           prescription_url?: string | null
           rejection_reason?: string | null
+          tip_amount?: number | null
           total_amount: number
           updated_at?: string
           user_id: string
@@ -652,6 +705,8 @@ export type Database = {
           vendor_notes?: string | null
         }
         Update: {
+          coupon_code?: string | null
+          coupon_discount?: number | null
           created_at?: string
           customer_phone?: string
           delivered_at?: string | null
@@ -663,6 +718,7 @@ export type Database = {
           discount_amount?: number | null
           estimated_delivery_time?: string | null
           final_amount?: number
+          handling_charges?: number | null
           id?: string
           order_number?: string
           order_status?: string | null
@@ -675,6 +731,7 @@ export type Database = {
           prescription_status?: string | null
           prescription_url?: string | null
           rejection_reason?: string | null
+          tip_amount?: number | null
           total_amount?: number
           updated_at?: string
           user_id?: string
@@ -832,6 +889,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      order_ratings: {
+        Row: {
+          created_at: string | null
+          delivery_rating: number | null
+          id: string
+          order_id: string
+          pharmacy_rating: number | null
+          rating: number
+          review: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_rating?: number | null
+          id?: string
+          order_id: string
+          pharmacy_rating?: number | null
+          rating: number
+          review?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_rating?: number | null
+          id?: string
+          order_id?: string
+          pharmacy_rating?: number | null
+          rating?: number
+          review?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_ratings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_tracking: {
         Row: {

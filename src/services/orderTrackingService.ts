@@ -21,6 +21,10 @@ export interface OrderWithTracking {
   final_amount: number;
   discount_amount: number;
   delivery_fee: number;
+  tip_amount: number;
+  handling_charges: number;
+  coupon_code?: string;
+  coupon_discount: number;
   delivery_address: string;
   customer_phone: string;
   prescription_url?: string;
@@ -195,6 +199,58 @@ class OrderTrackingService {
       return { success: true };
     } catch (error) {
       console.error('Error cancelling order:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  async updateTip(orderId: string, tipAmount: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: order, error: orderError } = await supabase
+        .from('medicine_orders')
+        .select('total_amount, handling_charges, delivery_fee, coupon_discount')
+        .eq('id', orderId)
+        .single();
+
+      if (orderError || !order) {
+        return { success: false, error: 'Order not found' };
+      }
+
+      const finalAmount = 
+        order.total_amount + 
+        (order.handling_charges || 0) + 
+        (order.delivery_fee || 0) + 
+        tipAmount - 
+        (order.coupon_discount || 0);
+
+      const { error } = await supabase
+        .from('medicine_orders')
+        .update({
+          tip_amount: tipAmount,
+          final_amount: finalAmount
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating tip:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  async updatePaymentMethod(orderId: string, method: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('medicine_orders')
+        .update({ payment_method: method })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating payment method:', error);
       return { success: false, error: (error as Error).message };
     }
   }

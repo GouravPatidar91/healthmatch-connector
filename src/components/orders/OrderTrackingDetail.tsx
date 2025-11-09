@@ -8,6 +8,9 @@ import {
 import { OrderStatusTimeline } from './OrderStatusTimeline';
 import { OrderActionButtons } from './OrderActionButtons';
 import { CancelOrderDialog } from './CancelOrderDialog';
+import { CouponInput } from './CouponInput';
+import { TipSelector } from './TipSelector';
+import { OrderRatingDialog } from './OrderRatingDialog';
 import { orderTrackingService, OrderWithTracking } from '@/services/orderTrackingService';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, MapPin, Phone, CreditCard, Download } from 'lucide-react';
@@ -30,6 +33,7 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
   const [order, setOrder] = useState<OrderWithTracking | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -110,7 +114,7 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
 
             <Separator />
 
-            {/* Payment Details - Prominent Section */}
+            {/* Payment Details - Enhanced with Coupon and Tip */}
             <Card className="border-2 border-primary/20 bg-primary/5">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
@@ -118,7 +122,7 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
                   Payment Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Payment Method</span>
                   <Badge variant="secondary" className="text-sm">
@@ -134,22 +138,35 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
                     {order.payment_status.toUpperCase()}
                   </Badge>
                 </div>
+                
                 <Separator />
-                <div className="space-y-2 pt-2">
+                
+                {/* Cost Breakdown */}
+                <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
+                    <span>Medicine Amount</span>
                     <span>₹{order.total_amount}</span>
                   </div>
-                  {order.discount_amount > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Discount</span>
-                      <span>-₹{order.discount_amount}</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-sm">
+                    <span>Handling Charges</span>
+                    <span>₹{order.handling_charges || 30}</span>
+                  </div>
                   <div className="flex justify-between text-sm">
                     <span>Delivery Fee</span>
                     <span>₹{order.delivery_fee || 50}</span>
                   </div>
+                  {order.coupon_discount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Coupon Discount ({order.coupon_code})</span>
+                      <span>-₹{order.coupon_discount}</span>
+                    </div>
+                  )}
+                  {order.tip_amount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span>Tip for Delivery Partner</span>
+                      <span>+₹{order.tip_amount}</span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total Amount</span>
@@ -158,6 +175,26 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Coupon Input - Only before delivered */}
+            {order.order_status !== 'delivered' && order.order_status !== 'cancelled' && (
+              <CouponInput
+                orderId={order.id}
+                orderAmount={order.total_amount}
+                appliedCoupon={order.coupon_code}
+                onCouponApplied={() => loadOrderDetails()}
+                onCouponRemoved={() => loadOrderDetails()}
+              />
+            )}
+
+            {/* Tip Selector - Only when out for delivery or before */}
+            {order.order_status !== 'delivered' && order.order_status !== 'cancelled' && (
+              <TipSelector
+                orderId={order.id}
+                currentTip={order.tip_amount || 0}
+                onTipUpdated={() => loadOrderDetails()}
+              />
+            )}
 
             {/* Order Details */}
             <Card className="p-4">
@@ -251,6 +288,17 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
               onCancelOrder={() => setShowCancelDialog(true)}
               onReorder={handleReorder}
             />
+
+            {/* Rate Order Button */}
+            {order.order_status === 'delivered' && (
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={() => setShowRatingDialog(true)}
+              >
+                Rate Your Order
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -262,6 +310,20 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
         onSuccess={() => {
           loadOrderDetails();
           setShowCancelDialog(false);
+        }}
+      />
+
+      <OrderRatingDialog
+        open={showRatingDialog}
+        orderId={orderId}
+        orderStatus={order.order_status}
+        onClose={() => setShowRatingDialog(false)}
+        onRatingSubmitted={() => {
+          setShowRatingDialog(false);
+          toast({
+            title: 'Success',
+            description: 'Thank you for rating your order!',
+          });
         }}
       />
     </>
