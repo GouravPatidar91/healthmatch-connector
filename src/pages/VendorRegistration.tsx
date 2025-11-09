@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Clock, Phone, Mail, FileText, Upload } from 'lucide-react';
+import { PharmacyLocationPicker } from '@/components/maps/PharmacyLocationPicker';
 
 export default function VendorRegistration() {
   const { user } = useAuth();
@@ -24,6 +25,8 @@ export default function VendorRegistration() {
     address: '',
     city: '',
     region: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
     delivery_radius_km: 5,
     operating_hours: {
       mon: '9:00-21:00',
@@ -44,9 +47,27 @@ export default function VendorRegistration() {
     }));
   };
 
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // Validate location is selected
+    if (!formData.latitude || !formData.longitude) {
+      toast({
+        title: "Location Required",
+        description: "Please select your pharmacy location on the map.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -181,7 +202,19 @@ export default function VendorRegistration() {
                 Location Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Map Location Picker */}
+              <div>
+                <Label className="mb-4 block">
+                  Select Pharmacy Location on Map *
+                </Label>
+                <PharmacyLocationPicker
+                  onLocationSelect={handleLocationSelect}
+                  initialLat={formData.latitude || undefined}
+                  initialLng={formData.longitude || undefined}
+                />
+              </div>
+
               <div>
                 <Label htmlFor="address">Complete Address *</Label>
                 <Textarea
