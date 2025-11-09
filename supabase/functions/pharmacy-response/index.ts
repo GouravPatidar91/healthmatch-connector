@@ -67,19 +67,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate order_id exists
-    if (!broadcast.order_id) {
-      console.error('Broadcast missing order_id:', broadcast_id);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Invalid broadcast: missing order_id' 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Broadcast found with order_id:', broadcast.order_id);
+    console.log('Broadcast found, order_id:', broadcast.order_id || 'will be created');
 
     // Check if already accepted by someone else
     if (broadcast.status === 'accepted') {
