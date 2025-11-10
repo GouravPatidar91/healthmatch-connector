@@ -229,6 +229,42 @@ serve(async (req) => {
 
       console.log(`Order ${orderId} assigned to pharmacy ${vendor_id}`);
 
+      // Broadcast delivery request to nearby delivery partners
+      const { data: vendorLocation, error: vendorError } = await supabase
+        .from('medicine_vendors')
+        .select('latitude, longitude')
+        .eq('id', vendor_id)
+        .single();
+
+      if (vendorLocation?.latitude && vendorLocation?.longitude) {
+        console.log('Broadcasting delivery request for order:', orderId);
+        
+        const { data: broadcastData, error: broadcastError } = await supabase.functions.invoke(
+          'broadcast-delivery-request',
+          {
+            body: {
+              orderId: orderId,
+              vendorId: vendor_id,
+              vendorLocation: {
+                latitude: vendorLocation.latitude,
+                longitude: vendorLocation.longitude
+              },
+              radiusKm: 10
+            }
+          }
+        );
+
+        if (broadcastError) {
+          console.error('Failed to broadcast delivery request:', broadcastError);
+        } else if (broadcastData?.success) {
+          console.log(`Notified ${broadcastData.partnersNotified} delivery partners`);
+        } else {
+          console.warn('Delivery broadcast failed:', broadcastData?.error);
+        }
+      } else {
+        console.warn('Vendor location not available for delivery broadcast');
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
