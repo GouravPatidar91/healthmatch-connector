@@ -300,6 +300,53 @@ export type Database = {
           },
         ]
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          delivery_partner_id: string | null
+          device_info: Json | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_partner_id?: string | null
+          device_info?: Json | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_partner_id?: string | null
+          device_info?: Json | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_tokens_delivery_partner_id_fkey"
+            columns: ["delivery_partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_notifications: {
         Row: {
           appointment_id: string
@@ -800,6 +847,13 @@ export type Database = {
           vendor_notes?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "medicine_orders_delivery_partner_id_fkey"
+            columns: ["delivery_partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "medicine_orders_prescription_approved_by_fkey"
             columns: ["prescription_approved_by"]

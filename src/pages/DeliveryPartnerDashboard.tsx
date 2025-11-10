@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ActiveOrderTracking } from '@/components/delivery/ActiveOrderTracking';
-import { DeliveryRequestNotification } from '@/components/delivery/DeliveryRequestNotification';
+import { DeliveryRequestNotificationEnhanced } from '@/components/delivery/DeliveryRequestNotificationEnhanced';
 import { deliveryRequestService } from '@/services/deliveryRequestService';
 import { Bike, Package, CheckCircle, Clock, AlertCircle, Bell, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -46,11 +46,29 @@ export default function DeliveryPartnerDashboard() {
   const [incomingRequest, setIncomingRequest] = useState<any>(null);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     loadPartnerData();
     loadOrders();
   }, []);
+
+  // Auto-refresh pending requests every 10 seconds
+  useEffect(() => {
+    if (!partner) return;
+
+    const refreshInterval = setInterval(async () => {
+      try {
+        const requests = await deliveryRequestService.getPendingRequests(partner.id);
+        setPendingRequests(requests);
+        setUnreadCount(requests.length);
+      } catch (error) {
+        console.error('Error refreshing pending requests:', error);
+      }
+    }, 10000);
+
+    return () => clearInterval(refreshInterval);
+  }, [partner]);
 
   useEffect(() => {
     if (!partner) return;
@@ -59,13 +77,32 @@ export default function DeliveryPartnerDashboard() {
     const channel = deliveryRequestService.subscribeToRequestUpdates(
       partner.id,
       (request) => {
+        console.log('New delivery request received:', request);
+        
+        // Play notification sound
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKR5/g8r5sIQUxh9Hz04IzBh5uwO/jmVUUCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRC=');
+        audio.play().catch(() => {}); // Ignore if autoplay blocked
+        
+        // Show toast notification
         setIncomingRequest(request);
+        setPendingRequests(prev => {
+          const exists = prev.some(r => r.id === request.id);
+          if (exists) return prev;
+          return [...prev, request];
+        });
+        setUnreadCount(prev => prev + 1);
+        
+        // Auto-open drawer
+        setShowNotifications(true);
         loadOrders();
       }
     );
 
     // Load existing pending requests
-    deliveryRequestService.getPendingRequests(partner.id).then(setPendingRequests);
+    deliveryRequestService.getPendingRequests(partner.id).then((requests) => {
+      setPendingRequests(requests);
+      setUnreadCount(requests.length);
+    });
 
     return () => {
       supabase.removeChannel(channel);
@@ -250,13 +287,16 @@ export default function DeliveryPartnerDashboard() {
               ) : (
                 <div className="space-y-4">
                   {pendingRequests.map((request) => (
-                    <DeliveryRequestNotification
+                    <DeliveryRequestNotificationEnhanced
                       key={request.id}
                       request={request}
                       partnerId={partner.id}
                       onClose={() => {
                         loadOrders();
-                        deliveryRequestService.getPendingRequests(partner.id).then(setPendingRequests);
+                        deliveryRequestService.getPendingRequests(partner.id).then((requests) => {
+                          setPendingRequests(requests);
+                          setUnreadCount(requests.length);
+                        });
                       }}
                     />
                   ))}
@@ -305,16 +345,19 @@ export default function DeliveryPartnerDashboard() {
           <p className="text-muted-foreground">Welcome back, {partner.name}</p>
         </div>
         <div className="flex gap-2 items-center">
-          {pendingRequests.length > 0 && (
-            <Button 
-              variant="destructive" 
-              className="flex items-center gap-2"
-              onClick={() => setShowNotifications(true)}
-            >
-              <Bell className="h-4 w-4 animate-pulse" />
-              {pendingRequests.length} Pending Request{pendingRequests.length > 1 ? 's' : ''}
-            </Button>
-          )}
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="relative"
+            onClick={() => setShowNotifications(true)}
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground animate-pulse">
+                {unreadCount}
+              </Badge>
+            )}
+          </Button>
           <Badge variant={partner.is_available ? 'default' : 'secondary'} className="text-lg px-4 py-2">
             {partner.is_available ? 'Available' : 'Offline'}
           </Badge>
