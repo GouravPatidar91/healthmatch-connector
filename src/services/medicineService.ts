@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { deliveryRequestService } from './deliveryRequestService';
 
 export interface Medicine {
   id: string;
@@ -333,6 +334,30 @@ class MedicineService {
 
       if (notificationError) {
         console.warn('Failed to create vendor notification:', notificationError);
+      }
+
+      // Broadcast to nearby delivery partners
+      const { data: vendor, error: vendorError } = await supabase
+        .from('medicine_vendors')
+        .select('latitude, longitude')
+        .eq('id', orderData.vendor_id)
+        .single();
+
+      if (!vendorError && vendor?.latitude && vendor?.longitude) {
+        const broadcastResult = await deliveryRequestService.broadcastToNearbyPartners(
+          order.id,
+          orderData.vendor_id,
+          { latitude: vendor.latitude, longitude: vendor.longitude },
+          10 // 10km radius
+        );
+
+        if (broadcastResult.success) {
+          console.log('Delivery requests broadcast to partners:', broadcastResult.requestIds);
+        } else {
+          console.warn('Failed to broadcast delivery requests:', broadcastResult.error);
+        }
+      } else {
+        console.warn('Vendor location not available for delivery broadcast');
       }
 
       return { success: true, orderId: order.id };
