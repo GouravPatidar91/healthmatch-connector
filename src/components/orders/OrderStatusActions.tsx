@@ -91,8 +91,8 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
       }
 
       toast({
-        title: 'Searching...',
-        description: 'Finding nearby delivery partners',
+        title: 'Order Packed!',
+        description: 'Searching for delivery partners...',
       });
 
       const result = await deliveryRequestService.broadcastToNearbyPartners(
@@ -140,12 +140,12 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
       case 'preparing':
         return (
           <Button
-            onClick={() => handleStatusUpdate('ready_for_pickup', 'Order is ready for pickup')}
+            onClick={() => handleStatusUpdate('ready_for_pickup', 'Order packed and ready')}
             disabled={loading}
             className="w-full"
           >
             <CheckCircle className="h-4 w-4 mr-2" />
-            Mark Ready for Pickup
+            Mark as Order Packed
           </Button>
         );
       

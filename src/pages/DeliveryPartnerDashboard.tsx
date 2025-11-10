@@ -226,7 +226,7 @@ export default function DeliveryPartnerDashboard() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Incoming Request Modal */}
       {incomingRequest && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
+        <div className="fixed top-4 right-4 z-50 max-w-md animate-in slide-in-from-right">
           <DeliveryRequestNotification
             request={incomingRequest}
             partnerId={partner.id}
@@ -237,6 +237,52 @@ export default function DeliveryPartnerDashboard() {
             }}
           />
         </div>
+      )}
+
+      {/* Pending Requests Summary */}
+      {pendingRequests.length > 0 && !incomingRequest && (
+        <Card className="border-orange-500 bg-orange-50/50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Bell className="h-5 w-5 text-orange-600 animate-pulse" />
+              You Have Pending Delivery Requests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              {pendingRequests.length} order{pendingRequests.length > 1 ? 's' : ''} waiting for your response
+            </p>
+            <div className="space-y-2">
+              {pendingRequests.slice(0, 3).map((req: any) => (
+                <div 
+                  key={req.id}
+                  className="p-3 bg-background rounded-md border cursor-pointer hover:border-primary"
+                  onClick={() => setIncomingRequest(req)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">
+                        Order #{req.medicine_orders?.order_number}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {req.medicine_orders?.vendor?.pharmacy_name}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Pending
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {pendingRequests.length > 3 && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                +{pendingRequests.length - 3} more request{pendingRequests.length - 3 > 1 ? 's' : ''}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Header */}

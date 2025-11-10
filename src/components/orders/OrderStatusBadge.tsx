@@ -3,9 +3,10 @@ import { Badge } from '@/components/ui/badge';
 
 interface OrderStatusBadgeProps {
   status: string;
+  hasDeliveryPartner?: boolean;
 }
 
-export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status }) => {
+export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status, hasDeliveryPartner }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'placed':
@@ -37,7 +38,10 @@ export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status }) =>
       case 'preparing':
         return 'Preparing';
       case 'ready_for_pickup':
-        return 'Ready for Pickup';
+        if (hasDeliveryPartner === false) {
+          return 'Order Packed - Assigning Partner';
+        }
+        return 'Order Packed';
       case 'out_for_delivery':
         return 'Out for Delivery';
       case 'delivered':

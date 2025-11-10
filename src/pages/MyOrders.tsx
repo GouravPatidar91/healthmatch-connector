@@ -49,8 +49,24 @@ const MyOrders: React.FC = () => {
               setTrackingDialogOpen(true);
               
               toast({
-                title: 'Delivery Partner Assigned!',
-                description: 'Your order is now out for delivery. Track it live!',
+                title: '🎉 Delivery Partner Assigned!',
+                description: 'Your order is now out for delivery. Track your order live!',
+              });
+            }
+
+            // Notify when partner is assigned (even if status hasn't changed yet)
+            if (payload.new.delivery_partner_id && !payload.old.delivery_partner_id) {
+              toast({
+                title: '✓ Partner Assigned',
+                description: 'A delivery partner has been assigned to your order',
+              });
+            }
+
+            // Notify when order is packed
+            if (newStatus === 'ready_for_pickup' && oldStatus === 'preparing') {
+              toast({
+                title: '📦 Order Packed',
+                description: 'Your order is packed! Finding a delivery partner...',
               });
             }
 
