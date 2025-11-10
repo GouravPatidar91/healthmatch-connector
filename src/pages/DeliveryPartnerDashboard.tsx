@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ActiveOrderTracking } from '@/components/delivery/ActiveOrderTracking';
 import { DeliveryRequestNotification } from '@/components/delivery/DeliveryRequestNotification';
 import { deliveryRequestService } from '@/services/deliveryRequestService';
-import { Bike, Package, CheckCircle, Clock, AlertCircle, Bell } from 'lucide-react';
+import { Bike, Package, CheckCircle, Clock, AlertCircle, Bell, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface DeliveryPartner {
@@ -45,6 +45,7 @@ export default function DeliveryPartnerDashboard() {
   const [loading, setLoading] = useState(true);
   const [incomingRequest, setIncomingRequest] = useState<any>(null);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     loadPartnerData();
@@ -224,18 +225,76 @@ export default function DeliveryPartnerDashboard() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Incoming Request Modal */}
-      {incomingRequest && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <DeliveryRequestNotification
-            request={incomingRequest}
-            partnerId={partner.id}
-            onClose={() => {
-              setIncomingRequest(null);
-              loadOrders();
-              deliveryRequestService.getPendingRequests(partner.id).then(setPendingRequests);
-            }}
-          />
+      {/* Notification Drawer */}
+      {showNotifications && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50" onClick={() => setShowNotifications(false)}>
+          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-background border-l shadow-lg overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Delivery Requests</h2>
+                <Button variant="ghost" size="icon" onClick={() => setShowNotifications(false)}>
+                  <XCircle className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {pendingRequests.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Bell className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No Pending Requests</h3>
+                    <p className="text-muted-foreground">
+                      New delivery requests will appear here
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {pendingRequests.map((request) => (
+                    <DeliveryRequestNotification
+                      key={request.id}
+                      request={request}
+                      partnerId={partner.id}
+                      onClose={() => {
+                        loadOrders();
+                        deliveryRequestService.getPendingRequests(partner.id).then(setPendingRequests);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notification for new requests */}
+      {incomingRequest && !showNotifications && (
+        <div className="fixed top-4 right-4 z-50 max-w-md animate-in slide-in-from-right">
+          <Card className="border-primary shadow-lg bg-background">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-primary animate-pulse" />
+                  <p className="font-semibold">New Delivery Request!</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setIncomingRequest(null)}>
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                You have a new delivery request waiting
+              </p>
+              <Button 
+                className="w-full" 
+                onClick={() => {
+                  setShowNotifications(true);
+                  setIncomingRequest(null);
+                }}
+              >
+                View Request
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -247,10 +306,14 @@ export default function DeliveryPartnerDashboard() {
         </div>
         <div className="flex gap-2 items-center">
           {pendingRequests.length > 0 && (
-            <Badge variant="destructive" className="flex items-center gap-1">
-              <Bell className="h-3 w-3" />
+            <Button 
+              variant="destructive" 
+              className="flex items-center gap-2"
+              onClick={() => setShowNotifications(true)}
+            >
+              <Bell className="h-4 w-4 animate-pulse" />
               {pendingRequests.length} Pending Request{pendingRequests.length > 1 ? 's' : ''}
-            </Badge>
+            </Button>
           )}
           <Badge variant={partner.is_available ? 'default' : 'secondary'} className="text-lg px-4 py-2">
             {partner.is_available ? 'Available' : 'Offline'}
