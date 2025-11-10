@@ -191,6 +191,7 @@ export type Database = {
           is_available: boolean | null
           is_verified: boolean | null
           license_number: string | null
+          location_updated_at: string | null
           max_delivery_radius_km: number | null
           name: string
           phone: string
@@ -209,6 +210,7 @@ export type Database = {
           is_available?: boolean | null
           is_verified?: boolean | null
           license_number?: string | null
+          location_updated_at?: string | null
           max_delivery_radius_km?: number | null
           name: string
           phone: string
@@ -227,6 +229,7 @@ export type Database = {
           is_available?: boolean | null
           is_verified?: boolean | null
           license_number?: string | null
+          location_updated_at?: string | null
           max_delivery_radius_km?: number | null
           name?: string
           phone?: string
