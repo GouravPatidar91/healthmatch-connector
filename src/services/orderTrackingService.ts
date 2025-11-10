@@ -26,6 +26,8 @@ export interface OrderWithTracking {
   coupon_code?: string;
   coupon_discount: number;
   delivery_address: string;
+  delivery_latitude?: number;
+  delivery_longitude?: number;
   customer_phone: string;
   prescription_url?: string;
   estimated_delivery_time?: string;
@@ -35,11 +37,15 @@ export interface OrderWithTracking {
     pharmacy_name: string;
     phone: string;
     address: string;
+    latitude?: number;
+    longitude?: number;
   };
   delivery_partner?: {
+    id: string;
     name: string;
     phone: string;
     vehicle_number: string;
+    vehicle_type?: string;
   };
   items: Array<{
     medicine_name: string;
@@ -57,7 +63,7 @@ class OrderTrackingService {
         .from('medicine_orders')
         .select(`
           *,
-          vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, phone, address),
+          vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, phone, address, latitude, longitude),
           items:medicine_order_items(
             quantity,
             unit_price,
@@ -78,7 +84,7 @@ class OrderTrackingService {
           if (order.delivery_partner_id) {
             const { data: partner } = await supabase
               .from('delivery_partners')
-              .select('name, phone, vehicle_number')
+              .select('id, name, phone, vehicle_number, vehicle_type')
               .eq('id', order.delivery_partner_id)
               .maybeSingle();
             delivery_partner = partner || undefined;
@@ -113,7 +119,7 @@ class OrderTrackingService {
         .from('medicine_orders')
         .select(`
           *,
-          vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, phone, address),
+          vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, phone, address, latitude, longitude),
           items:medicine_order_items(
             quantity,
             unit_price,
@@ -133,7 +139,7 @@ class OrderTrackingService {
       if (order.delivery_partner_id) {
         const { data: partner } = await supabase
           .from('delivery_partners')
-          .select('name, phone, vehicle_number')
+          .select('id, name, phone, vehicle_number, vehicle_type')
           .eq('id', order.delivery_partner_id)
           .maybeSingle();
         delivery_partner = partner || undefined;

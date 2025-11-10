@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LiveOrderTrackingMap } from './LiveOrderTrackingMap';
 
 interface OrderTrackingDetailProps {
   open: boolean;
@@ -103,6 +104,34 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Live Tracking Map - Show when order is out for delivery */}
+            {order.order_status === 'out_for_delivery' && 
+             order.delivery_partner?.id && 
+             order.delivery_latitude && 
+             order.delivery_longitude && 
+             order.vendor?.latitude && 
+             order.vendor?.longitude && (
+              <div>
+                <h3 className="font-semibold mb-4">Live Tracking</h3>
+                <LiveOrderTrackingMap
+                  deliveryPartnerId={order.delivery_partner.id}
+                  deliveryPartnerName={order.delivery_partner.name}
+                  vehicleType={order.delivery_partner.vehicle_type || 'Vehicle'}
+                  pharmacyLocation={{
+                    lat: order.vendor.latitude,
+                    lng: order.vendor.longitude
+                  }}
+                  pharmacyName={order.vendor.pharmacy_name}
+                  customerLocation={{
+                    lat: order.delivery_latitude,
+                    lng: order.delivery_longitude
+                  }}
+                  customerAddress={order.delivery_address}
+                  orderStatus={order.order_status}
+                />
+              </div>
+            )}
+
             {/* Timeline */}
             <div>
               <h3 className="font-semibold mb-4">Order Timeline</h3>
