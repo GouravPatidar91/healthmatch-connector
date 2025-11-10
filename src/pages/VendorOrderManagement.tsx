@@ -12,6 +12,7 @@ import { VendorPriceEditor } from '@/components/orders/VendorPriceEditor';
 import { DeliveryPartnerSelector } from '@/components/orders/DeliveryPartnerSelector';
 import { OrderStatusActions } from '@/components/orders/OrderStatusActions';
 import { OrderStatusTimeline } from '@/components/orders/OrderStatusTimeline';
+import { DeliveryRequestStatus } from '@/components/orders/DeliveryRequestStatus';
 
 interface OrderData {
   id: string;
@@ -26,6 +27,14 @@ interface OrderData {
   prescription_url?: string;
   prescription_required: boolean;
   created_at: string;
+  delivery_partner_id?: string;
+  delivery_partner?: {
+    id: string;
+    name: string;
+    phone: string;
+    vehicle_type: string;
+    vehicle_number: string;
+  };
   vendor: {
     pharmacy_name: string;
     latitude?: number;
@@ -108,6 +117,7 @@ export default function VendorOrderManagement() {
         .select(`
           *,
           vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, latitude, longitude),
+          delivery_partner:delivery_partners(id, name, phone, vehicle_type, vehicle_number),
           items:medicine_order_items(
             medicine_id,
             quantity,
@@ -125,6 +135,9 @@ export default function VendorOrderManagement() {
 
       const transformedOrder: OrderData = {
         ...orderData,
+        delivery_partner: Array.isArray(orderData.delivery_partner) 
+          ? orderData.delivery_partner[0] 
+          : orderData.delivery_partner,
         items: orderData.items?.map((item: any) => ({
           medicine_id: item.medicine?.id || item.medicine_id,
           medicine_name: item.medicine?.name || 'Unknown',
@@ -308,17 +321,31 @@ export default function VendorOrderManagement() {
               onStatusUpdated={loadOrderData}
             />
 
-            {/* Delivery Partner Selector */}
-            <DeliveryPartnerSelector
-              orderId={order.id}
-              orderStatus={order.order_status}
-              vendorLocation={
-                vendorInfo?.latitude && vendorInfo?.longitude
-                  ? { latitude: vendorInfo.latitude, longitude: vendorInfo.longitude }
-                  : undefined
-              }
-              onPartnerAssigned={loadOrderData}
-            />
+            {/* Delivery Request Status - Show when ready for pickup or partner assigned */}
+            {(order.order_status === 'ready_for_pickup' || 
+              order.order_status === 'out_for_delivery') && (
+              <DeliveryRequestStatus
+                orderId={order.id}
+                vendorId={vendorInfo.id}
+                deliveryPartner={order.delivery_partner}
+              />
+            )}
+
+            {/* Manual Delivery Partner Selector - Only show if not ready for pickup */}
+            {order.order_status !== 'ready_for_pickup' && 
+             order.order_status !== 'out_for_delivery' && 
+             order.order_status !== 'delivered' && (
+              <DeliveryPartnerSelector
+                orderId={order.id}
+                orderStatus={order.order_status}
+                vendorLocation={
+                  vendorInfo?.latitude && vendorInfo?.longitude
+                    ? { latitude: vendorInfo.latitude, longitude: vendorInfo.longitude }
+                    : undefined
+                }
+                onPartnerAssigned={loadOrderData}
+              />
+            )}
           </div>
         </div>
       </div>
