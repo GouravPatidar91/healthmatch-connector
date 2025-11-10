@@ -217,6 +217,9 @@ class DeliveryRequestService {
 
   async getPendingRequests(partnerId: string): Promise<any[]> {
     try {
+      // Add 5 second buffer to account for clock drift
+      const bufferTime = new Date(Date.now() - 5000).toISOString();
+      
       const { data, error } = await supabase
         .from('delivery_requests')
         .select(`
@@ -224,7 +227,9 @@ class DeliveryRequestService {
           medicine_orders (
             order_number,
             delivery_address,
-            total_amount,
+            delivery_latitude,
+            delivery_longitude,
+            final_amount,
             medicine_vendors (
               pharmacy_name,
               address,
@@ -235,11 +240,22 @@ class DeliveryRequestService {
         `)
         .eq('delivery_partner_id', partnerId)
         .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
+        .gte('expires_at', bufferTime)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Additional client-side filter to ensure validity
+      const now = Date.now();
+      const validRequests = (data || []).filter(request => {
+        const expiresAt = new Date(request.expires_at).getTime();
+        const timeLeft = Math.floor((expiresAt - now) / 1000);
+        console.log(`Request ${request.id}: expires at ${request.expires_at}, time left: ${timeLeft}s`);
+        return expiresAt > now;
+      });
+      
+      console.log(`Found ${validRequests.length} valid pending requests`);
+      return validRequests;
     } catch (error) {
       console.error('Error fetching pending requests:', error);
       return [];

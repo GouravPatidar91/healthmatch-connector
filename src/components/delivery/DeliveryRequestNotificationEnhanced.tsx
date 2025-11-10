@@ -24,13 +24,14 @@ export function DeliveryRequestNotificationEnhanced({
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const now = new Date().getTime();
+      const now = Date.now();
       const expiresAt = new Date(request.expires_at).getTime();
       const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(diff);
 
-      if (diff === 0) {
-        onClose();
+      // Only close if truly expired (with 1 second buffer)
+      if (diff <= 1) {
+        setTimeout(() => onClose(), 1000);
       }
     };
 

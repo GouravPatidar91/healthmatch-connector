@@ -53,7 +53,7 @@ export default function DeliveryPartnerDashboard() {
     loadOrders();
   }, []);
 
-  // Auto-refresh pending requests every 10 seconds
+  // Auto-refresh pending requests every 30 seconds
   useEffect(() => {
     if (!partner) return;
 
@@ -65,7 +65,7 @@ export default function DeliveryPartnerDashboard() {
       } catch (error) {
         console.error('Error refreshing pending requests:', error);
       }
-    }, 10000);
+    }, 30000);
 
     return () => clearInterval(refreshInterval);
   }, [partner]);
