@@ -117,7 +117,7 @@ export default function VendorOrderManagement() {
         .select(`
           *,
           vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, latitude, longitude),
-          delivery_partner:delivery_partners!medicine_orders_delivery_partner_id_fkey(id, name, phone, vehicle_type, vehicle_number),
+          delivery_partner:delivery_partners(id, name, phone, vehicle_type, vehicle_number),
           items:medicine_order_items(
             medicine_id,
             quantity,

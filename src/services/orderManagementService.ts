@@ -88,40 +88,6 @@ class OrderManagementService {
 
   async updateOrderStatus(orderId: string, status: string, notes?: string) {
     try {
-      console.log('Updating order status:', { orderId, status, notes });
-      
-      // First verify the order belongs to the current vendor
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      // Get vendor info
-      const { data: vendor, error: vendorError } = await supabase
-        .from('medicine_vendors')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (vendorError || !vendor) {
-        console.error('Vendor verification failed:', vendorError);
-        throw new Error('Vendor not found');
-      }
-
-      // Verify order belongs to vendor
-      const { data: order, error: orderCheckError } = await supabase
-        .from('medicine_orders')
-        .select('id, vendor_id')
-        .eq('id', orderId)
-        .eq('vendor_id', vendor.id)
-        .single();
-
-      if (orderCheckError || !order) {
-        console.error('Order verification failed:', orderCheckError);
-        throw new Error('Order not found or access denied');
-      }
-
-      // Update the order status
       const { error } = await supabase
         .from('medicine_orders')
         .update({
@@ -129,15 +95,10 @@ class OrderManagementService {
           vendor_notes: notes,
           updated_at: new Date().toISOString()
         })
-        .eq('id', orderId)
-        .eq('vendor_id', vendor.id);
+        .eq('id', orderId);
 
-      if (error) {
-        console.error('Order update failed:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Order status updated successfully');
       return { success: true };
     } catch (error) {
       console.error('Error updating order status:', error);

@@ -77,27 +77,6 @@ class DeliveryRequestService {
 
       if (createError) throw createError;
 
-      // Send push notifications to partners
-      try {
-        const partnerIds = partnersWithDistance.map(p => p.id);
-        await supabase.functions.invoke('send-push-notification', {
-          body: {
-            deliveryPartnerIds: partnerIds,
-            title: '🚨 New Delivery Request!',
-            body: `New order ready for pickup nearby. Tap to accept!`,
-            data: {
-              orderId,
-              vendorId,
-              requestType: 'initial'
-            }
-          }
-        });
-        console.log('Push notifications sent to partners');
-      } catch (notifError) {
-        console.error('Error sending push notifications:', notifError);
-        // Don't fail if notifications fail
-      }
-
       return {
         success: true,
         requestIds: createdRequests?.map((r) => r.id) || [],
