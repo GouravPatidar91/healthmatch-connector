@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ActiveOrderTracking } from '@/components/delivery/ActiveOrderTracking';
 import { DeliveryRequestNotification } from '@/components/delivery/DeliveryRequestNotification';
 import { deliveryRequestService } from '@/services/deliveryRequestService';
+import { pushNotificationService } from '@/services/pushNotificationService';
 import { Bike, Package, CheckCircle, Clock, AlertCircle, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -50,6 +51,17 @@ export default function DeliveryPartnerDashboard() {
     loadPartnerData();
     loadOrders();
   }, []);
+
+  // Initialize push notifications
+  useEffect(() => {
+    if (partner) {
+      pushNotificationService.initialize(partner.id).catch(console.error);
+    }
+
+    return () => {
+      // Cleanup on unmount (optional, usually keep notifications active)
+    };
+  }, [partner]);
 
   useEffect(() => {
     if (!partner) return;

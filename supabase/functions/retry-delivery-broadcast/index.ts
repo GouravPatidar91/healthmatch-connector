@@ -245,6 +245,33 @@ Deno.serve(async (req) => {
 
       console.log(`✓ Created ${newRequests.length} new delivery requests for order ${order.id} (round ${broadcastRound + 1}, radius ${expandedRadius}km)`);
       
+      // Send push notifications to selected partners
+      try {
+        const partnerIds = selectedPartners.map((p: any) => p.id);
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+          },
+          body: JSON.stringify({
+            deliveryPartnerIds: partnerIds,
+            title: '🚨 New Delivery Request!',
+            body: `Order #${order.order_number} from ${vendor.pharmacy_name}. Tap to accept!`,
+            data: {
+              orderId: order.id,
+              orderNumber: order.order_number,
+              vendorName: vendor.pharmacy_name,
+              broadcastRound: broadcastRound + 1
+            }
+          })
+        });
+        console.log(`Push notifications sent to ${partnerIds.length} partners`);
+      } catch (notifError) {
+        console.error('Error sending push notifications:', notifError);
+        // Don't fail the entire operation if notifications fail
+      }
+      
       rebroadcastCount++;
       processedCount++;
     }
