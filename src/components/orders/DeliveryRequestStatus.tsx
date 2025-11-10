@@ -119,19 +119,8 @@ export const DeliveryRequestStatus: React.FC<DeliveryRequestStatusProps> = ({
       <Card className="border-orange-500 bg-orange-50/50">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600 mr-1" />
-            Order Packed
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pb-3">
-          <Badge variant="default" className="bg-green-600">
-            ✓ Order is packed and ready
-          </Badge>
-        </CardContent>
-        <CardHeader className="pt-0">
-          <CardTitle className="text-base flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-orange-600" />
-            Assigning Delivery Partner
+            Searching for Delivery Partners
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">

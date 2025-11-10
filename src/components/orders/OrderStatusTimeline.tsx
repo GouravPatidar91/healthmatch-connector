@@ -42,7 +42,7 @@ export const OrderStatusTimeline: React.FC<OrderStatusTimelineProps> = ({
       case 'preparing':
         return 'Preparing Medicines';
       case 'ready_for_pickup':
-        return 'Order Packed';
+        return 'Ready for Pickup';
       case 'out_for_delivery':
         return 'Out for Delivery';
       case 'delivered':
