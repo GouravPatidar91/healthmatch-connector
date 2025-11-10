@@ -336,7 +336,7 @@ class MedicineService {
         console.warn('Failed to create vendor notification:', notificationError);
       }
 
-      // Broadcast to nearby delivery partners
+      // Broadcast to nearby delivery partners using edge function
       const { data: vendor, error: vendorError } = await supabase
         .from('medicine_vendors')
         .select('latitude, longitude')
@@ -344,17 +344,33 @@ class MedicineService {
         .single();
 
       if (!vendorError && vendor?.latitude && vendor?.longitude) {
-        const broadcastResult = await deliveryRequestService.broadcastToNearbyPartners(
-          order.id,
-          orderData.vendor_id,
-          { latitude: vendor.latitude, longitude: vendor.longitude },
-          10 // 10km radius
-        );
+        try {
+          console.log('Broadcasting delivery request for order:', order.id);
+          
+          const { data: broadcastData, error: broadcastError } = await supabase.functions.invoke(
+            'broadcast-delivery-request',
+            {
+              body: {
+                orderId: order.id,
+                vendorId: orderData.vendor_id,
+                vendorLocation: { 
+                  latitude: vendor.latitude, 
+                  longitude: vendor.longitude 
+                },
+                radiusKm: 10
+              }
+            }
+          );
 
-        if (broadcastResult.success) {
-          console.log('Delivery requests broadcast to partners:', broadcastResult.requestIds);
-        } else {
-          console.warn('Failed to broadcast delivery requests:', broadcastResult.error);
+          if (broadcastError) {
+            console.error('Broadcast error:', broadcastError);
+          } else if (broadcastData?.success) {
+            console.log(`Delivery requests broadcast to ${broadcastData.partnersNotified} partners:`, broadcastData.requestIds);
+          } else {
+            console.warn('Broadcast failed:', broadcastData?.error);
+          }
+        } catch (error) {
+          console.error('Failed to broadcast delivery requests:', error);
         }
       } else {
         console.warn('Vendor location not available for delivery broadcast');

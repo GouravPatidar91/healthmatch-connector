@@ -1,4 +1,3 @@
-
 project_id = "bpflebtklgnivcanhlbp"
 
 [functions.analyze-symptoms]
@@ -11,4 +10,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.get-mapbox-token]
+verify_jwt = false
+
+[functions.broadcast-delivery-request]
 verify_jwt = false
