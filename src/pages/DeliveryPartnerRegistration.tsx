@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,13 +23,17 @@ const registrationSchema = z.object({
   email: z.string()
     .trim()
     .email('Invalid email address')
-    .max(255, 'Email must be less than 255 characters'),
+    .max(255, 'Email must be less than 255 characters')
+    .optional()
+    .or(z.literal('')),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
     .max(72, 'Password must be less than 72 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .optional()
+    .or(z.literal('')),
   phone: z.string()
     .trim()
     .regex(/^[0-9]{10}$/, 'Phone number must be exactly 10 digits'),
@@ -83,16 +87,36 @@ export default function DeliveryPartnerRegistration() {
     },
   });
 
-  // Redirect if already logged in
-  if (user) {
-    navigate('/delivery-partner-dashboard');
-    return null;
-  }
+  // Check if user is already a delivery partner
+  useEffect(() => {
+    const checkExistingPartner = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('delivery_partners')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (data) {
+          // Already registered, redirect to dashboard
+          navigate('/delivery-partner-dashboard');
+        }
+      }
+    };
+    
+    checkExistingPartner();
+  }, [user, navigate]);
 
   const onSubmit = async (data: RegistrationFormData) => {
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
+
+      // Validate email and password for non-logged-in users
+      if (!user && (!data.email || !data.password)) {
+        setErrorMessage('Email and password are required for registration');
+        return;
+      }
 
       // Check if location permission is granted
       if (permissionState !== 'granted' || !location) {
@@ -100,37 +124,47 @@ export default function DeliveryPartnerRegistration() {
         return;
       }
 
-      // Step 1: Create auth user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/delivery-partner-dashboard`,
-          data: {
-            name: data.name,
+      let userId: string;
+
+      // Step 1: Handle authentication
+      if (user) {
+        // User is already logged in, use their ID
+        userId = user.id;
+      } else {
+        // Create new auth user
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/delivery-partner-dashboard`,
+            data: {
+              name: data.name,
+            },
           },
-        },
-      });
+        });
 
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          setErrorMessage('This email is already registered. Please login instead.');
-        } else {
-          setErrorMessage(signUpError.message);
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            setErrorMessage('This email is already registered. Please login instead.');
+          } else {
+            setErrorMessage(signUpError.message);
+          }
+          return;
         }
-        return;
-      }
 
-      if (!authData.user) {
-        setErrorMessage('Failed to create account. Please try again.');
-        return;
+        if (!authData.user) {
+          setErrorMessage('Failed to create account. Please try again.');
+          return;
+        }
+
+        userId = authData.user.id;
       }
 
       // Step 2: Insert into delivery_partners table
       const { error: insertError } = await supabase
         .from('delivery_partners')
         .insert({
-          user_id: authData.user.id,
+          user_id: userId,
           name: data.name,
           phone: data.phone,
           vehicle_type: data.vehicleType,
@@ -151,11 +185,15 @@ export default function DeliveryPartnerRegistration() {
 
       toast({
         title: 'Registration Successful!',
-        description: 'Your account has been created. Please check your email to verify your account.',
+        description: user 
+          ? 'You are now registered as a delivery partner!'
+          : 'Your account has been created. Please check your email to verify your account.',
       });
 
       // Redirect to dashboard
-      navigate('/delivery-partner-dashboard');
+      setTimeout(() => {
+        navigate('/delivery-partner-dashboard');
+      }, 1000);
     } catch (error) {
       console.error('Registration error:', error);
       setErrorMessage('An unexpected error occurred. Please try again.');
@@ -244,42 +282,56 @@ export default function DeliveryPartnerRegistration() {
                   placeholder="Enter your full name"
                   {...register('name')}
                   disabled={isSubmitting}
+                  defaultValue={user?.user_metadata?.name || ''}
                 />
                 {errors.name && (
                   <p className="text-sm text-destructive">{errors.name.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  {...register('email')}
-                  disabled={isSubmitting}
-                />
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email.message}</p>
-                )}
-              </div>
+              {!user && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      {...register('email')}
+                      disabled={isSubmitting}
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email.message}</p>
+                    )}
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a strong password"
-                  {...register('password')}
-                  disabled={isSubmitting}
-                />
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password.message}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Must contain at least 8 characters, including uppercase, lowercase, and numbers
-                </p>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Create a strong password"
+                      {...register('password')}
+                      disabled={isSubmitting}
+                    />
+                    {errors.password && (
+                      <p className="text-sm text-destructive">{errors.password.message}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Must contain at least 8 characters, including uppercase, lowercase, and numbers
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {user && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Logged in as {user.email}
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number *</Label>
@@ -384,17 +436,19 @@ export default function DeliveryPartnerRegistration() {
               </Button>
             </div>
 
-            <div className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
-              <Button
-                type="button"
-                variant="link"
-                className="p-0"
-                onClick={() => navigate('/login')}
-              >
-                Login here
-              </Button>
-            </div>
+            {!user && (
+              <div className="text-center text-sm text-muted-foreground">
+                Already have an account?{' '}
+                <Button
+                  type="button"
+                  variant="link"
+                  className="p-0"
+                  onClick={() => navigate('/login')}
+                >
+                  Login here
+                </Button>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
