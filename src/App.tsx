@@ -29,6 +29,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import OrderSuccess from "./pages/OrderSuccess";
 import MyOrders from "./pages/MyOrders";
 import DeliveryPartnerDashboard from "./pages/DeliveryPartnerDashboard";
+import DeliveryPartnerRegistration from "./pages/DeliveryPartnerRegistration";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import RequireAuth from "./components/auth/RequireAuth";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/internship-terms" element={<InternshipTerms />} />
+            <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
             
             {/* Protected routes with auth check */}
             <Route element={<RequireAuth><MainLayout /></RequireAuth>}>

@@ -67,6 +67,9 @@ const Homepage = () => {
               <a href="#about" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
                 About
               </a>
+              <a href="#partners" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
+                Partners
+              </a>
               <a href="#contact" className="text-gray-600 hover:text-blue-500 font-medium transition-colors">
                 Contact
               </a>
@@ -204,8 +207,62 @@ const Homepage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-24 bg-gradient-to-r from-blue-500 to-blue-600">
+      <section id="partners" className="py-24 bg-gradient-to-r from-blue-500 to-blue-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">Join Our Network</h2>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+              Become a partner and help us deliver healthcare to more people
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all">
+              <CardContent className="pt-6 text-center">
+                <div className="text-white space-y-4">
+                  <Heart className="h-12 w-12 mx-auto" />
+                  <h3 className="text-xl font-semibold">Healthcare Providers</h3>
+                  <p className="text-blue-100">Join as a doctor or clinic</p>
+                  <Link to="/doctor-registration">
+                    <Button variant="secondary" className="mt-4">
+                      Register Now
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all">
+              <CardContent className="pt-6 text-center">
+                <div className="text-white space-y-4">
+                  <FileText className="h-12 w-12 mx-auto" />
+                  <h3 className="text-xl font-semibold">Pharmacy Partners</h3>
+                  <p className="text-blue-100">List your pharmacy with us</p>
+                  <Link to="/vendor-registration">
+                    <Button variant="secondary" className="mt-4">
+                      Register Now
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all">
+              <CardContent className="pt-6 text-center">
+                <div className="text-white space-y-4">
+                  <Users className="h-12 w-12 mx-auto" />
+                  <h3 className="text-xl font-semibold">Delivery Partners</h3>
+                  <p className="text-blue-100">Earn by delivering medicines</p>
+                  <Link to="/delivery-partner-registration">
+                    <Button variant="secondary" className="mt-4">
+                      Register Now
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 text-center text-white">
             <div className="space-y-4">
               <div className="text-5xl font-bold">50K+</div>
@@ -273,6 +330,15 @@ const Homepage = () => {
                 <li><a href="#" className="hover:text-white transition-colors">Health Monitoring</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Appointments</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Medical Records</a></li>
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-white font-semibold text-lg">Partners</h3>
+              <ul className="space-y-2">
+                <li><Link to="/doctor-registration" className="hover:text-white transition-colors">Become a Doctor</Link></li>
+                <li><Link to="/vendor-registration" className="hover:text-white transition-colors">Register Pharmacy</Link></li>
+                <li><Link to="/delivery-partner-registration" className="hover:text-white transition-colors">Delivery Partner</Link></li>
               </ul>
             </div>
 
