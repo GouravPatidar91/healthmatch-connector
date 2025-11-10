@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Package, Clock, Phone } from 'lucide-react';
 import { deliveryRequestService } from '@/services/deliveryRequestService';
 import { useToast } from '@/hooks/use-toast';
+import { DeliveryRequestMap } from './DeliveryRequestMap';
 
 interface DeliveryRequestNotificationProps {
   request: any;
@@ -101,6 +102,24 @@ export const DeliveryRequestNotification: React.FC<DeliveryRequestNotificationPr
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Map View */}
+        {vendor?.latitude && vendor?.longitude && order?.delivery_latitude && order?.delivery_longitude && (
+          <DeliveryRequestMap
+            partnerId={partnerId}
+            vendorLocation={{
+              latitude: vendor.latitude,
+              longitude: vendor.longitude,
+            }}
+            vendorName={vendor.pharmacy_name}
+            vendorAddress={vendor.address}
+            deliveryLocation={{
+              latitude: order.delivery_latitude,
+              longitude: order.delivery_longitude,
+            }}
+            deliveryAddress={order.delivery_address}
+          />
+        )}
+
         <div className="space-y-2">
           <div className="flex items-start gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
