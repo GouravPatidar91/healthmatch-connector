@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.get-mapbox-token]
 verify_jwt = false
+
+[functions.retry-delivery-broadcast]
+verify_jwt = false
