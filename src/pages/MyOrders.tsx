@@ -3,10 +3,12 @@ import { orderTrackingService, OrderWithTracking } from '@/services/orderTrackin
 import { OrderCard } from '@/components/orders/OrderCard';
 import { OrderTrackingDetail } from '@/components/orders/OrderTrackingDetail';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 
 const MyOrders: React.FC = () => {
   const { user } = useAuth();
@@ -15,12 +17,53 @@ const MyOrders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [trackingDialogOpen, setTrackingDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadOrders();
     }
   }, [user]);
+
+  // Subscribe to real-time order updates
+  useEffect(() => {
+    if (!orders.length) return;
+
+    const channels = orders
+      .filter(order => ['ready_for_pickup', 'out_for_delivery'].includes(order.order_status))
+      .map(order => 
+        supabase
+          .channel(`order-${order.id}`)
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'medicine_orders',
+            filter: `id=eq.${order.id}`
+          }, (payload: any) => {
+            const newStatus = payload.new.order_status;
+            const oldStatus = payload.old.order_status;
+
+            // Auto-open tracking when delivery partner is assigned
+            if (newStatus === 'out_for_delivery' && oldStatus === 'ready_for_pickup') {
+              setSelectedOrderId(order.id);
+              setTrackingDialogOpen(true);
+              
+              toast({
+                title: 'Delivery Partner Assigned!',
+                description: 'Your order is now out for delivery. Track it live!',
+              });
+            }
+
+            // Reload orders to reflect new status
+            loadOrders();
+          })
+          .subscribe()
+      );
+    
+    return () => {
+      channels.forEach(ch => supabase.removeChannel(ch));
+    };
+  }, [orders]);
 
   // Check for ?track= parameter in URL
   useEffect(() => {
@@ -180,9 +223,12 @@ const MyOrders: React.FC = () => {
 
       {selectedOrderId && (
         <OrderTrackingDetail
-          open={!!selectedOrderId}
+          open={trackingDialogOpen || !!selectedOrderId}
           orderId={selectedOrderId}
-          onClose={() => setSelectedOrderId(null)}
+          onClose={() => {
+            setSelectedOrderId(null);
+            setTrackingDialogOpen(false);
+          }}
         />
       )}
     </div>

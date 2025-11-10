@@ -30,6 +30,11 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
           description: `Order status updated to ${newStatus}`,
         });
         onStatusUpdated();
+        
+        // If marking as ready for pickup, broadcast to delivery partners
+        if (newStatus === 'ready_for_pickup') {
+          await handleBroadcastToPartners();
+        }
       } else {
         toast({
           title: 'Error',
@@ -45,6 +50,76 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBroadcastToPartners = async () => {
+    try {
+      // Import the service dynamically to avoid circular dependencies
+      const { deliveryRequestService } = await import('@/services/deliveryRequestService');
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // Get order and vendor details
+      const { data: order, error: orderError } = await supabase
+        .from('medicine_orders')
+        .select(`
+          id,
+          vendor_id,
+          medicine_vendors (
+            id,
+            latitude,
+            longitude,
+            pharmacy_name
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (orderError || !order) {
+        console.error('Error fetching order details:', orderError);
+        return;
+      }
+
+      const vendor = order.medicine_vendors as any;
+      if (!vendor?.latitude || !vendor?.longitude) {
+        toast({
+          title: 'Location Required',
+          description: 'Vendor location is required to find delivery partners',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Searching...',
+        description: 'Finding nearby delivery partners',
+      });
+
+      const result = await deliveryRequestService.broadcastToNearbyPartners(
+        order.id,
+        vendor.id,
+        { latitude: vendor.latitude, longitude: vendor.longitude }
+      );
+
+      if (result.success) {
+        toast({
+          title: 'Partners Notified',
+          description: `Notified ${result.requestIds?.length || 0} delivery partners`,
+        });
+      } else {
+        toast({
+          title: 'No Partners Available',
+          description: result.error || 'No delivery partners found nearby',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error broadcasting to partners:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to notify delivery partners',
+        variant: 'destructive',
+      });
     }
   };
 

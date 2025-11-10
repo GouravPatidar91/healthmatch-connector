@@ -242,6 +242,64 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_requests: {
+        Row: {
+          created_at: string | null
+          delivery_partner_id: string
+          expires_at: string
+          id: string
+          order_id: string
+          rejection_reason: string | null
+          responded_at: string | null
+          status: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_partner_id: string
+          expires_at: string
+          id?: string
+          order_id: string
+          rejection_reason?: string | null
+          responded_at?: string | null
+          status?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_partner_id?: string
+          expires_at?: string
+          id?: string
+          order_id?: string
+          rejection_reason?: string | null
+          responded_at?: string | null
+          status?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_requests_delivery_partner_id_fkey"
+            columns: ["delivery_partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_requests_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_notifications: {
         Row: {
           appointment_id: string

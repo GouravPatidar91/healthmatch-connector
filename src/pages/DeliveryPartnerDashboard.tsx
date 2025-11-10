@@ -8,7 +8,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ActiveOrderTracking } from '@/components/delivery/ActiveOrderTracking';
-import { Bike, Package, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { DeliveryRequestNotification } from '@/components/delivery/DeliveryRequestNotification';
+import { deliveryRequestService } from '@/services/deliveryRequestService';
+import { Bike, Package, CheckCircle, Clock, AlertCircle, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface DeliveryPartner {
@@ -41,11 +43,33 @@ export default function DeliveryPartnerDashboard() {
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [incomingRequest, setIncomingRequest] = useState<any>(null);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
 
   useEffect(() => {
     loadPartnerData();
     loadOrders();
   }, []);
+
+  useEffect(() => {
+    if (!partner) return;
+
+    // Subscribe to new delivery requests
+    const channel = deliveryRequestService.subscribeToRequestUpdates(
+      partner.id,
+      (request) => {
+        setIncomingRequest(request);
+        loadOrders();
+      }
+    );
+
+    // Load existing pending requests
+    deliveryRequestService.getPendingRequests(partner.id).then(setPendingRequests);
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [partner]);
 
   const loadPartnerData = async () => {
     try {
@@ -200,16 +224,39 @@ export default function DeliveryPartnerDashboard() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Delivery Partner Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {partner.name}</p>
-          </div>
+      {/* Incoming Request Modal */}
+      {incomingRequest && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <DeliveryRequestNotification
+            request={incomingRequest}
+            partnerId={partner.id}
+            onClose={() => {
+              setIncomingRequest(null);
+              loadOrders();
+              deliveryRequestService.getPendingRequests(partner.id).then(setPendingRequests);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Delivery Partner Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, {partner.name}</p>
+        </div>
+        <div className="flex gap-2 items-center">
+          {pendingRequests.length > 0 && (
+            <Badge variant="destructive" className="flex items-center gap-1">
+              <Bell className="h-3 w-3" />
+              {pendingRequests.length} Pending Request{pendingRequests.length > 1 ? 's' : ''}
+            </Badge>
+          )}
           <Badge variant={partner.is_available ? 'default' : 'secondary'} className="text-lg px-4 py-2">
             {partner.is_available ? 'Available' : 'Offline'}
           </Badge>
         </div>
+      </div>
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">
