@@ -848,6 +848,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "medicine_orders_delivery_partner_id_fkey"
+            columns: ["delivery_partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "medicine_orders_prescription_approved_by_fkey"
             columns: ["prescription_approved_by"]
             isOneToOne: false
