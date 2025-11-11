@@ -436,7 +436,7 @@ class MedicineService {
                 patient_id: user.id,
                 patient_latitude: userLocation.latitude,
                 patient_longitude: userLocation.longitude,
-                max_distance_km: 5,
+                max_distance_km: 50, // Increased to 50km to find more pharmacies
                 pharmacies_per_round: 5
               }
             }
@@ -446,7 +446,7 @@ class MedicineService {
             console.error('Broadcast error:', broadcastError);
             return { 
               success: false, 
-              error: 'Failed to broadcast to pharmacies. Please try again.',
+              error: `Failed to broadcast to pharmacies: ${broadcastError.message || 'Please check your internet connection and try again.'}`,
               url: data.publicUrl, 
               prescription: prescriptionData 
             };

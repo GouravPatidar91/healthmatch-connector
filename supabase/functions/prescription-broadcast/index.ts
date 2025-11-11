@@ -23,7 +23,7 @@ serve(async (req) => {
       patient_id,
       patient_latitude, 
       patient_longitude,
-      max_distance_km = 5,
+      max_distance_km = 50, // Increased from 5km to 50km to find more pharmacies
       pharmacies_per_round = 5
     } = await req.json();
 
@@ -45,12 +45,13 @@ serve(async (req) => {
     }
 
     if (!nearbyPharmacies || nearbyPharmacies.length === 0) {
-      console.log('No nearby pharmacies found');
+      console.log(`No nearby pharmacies found within ${max_distance_km}km`);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'No pharmacies found within radius',
-          pharmacies_count: 0
+          message: `No pharmacies found within ${max_distance_km}km of your location. Please try expanding your search radius or check if there are verified pharmacies in your area.`,
+          pharmacies_count: 0,
+          search_radius_km: max_distance_km
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
