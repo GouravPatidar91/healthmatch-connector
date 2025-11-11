@@ -61,28 +61,51 @@ export default function DeliveryPartnerDashboard() {
     const channel = deliveryRequestService.subscribeToRequestUpdates(
       partner.id,
       async (newRequest) => {
+        console.log('New delivery request received:', newRequest);
+        
         // Fetch the complete request data with relations
         const requests = await deliveryRequestService.getPendingRequests(partner.id);
-        setPendingRequests(requests);
-        setUnreadCount(requests.length);
+        console.log('Fetched pending requests:', requests);
         
-        // Reload orders when request is accepted
-        if (newRequest.status === 'accepted') {
-          loadOrders();
-        }
+        // Transform data to match component expectations
+        const transformedRequests = requests.map(req => ({
+          ...req,
+          order: Array.isArray(req.medicine_orders) ? req.medicine_orders[0] : req.medicine_orders,
+          vendor: Array.isArray(req.medicine_orders) && req.medicine_orders[0]?.medicine_vendors 
+            ? req.medicine_orders[0].medicine_vendors 
+            : null
+        }));
+        
+        console.log('Transformed requests:', transformedRequests);
+        setPendingRequests(transformedRequests);
+        setUnreadCount(transformedRequests.length);
         
         // Show toast notification
-        toast({
-          title: 'New delivery request received!',
-          description: 'A new order is available for delivery',
-        });
+        if (transformedRequests.length > 0) {
+          toast({
+            title: 'New delivery request received!',
+            description: 'A new order is available for delivery',
+          });
+        }
       }
     );
 
     // Initial load of pending requests
     deliveryRequestService.getPendingRequests(partner.id).then((requests) => {
-      setPendingRequests(requests);
-      setUnreadCount(requests.length);
+      console.log('Initial pending requests:', requests);
+      
+      // Transform data to match component expectations
+      const transformedRequests = requests.map(req => ({
+        ...req,
+        order: Array.isArray(req.medicine_orders) ? req.medicine_orders[0] : req.medicine_orders,
+        vendor: Array.isArray(req.medicine_orders) && req.medicine_orders[0]?.medicine_vendors 
+          ? req.medicine_orders[0].medicine_vendors 
+          : null
+      }));
+      
+      console.log('Initial transformed requests:', transformedRequests);
+      setPendingRequests(transformedRequests);
+      setUnreadCount(transformedRequests.length);
     });
 
     // Cleanup subscription
@@ -301,8 +324,17 @@ export default function DeliveryPartnerDashboard() {
                       onClose={() => {
                         loadOrders();
                         deliveryRequestService.getPendingRequests(partner.id).then((requests) => {
-                          setPendingRequests(requests);
-                          setUnreadCount(requests.length);
+                          // Transform data to match component expectations
+                          const transformedRequests = requests.map(req => ({
+                            ...req,
+                            order: Array.isArray(req.medicine_orders) ? req.medicine_orders[0] : req.medicine_orders,
+                            vendor: Array.isArray(req.medicine_orders) && req.medicine_orders[0]?.medicine_vendors 
+                              ? req.medicine_orders[0].medicine_vendors 
+                              : null
+                          }));
+                          
+                          setPendingRequests(transformedRequests);
+                          setUnreadCount(transformedRequests.length);
                         });
                       }}
                     />
