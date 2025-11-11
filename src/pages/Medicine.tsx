@@ -18,7 +18,7 @@ import { medicineService } from '@/services/medicineService';
 import PrescriptionProcessingModal from '@/components/prescription/PrescriptionProcessingModal';
 import { CheckoutDialog } from '@/components/medicine/CheckoutDialog';
 import { supabase } from '@/integrations/supabase/client';
-import { LocationPickerDialog } from '@/components/maps/LocationPickerDialog';
+import { MapboxLocationPicker } from '@/components/maps/MapboxLocationPicker';
 
 const categories = [
   { name: 'All Categories', icon: '🏥', value: 'all' },
@@ -962,7 +962,7 @@ export default function Medicine() {
         />
 
       {/* Location Picker Dialog */}
-      <LocationPickerDialog
+      <MapboxLocationPicker
         open={isLocationPickerOpen}
         onClose={() => setIsLocationPickerOpen(false)}
         onLocationSelect={(location) => {
@@ -997,7 +997,7 @@ export default function Medicine() {
         />
 
         {/* Location Picker Dialog */}
-        <LocationPickerDialog
+        <MapboxLocationPicker
           open={isLocationPickerOpen}
           onClose={() => setIsLocationPickerOpen(false)}
           onLocationSelect={(location) => {
