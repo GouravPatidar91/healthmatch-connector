@@ -13,6 +13,7 @@ import { DeliveryPartnerSelector } from '@/components/orders/DeliveryPartnerSele
 import { OrderStatusActions } from '@/components/orders/OrderStatusActions';
 import { OrderStatusTimeline } from '@/components/orders/OrderStatusTimeline';
 import { DeliveryRequestStatus } from '@/components/orders/DeliveryRequestStatus';
+import { OrderMiniMap } from '@/components/orders/OrderMiniMap';
 
 interface OrderData {
   id: string;
@@ -23,6 +24,8 @@ interface OrderData {
   handling_charges: number;
   delivery_fee: number;
   delivery_address: string;
+  delivery_latitude?: number;
+  delivery_longitude?: number;
   customer_phone: string;
   prescription_url?: string;
   prescription_required: boolean;
@@ -281,12 +284,31 @@ export default function VendorOrderManagement() {
               </CardContent>
             </Card>
 
-            {/* Customer Details */}
+            {/* Customer Details with Mini Map */}
             <Card>
               <CardHeader>
                 <CardTitle>Customer Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
+                {/* Mini Map showing user location */}
+                {order.delivery_latitude && order.delivery_longitude && 
+                 vendorInfo?.latitude && vendorInfo?.longitude && (
+                  <div className="mb-4">
+                    <OrderMiniMap
+                      pharmacyLocation={{
+                        lat: vendorInfo.latitude,
+                        lng: vendorInfo.longitude
+                      }}
+                      pharmacyName={vendorInfo.pharmacy_name}
+                      customerLocation={{
+                        lat: order.delivery_latitude,
+                        lng: order.delivery_longitude
+                      }}
+                      customerAddress={order.delivery_address}
+                    />
+                  </div>
+                )}
+                
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 mt-1 text-muted-foreground" />
                   <div>

@@ -19,6 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LiveOrderTrackingMap } from './LiveOrderTrackingMap';
+import { OrderMiniMap } from './OrderMiniMap';
 
 interface OrderTrackingDetailProps {
   open: boolean;
@@ -40,13 +41,24 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
   useEffect(() => {
     if (open && orderId) {
       loadOrderDetails();
+      
+      // Auto-redirect to live tracking when status changes to out_for_delivery
       const unsubscribe = orderTrackingService.subscribeToOrderUpdates(orderId, (updatedOrder) => {
         if (updatedOrder) {
           loadOrderDetails();
-          toast({
-            title: 'Order Updated',
-            description: 'Your order status has been updated',
-          });
+          
+          // Check if status changed to out_for_delivery
+          if (updatedOrder.order_status === 'out_for_delivery' && order?.order_status !== 'out_for_delivery') {
+            toast({
+              title: 'Delivery Partner On The Way! 🚀',
+              description: 'Track your order in real-time',
+            });
+          } else {
+            toast({
+              title: 'Order Updated',
+              description: 'Your order status has been updated',
+            });
+          }
         }
       });
 
@@ -104,6 +116,34 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Mini Map - Show when order is confirmed and has location */}
+            {(order.order_status === 'confirmed' || 
+              order.order_status === 'preparing' || 
+              order.order_status === 'ready_for_pickup') &&
+             order.delivery_latitude && 
+             order.delivery_longitude && 
+             order.vendor?.latitude && 
+             order.vendor?.longitude && (
+              <div>
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Order Location
+                </h3>
+                <OrderMiniMap
+                  pharmacyLocation={{
+                    lat: order.vendor.latitude,
+                    lng: order.vendor.longitude
+                  }}
+                  pharmacyName={order.vendor.pharmacy_name}
+                  customerLocation={{
+                    lat: order.delivery_latitude,
+                    lng: order.delivery_longitude
+                  }}
+                  customerAddress={order.delivery_address}
+                />
+              </div>
+            )}
+            
             {/* Live Tracking Map - Show when order is out for delivery */}
             {order.order_status === 'out_for_delivery' && 
              order.delivery_partner?.id && 

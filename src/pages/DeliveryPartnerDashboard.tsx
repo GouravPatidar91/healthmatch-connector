@@ -57,18 +57,19 @@ export default function DeliveryPartnerDashboard() {
   useEffect(() => {
     if (!partner) return;
 
-    console.log('Setting up realtime subscription for partner:', partner.id);
-
     // Subscribe to realtime updates
     const channel = deliveryRequestService.subscribeToRequestUpdates(
       partner.id,
       async (newRequest) => {
-        console.log('New delivery request received via realtime:', newRequest);
-        
         // Fetch the complete request data with relations
         const requests = await deliveryRequestService.getPendingRequests(partner.id);
         setPendingRequests(requests);
         setUnreadCount(requests.length);
+        
+        // Reload orders when request is accepted
+        if (newRequest.status === 'accepted') {
+          loadOrders();
+        }
         
         // Show toast notification
         toast({
@@ -86,44 +87,29 @@ export default function DeliveryPartnerDashboard() {
 
     // Cleanup subscription
     return () => {
-      console.log('Cleaning up realtime subscription');
       channel.unsubscribe();
     };
   }, [partner]);
 
+  // Real-time order status updates
   useEffect(() => {
     if (!partner) return;
 
-    // Subscribe to new delivery requests
-    const channel = deliveryRequestService.subscribeToRequestUpdates(
-      partner.id,
-      (request) => {
-        console.log('New delivery request received:', request);
-        
-        // Play notification sound
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKR5/g8r5sIQUxh9Hz04IzBh5uwO/jmVUUCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRC=');
-        audio.play().catch(() => {}); // Ignore if autoplay blocked
-        
-        // Show toast notification
-        setIncomingRequest(request);
-        setPendingRequests(prev => {
-          const exists = prev.some(r => r.id === request.id);
-          if (exists) return prev;
-          return [...prev, request];
-        });
-        setUnreadCount(prev => prev + 1);
-        
-        // Auto-open drawer
-        setShowNotifications(true);
-        loadOrders();
-      }
-    );
-
-    // Load existing pending requests
-    deliveryRequestService.getPendingRequests(partner.id).then((requests) => {
-      setPendingRequests(requests);
-      setUnreadCount(requests.length);
-    });
+    const channel = supabase
+      .channel(`partner-orders-${partner.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'medicine_orders',
+          filter: `delivery_partner_id=eq.${partner.id}`
+        },
+        () => {
+          loadOrders();
+        }
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);

@@ -18,6 +18,7 @@ import { medicineService } from '@/services/medicineService';
 import PrescriptionProcessingModal from '@/components/prescription/PrescriptionProcessingModal';
 import { CheckoutDialog } from '@/components/medicine/CheckoutDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { LocationPickerDialog } from '@/components/maps/LocationPickerDialog';
 
 const categories = [
   { name: 'All Categories', icon: '🏥', value: 'all' },
@@ -70,6 +71,9 @@ export default function Medicine() {
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [deliveryLatitude, setDeliveryLatitude] = useState<number | null>(null);
+  const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(null);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
 
   useEffect(() => {
     // Initial load
@@ -299,6 +303,8 @@ export default function Medicine() {
         payment_method: 'cod',
         delivery_address: deliveryAddress,
         customer_phone: customerPhone,
+        delivery_latitude: deliveryLatitude,
+        delivery_longitude: deliveryLongitude,
         prescription_required: prescriptionRequired,
         items: cartItems.map(item => ({
           medicine_id: item.id,
@@ -586,6 +592,22 @@ export default function Medicine() {
           </div>
 
           <div className="space-y-2">
+            {/* Location Picker Button */}
+            <Button 
+              variant="outline"
+              className="w-full" 
+              onClick={() => setIsLocationPickerOpen(true)}
+            >
+              <MapPin className="mr-2 h-4 w-4" />
+              {deliveryLatitude && deliveryLongitude ? 'Change Delivery Location' : 'Set Delivery Location'}
+            </Button>
+            
+            {deliveryLatitude && deliveryLongitude && (
+              <div className="text-xs text-muted-foreground p-2 bg-muted rounded-md">
+                ✓ Location selected: {deliveryAddress.substring(0, 50)}...
+              </div>
+            )}
+            
             <Button 
               className="w-full" 
               size="lg"
@@ -943,6 +965,24 @@ export default function Medicine() {
           setCustomerPhone={setCustomerPhone}
           onConfirmOrder={handleConfirmOrder}
           isProcessing={isProcessingOrder}
+        />
+
+        {/* Location Picker Dialog */}
+        <LocationPickerDialog
+          open={isLocationPickerOpen}
+          onClose={() => setIsLocationPickerOpen(false)}
+          onLocationSelect={(location) => {
+            setDeliveryLatitude(location.latitude);
+            setDeliveryLongitude(location.longitude);
+            setDeliveryAddress(location.address);
+          }}
+          initialLocation={
+            deliveryLatitude && deliveryLongitude
+              ? { latitude: deliveryLatitude, longitude: deliveryLongitude }
+              : userLocation 
+              ? { latitude: userLocation.lat, longitude: userLocation.lng }
+              : undefined
+          }
         />
       </div>
     </div>

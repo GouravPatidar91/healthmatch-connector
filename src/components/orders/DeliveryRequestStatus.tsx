@@ -113,10 +113,10 @@ export const DeliveryRequestStatus: React.FC<DeliveryRequestStatusProps> = ({
     );
   }
 
-  // Show searching status
+  // Show searching status with hidden partner names
   if (searching || requests.length === 0) {
     return (
-      <Card className="border-orange-500 bg-orange-50/50">
+      <Card className="border-orange-500 bg-orange-50/50 dark:bg-orange-950/20">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-orange-600" />
@@ -130,15 +130,16 @@ export const DeliveryRequestStatus: React.FC<DeliveryRequestStatusProps> = ({
           
           {requests.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Partners Notified:</p>
-              {requests.map((req) => (
+              <p className="text-sm font-medium">{requests.length} partners notified</p>
+              {requests.map((req, index) => (
                 <div
                   key={req.id}
-                  className="flex items-center justify-between p-2 bg-background rounded-md"
+                  className="flex items-center justify-between p-3 bg-background/50 backdrop-blur-sm rounded-md border"
                 >
-                  <span className="text-sm">
-                    {req.delivery_partners?.name || 'Partner'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+                    <span className="text-sm font-medium blur-sm">Partner {index + 1}</span>
+                  </div>
                   <Badge
                     variant={
                       req.status === 'pending'
@@ -147,22 +148,22 @@ export const DeliveryRequestStatus: React.FC<DeliveryRequestStatusProps> = ({
                         ? 'default'
                         : 'secondary'
                     }
+                    className="animate-pulse"
                   >
                     {req.status === 'pending' && new Date(req.expires_at) > new Date() && (
                       <Clock className="h-3 w-3 mr-1" />
                     )}
-                    {req.status === 'accepted' && (
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                    )}
-                    {req.status === 'rejected' && (
-                      <XCircle className="h-3 w-3 mr-1" />
-                    )}
-                    {req.status}
+                    Waiting...
                   </Badge>
                 </div>
               ))}
             </div>
           )}
+          
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-4">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span>Partner details will appear once someone accepts...</span>
+          </div>
         </CardContent>
       </Card>
     );
