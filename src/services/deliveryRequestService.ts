@@ -230,7 +230,7 @@ class DeliveryRequestService {
             delivery_latitude,
             delivery_longitude,
             final_amount,
-            medicine_vendors (
+            medicine_vendors!vendor_id (
               pharmacy_name,
               address,
               latitude,
