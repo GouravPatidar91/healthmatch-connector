@@ -1700,6 +1700,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_delivery_request_expired: {
+        Args: { expires_at: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "patient" | "pharmacy" | "admin" | "delivery_partner"
