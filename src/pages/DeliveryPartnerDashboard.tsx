@@ -57,8 +57,8 @@ export default function DeliveryPartnerDashboard() {
   useEffect(() => {
     if (!partner) return;
 
-    // Subscribe to realtime updates
-    const channel = deliveryRequestService.subscribeToRequestUpdates(
+    // Subscribe to new requests (INSERT)
+    const requestChannel = deliveryRequestService.subscribeToRequestUpdates(
       partner.id,
       async (newRequest) => {
         console.log('New delivery request received:', newRequest);
@@ -90,6 +90,55 @@ export default function DeliveryPartnerDashboard() {
       }
     );
 
+    // Subscribe to request status changes (UPDATE) to detect acceptances
+    const statusChannel = supabase
+      .channel(`delivery-request-status-${partner.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'delivery_requests',
+          filter: `delivery_partner_id=eq.${partner.id}`,
+        },
+        async (payload) => {
+          console.log('Delivery request updated:', payload);
+          
+          // If this partner accepted, reload active orders and clear pending
+          if (payload.new.status === 'accepted') {
+            console.log('Request accepted, reloading active orders');
+            await loadOrders();
+            
+            // Refresh pending requests
+            const requests = await deliveryRequestService.getPendingRequests(partner.id);
+            const transformedRequests = requests.map(req => ({
+              ...req,
+              order: Array.isArray(req.medicine_orders) ? req.medicine_orders[0] : req.medicine_orders,
+              vendor: Array.isArray(req.medicine_orders) && req.medicine_orders[0]?.medicine_vendors 
+                ? req.medicine_orders[0].medicine_vendors 
+                : null
+            }));
+            setPendingRequests(transformedRequests);
+            setUnreadCount(transformedRequests.length);
+          }
+          // If rejected by system (another partner accepted), refresh pending list
+          else if (payload.new.status === 'rejected' && payload.new.rejection_reason === 'Another partner accepted') {
+            console.log('Another partner accepted, removing from pending');
+            const requests = await deliveryRequestService.getPendingRequests(partner.id);
+            const transformedRequests = requests.map(req => ({
+              ...req,
+              order: Array.isArray(req.medicine_orders) ? req.medicine_orders[0] : req.medicine_orders,
+              vendor: Array.isArray(req.medicine_orders) && req.medicine_orders[0]?.medicine_vendors 
+                ? req.medicine_orders[0].medicine_vendors 
+                : null
+            }));
+            setPendingRequests(transformedRequests);
+            setUnreadCount(transformedRequests.length);
+          }
+        }
+      )
+      .subscribe();
+
     // Initial load of pending requests
     deliveryRequestService.getPendingRequests(partner.id).then((requests) => {
       console.log('Initial pending requests:', requests);
@@ -108,9 +157,10 @@ export default function DeliveryPartnerDashboard() {
       setUnreadCount(transformedRequests.length);
     });
 
-    // Cleanup subscription
+    // Cleanup subscriptions
     return () => {
-      channel.unsubscribe();
+      requestChannel.unsubscribe();
+      supabase.removeChannel(statusChannel);
     };
   }, [partner]);
 
@@ -321,21 +371,21 @@ export default function DeliveryPartnerDashboard() {
                       key={request.id}
                       request={request}
                       partnerId={partner.id}
-                      onClose={() => {
-                        loadOrders();
-                        deliveryRequestService.getPendingRequests(partner.id).then((requests) => {
-                          // Transform data to match component expectations
-                          const transformedRequests = requests.map(req => ({
-                            ...req,
-                            order: Array.isArray(req.medicine_orders) ? req.medicine_orders[0] : req.medicine_orders,
-                            vendor: Array.isArray(req.medicine_orders) && req.medicine_orders[0]?.medicine_vendors 
-                              ? req.medicine_orders[0].medicine_vendors 
-                              : null
-                          }));
-                          
-                          setPendingRequests(transformedRequests);
-                          setUnreadCount(transformedRequests.length);
-                        });
+                      onClose={async () => {
+                        // Reload both active orders and pending requests
+                        await loadOrders();
+                        
+                        const requests = await deliveryRequestService.getPendingRequests(partner.id);
+                        const transformedRequests = requests.map(req => ({
+                          ...req,
+                          order: Array.isArray(req.medicine_orders) ? req.medicine_orders[0] : req.medicine_orders,
+                          vendor: Array.isArray(req.medicine_orders) && req.medicine_orders[0]?.medicine_vendors 
+                            ? req.medicine_orders[0].medicine_vendors 
+                            : null
+                        }));
+                        
+                        setPendingRequests(transformedRequests);
+                        setUnreadCount(transformedRequests.length);
                       }}
                     />
                   ))}
