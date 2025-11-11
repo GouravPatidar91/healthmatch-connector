@@ -1033,8 +1033,11 @@ export default function Medicine() {
       <MapboxLocationPicker
         open={isLocationPickerOpen}
         onClose={() => setIsLocationPickerOpen(false)}
-        onLocationSelect={async (location) => {
-          console.log('Location selected:', location);
+        onLocationSelect={(location) => {
+          console.log('Location selected in parent:', location);
+          
+          // Close dialog immediately
+          setIsLocationPickerOpen(false);
           
           // Store custom location for pharmacy search and order placement
           const customLoc = { lat: location.latitude, lng: location.longitude };
@@ -1044,45 +1047,49 @@ export default function Medicine() {
           setDeliveryLongitude(location.longitude);
           setDeliveryAddress(location.address);
           
-          // Save to database for persistent use
-          try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              const { error } = await supabase
-                .from('profiles')
-                .update({
-                  delivery_latitude: location.latitude,
-                  delivery_longitude: location.longitude,
-                  delivery_address: location.address
-                })
-                .eq('id', user.id);
-              
-              if (error) {
-                console.error('Error saving location:', error);
-                toast({
-                  title: "Location Saved Locally",
-                  description: "Location saved for this session. Sign in to save permanently.",
-                  variant: "default",
-                });
+          // Save to database for persistent use (async in background)
+          (async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                const { error } = await supabase
+                  .from('profiles')
+                  .update({
+                    delivery_latitude: location.latitude,
+                    delivery_longitude: location.longitude,
+                    delivery_address: location.address
+                  })
+                  .eq('id', user.id);
+                
+                if (error) {
+                  console.error('Error saving location:', error);
+                  toast({
+                    title: "Location Set",
+                    description: "Location saved for this session only.",
+                  });
+                } else {
+                  toast({
+                    title: "✅ Location Saved",
+                    description: `Saved: ${location.address.substring(0, 50)}${location.address.length > 50 ? '...' : ''}`,
+                  });
+                }
               } else {
                 toast({
-                  title: "Location Saved",
-                  description: `Your delivery location has been saved: ${location.address}`,
+                  title: "Location Set",
+                  description: "Location set for this session. Sign in to save permanently.",
                 });
               }
-            } else {
+            } catch (error) {
+              console.error('Error saving location:', error);
               toast({
                 title: "Location Set",
-                description: "Location set for this session. Sign in to save permanently.",
+                description: "Using location for this session.",
               });
             }
-          } catch (error) {
-            console.error('Error saving location:', error);
-          }
+          })();
           
           // Update search with new location
           searchMedicines(searchTerm, selectedCategory === 'all' ? undefined : selectedCategory, customLoc);
-          setIsLocationPickerOpen(false);
         }}
         initialLocation={
           customLocation 
