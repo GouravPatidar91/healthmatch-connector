@@ -629,11 +629,22 @@ export default function Medicine() {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Quick Medicine</h1>
-          <p className="text-muted-foreground">
-            Order medicines and healthcare products from nearby verified pharmacies
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Quick Medicine</h1>
+            <p className="text-muted-foreground">
+              Order medicines and healthcare products from nearby verified pharmacies
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsLocationPickerOpen(true)}
+            className="gap-2 flex-shrink-0"
+          >
+            <MapPin className="h-4 w-4" />
+            Change Location
+          </Button>
         </div>
 
         {/* Location Permission Banner */}
@@ -950,8 +961,26 @@ export default function Medicine() {
           onSuccess={handleProcessingSuccess}
         />
 
-        {/* Checkout Dialog */}
-        <CheckoutDialog
+      {/* Location Picker Dialog */}
+      <LocationPickerDialog
+        open={isLocationPickerOpen}
+        onClose={() => setIsLocationPickerOpen(false)}
+        onLocationSelect={(location) => {
+          console.log('Location selected:', location);
+          toast({
+            title: "Location Updated",
+            description: `Searching medicines near ${location.address}`,
+          });
+          
+          // Update search with new location
+          searchMedicines(searchTerm, selectedCategory === 'all' ? undefined : selectedCategory);
+          setIsLocationPickerOpen(false);
+        }}
+        initialLocation={userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng } : undefined}
+      />
+
+      {/* Checkout Dialog */}
+      <CheckoutDialog
           open={isCheckoutDialogOpen}
           onOpenChange={setIsCheckoutDialogOpen}
           cartItems={cartItems}

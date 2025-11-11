@@ -233,7 +233,7 @@ export default function DeliveryPartnerDashboard() {
 
       if (!partnerData) return;
 
-      // Load active orders
+      // Load active orders - include all orders except delivered/cancelled
       const { data: active, error: activeError } = await supabase
         .from('medicine_orders')
         .select(`
@@ -241,7 +241,7 @@ export default function DeliveryPartnerDashboard() {
           vendor:medicine_vendors!vendor_id(pharmacy_name, address)
         `)
         .eq('delivery_partner_id', partnerData.id)
-        .in('order_status', ['confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery'])
+        .in('order_status', ['placed', 'confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery'])
         .order('created_at', { ascending: false });
 
       if (activeError) {

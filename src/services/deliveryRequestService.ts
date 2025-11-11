@@ -134,12 +134,11 @@ class DeliveryRequestService {
 
       if (partnerError) throw partnerError;
 
-      // 3. Assign partner to order and update status
+      // 3. Assign partner to order (keep existing status until vendor marks ready)
       const { error: orderError } = await supabase
         .from('medicine_orders')
         .update({
           delivery_partner_id: partner.id,
-          order_status: 'out_for_delivery',
         })
         .eq('id', request.order_id);
 
