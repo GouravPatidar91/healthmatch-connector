@@ -53,21 +53,42 @@ export default function DeliveryPartnerDashboard() {
     loadOrders();
   }, []);
 
-  // Auto-refresh pending requests every 30 seconds
+  // Real-time subscription for delivery requests
   useEffect(() => {
     if (!partner) return;
 
-    const refreshInterval = setInterval(async () => {
-      try {
+    console.log('Setting up realtime subscription for partner:', partner.id);
+
+    // Subscribe to realtime updates
+    const channel = deliveryRequestService.subscribeToRequestUpdates(
+      partner.id,
+      async (newRequest) => {
+        console.log('New delivery request received via realtime:', newRequest);
+        
+        // Fetch the complete request data with relations
         const requests = await deliveryRequestService.getPendingRequests(partner.id);
         setPendingRequests(requests);
         setUnreadCount(requests.length);
-      } catch (error) {
-        console.error('Error refreshing pending requests:', error);
+        
+        // Show toast notification
+        toast({
+          title: 'New delivery request received!',
+          description: 'A new order is available for delivery',
+        });
       }
-    }, 30000);
+    );
 
-    return () => clearInterval(refreshInterval);
+    // Initial load of pending requests
+    deliveryRequestService.getPendingRequests(partner.id).then((requests) => {
+      setPendingRequests(requests);
+      setUnreadCount(requests.length);
+    });
+
+    // Cleanup subscription
+    return () => {
+      console.log('Cleaning up realtime subscription');
+      channel.unsubscribe();
+    };
   }, [partner]);
 
   useEffect(() => {
