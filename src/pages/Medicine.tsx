@@ -84,19 +84,42 @@ export default function Medicine() {
     // Initial load
     searchMedicines('', selectedCategory === 'all' ? undefined : selectedCategory);
     
-    // Fetch user profile for delivery info
+    // Fetch user profile for delivery info and saved location
     const fetchUserProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('address, phone')
+          .select('address, phone, delivery_latitude, delivery_longitude, delivery_address')
           .eq('id', user.id)
           .single();
         
         if (profile) {
-          setDeliveryAddress(profile.address || '');
+          setDeliveryAddress(profile.address || profile.delivery_address || '');
           setCustomerPhone(profile.phone || '');
+          
+          // Load saved delivery location if available
+          if (profile.delivery_latitude && profile.delivery_longitude) {
+            const savedLocation = {
+              lat: profile.delivery_latitude,
+              lng: profile.delivery_longitude
+            };
+            setCustomLocation(savedLocation);
+            setSearchLocation(savedLocation);
+            setDeliveryLatitude(profile.delivery_latitude);
+            setDeliveryLongitude(profile.delivery_longitude);
+            if (profile.delivery_address) {
+              setDeliveryAddress(profile.delivery_address);
+            }
+            
+            toast({
+              title: "Saved Location Loaded",
+              description: "Using your preferred delivery location",
+            });
+            
+            // Search with saved location
+            searchMedicines('', selectedCategory === 'all' ? undefined : selectedCategory, savedLocation);
+          }
         }
       }
     };
@@ -677,7 +700,7 @@ export default function Medicine() {
             <Info className="h-4 w-4 text-primary" />
             <AlertTitle>Location Active</AlertTitle>
             <AlertDescription className="text-sm">
-              Your selected location is being used to:
+              Your confirmed location is being used to:
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Find nearby pharmacies with available stock</li>
                 <li>Calculate delivery distances and fees</li>
@@ -685,7 +708,7 @@ export default function Medicine() {
               </ul>
               {customLocation && (
                 <p className="mt-2 text-xs">
-                  📍 <strong>Custom location active</strong> - Click "Change Location" to update
+                  ✅ <strong>Location saved to your profile</strong> - Will be used for future orders
                 </p>
               )}
             </AlertDescription>
@@ -1010,21 +1033,52 @@ export default function Medicine() {
       <MapboxLocationPicker
         open={isLocationPickerOpen}
         onClose={() => setIsLocationPickerOpen(false)}
-        onLocationSelect={(location) => {
+        onLocationSelect={async (location) => {
           console.log('Location selected:', location);
           
           // Store custom location for pharmacy search and order placement
           const customLoc = { lat: location.latitude, lng: location.longitude };
           setCustomLocation(customLoc);
-          setSearchLocation(customLoc); // Update search location in hook
+          setSearchLocation(customLoc);
           setDeliveryLatitude(location.latitude);
           setDeliveryLongitude(location.longitude);
           setDeliveryAddress(location.address);
           
-          toast({
-            title: "Location Updated",
-            description: `Searching medicines near ${location.address}`,
-          });
+          // Save to database for persistent use
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              const { error } = await supabase
+                .from('profiles')
+                .update({
+                  delivery_latitude: location.latitude,
+                  delivery_longitude: location.longitude,
+                  delivery_address: location.address
+                })
+                .eq('id', user.id);
+              
+              if (error) {
+                console.error('Error saving location:', error);
+                toast({
+                  title: "Location Saved Locally",
+                  description: "Location saved for this session. Sign in to save permanently.",
+                  variant: "default",
+                });
+              } else {
+                toast({
+                  title: "Location Saved",
+                  description: `Your delivery location has been saved: ${location.address}`,
+                });
+              }
+            } else {
+              toast({
+                title: "Location Set",
+                description: "Location set for this session. Sign in to save permanently.",
+              });
+            }
+          } catch (error) {
+            console.error('Error saving location:', error);
+          }
           
           // Update search with new location
           searchMedicines(searchTerm, selectedCategory === 'all' ? undefined : selectedCategory, customLoc);

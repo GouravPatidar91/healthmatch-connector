@@ -1331,6 +1331,9 @@ export type Database = {
           city: string | null
           created_at: string
           date_of_birth: string | null
+          delivery_address: string | null
+          delivery_latitude: number | null
+          delivery_longitude: number | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           emergency_contact_relationship: string | null
@@ -1353,6 +1356,9 @@ export type Database = {
           city?: string | null
           created_at?: string
           date_of_birth?: string | null
+          delivery_address?: string | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
@@ -1375,6 +1381,9 @@ export type Database = {
           city?: string | null
           created_at?: string
           date_of_birth?: string | null
+          delivery_address?: string | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
