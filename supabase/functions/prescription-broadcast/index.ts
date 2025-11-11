@@ -53,7 +53,7 @@ serve(async (req) => {
           pharmacies_count: 0,
           search_radius_km: max_distance_km
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
