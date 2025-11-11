@@ -13,7 +13,7 @@ import HealthCheckHistory from "./pages/HealthCheckHistory";
 import HealthCheckResults from "./pages/HealthCheckResults";
 import Appointments from "./pages/Appointments";
 import Medicine from "./pages/Medicine";
-import Medicine from "./pages/ComingSoon";
+import ComingSoon from "./pages/ComingSoon";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Emergency from "./pages/Emergency";
@@ -52,16 +52,22 @@ const App = () => (
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/internship-terms" element={<InternshipTerms />} />
             <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
-            
+
             {/* Protected routes with auth check */}
-            <Route element={<RequireAuth><MainLayout /></RequireAuth>}>
+            <Route
+              element={
+                <RequireAuth>
+                  <MainLayout />
+                </RequireAuth>
+              }
+            >
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/health-check" element={<HealthCheck />} />
               <Route path="/health-check-results" element={<HealthCheckResults />} />
               <Route path="/health-check-history" element={<HealthCheckHistory />} />
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/medicine" element={<ComingSoon />} />
-<Route path="/vendor-dashboard" element={<VendorDashboard />} />
+              <Route path="/vendor-dashboard" element={<VendorDashboard />} />
               <Route path="/vendor-dashboard/order/:orderId" element={<VendorOrderManagement />} />
               <Route path="/vendor-registration" element={<VendorRegistration />} />
               <Route path="/medical-reports" element={<MedicalReports />} />
@@ -75,7 +81,7 @@ const App = () => (
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/delivery-partner-dashboard" element={<DeliveryPartnerDashboard />} />
             </Route>
-            
+
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
