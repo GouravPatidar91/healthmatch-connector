@@ -45,6 +45,7 @@ export function MapboxLocationPicker({
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -140,6 +141,9 @@ export function MapboxLocationPicker({
   }, [open, mapboxToken]);
 
   const reverseGeocode = async (lat: number, lng: number) => {
+    if (!mapboxToken) return;
+    
+    setIsLoadingAddress(true);
     try {
       const response = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=address,place`
@@ -149,10 +153,31 @@ export function MapboxLocationPicker({
       
       if (data.features && data.features.length > 0) {
         const place = data.features[0];
-        setAddress(place.place_name);
+        const addressText = place.place_name;
+        setAddress(addressText);
+        
+        // Show success toast
+        toast({
+          title: 'Location Found',
+          description: addressText.length > 50 ? addressText.substring(0, 50) + '...' : addressText,
+        });
+      } else {
+        setAddress('');
+        toast({
+          title: 'Address Not Found',
+          description: 'Could not find address for this location',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('Reverse geocoding error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to get address. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingAddress(false);
     }
   };
 
@@ -255,23 +280,31 @@ export function MapboxLocationPicker({
   };
 
   const handleConfirm = () => {
+    console.log('Confirm clicked - Position:', position, 'Address:', address);
+    
     if (!position) {
       toast({
         title: 'No Location Selected',
-        description: 'Please select a location on the map.',
+        description: 'Please click on the map to select a location.',
         variant: 'destructive',
       });
       return;
     }
 
-    if (!address) {
+    if (!address || address.trim() === '') {
       toast({
         title: 'Address Required',
-        description: 'Please wait for the address to load.',
+        description: 'Please wait for the address to load or enter manually.',
         variant: 'destructive',
       });
       return;
     }
+
+    console.log('Confirming location:', {
+      latitude: position.lat,
+      longitude: position.lng,
+      address,
+    });
 
     onLocationSelect({
       latitude: position.lat,
@@ -370,18 +403,29 @@ export function MapboxLocationPicker({
 
               <div className="space-y-2">
                 <Label htmlFor="address">Delivery Address</Label>
-                <Input
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Enter or select address on map"
-                />
+                <div className="relative">
+                  <Input
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder={isLoadingAddress ? "Loading address..." : "Enter or select address on map"}
+                    disabled={isLoadingAddress}
+                  />
+                  {isLoadingAddress && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Click on the map or drag the marker to select your location
                 </p>
                 {position && (
-                  <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                  <div className="text-xs text-muted-foreground bg-muted p-2 rounded-md">
                     📍 Coordinates: {position.lat.toFixed(6)}, {position.lng.toFixed(6)}
+                    {address && (
+                      <span className="block mt-1 text-primary">
+                        ✓ Address loaded successfully
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -393,8 +437,19 @@ export function MapboxLocationPicker({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!position || !address || loading}>
-            Confirm Location
+          <Button 
+            onClick={handleConfirm} 
+            disabled={!position || !address || loading || isLoadingAddress}
+            className="min-w-32"
+          >
+            {isLoadingAddress ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              'Confirm Location'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
