@@ -44,7 +44,8 @@ export default function Medicine() {
     userLocation, 
     searchStrategy,
     permissionState,
-    requestLocationPermission 
+    requestLocationPermission,
+    setSearchLocation
   } = useMedicines();
   const { 
     cartItems, 
@@ -74,6 +75,10 @@ export default function Medicine() {
   const [deliveryLatitude, setDeliveryLatitude] = useState<number | null>(null);
   const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(null);
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
+  const [customLocation, setCustomLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Use custom location if set, otherwise use detected location
+  const activeLocation = customLocation || userLocation;
 
   useEffect(() => {
     // Initial load
@@ -151,24 +156,27 @@ export default function Medicine() {
       return;
     }
 
-    if (!userLocation) {
-      toast({
-        title: "Location Required",
-        description: "Please enable location access to find nearby pharmacies.",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (!userLocation) {
+        toast({
+          title: "Location Required",
+          description: "Please enable location access to find nearby pharmacies.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    setIsUploading(true);
+      // Use custom location if set for prescription upload
+      const locationToUse = activeLocation || userLocation;
 
-    try {
-      // Upload prescription and immediately broadcast to nearby pharmacies
-      const uploadResult = await medicineService.uploadPrescription(
-        selectedFile,
-        undefined,
-        { latitude: userLocation.lat, longitude: userLocation.lng }
-      );
+      setIsUploading(true);
+
+      try {
+        // Upload prescription and immediately broadcast to nearby pharmacies
+        const uploadResult = await medicineService.uploadPrescription(
+          selectedFile,
+          undefined,
+          { latitude: locationToUse.lat, longitude: locationToUse.lng }
+        );
       
       if (!uploadResult.success) {
         toast({
@@ -251,6 +259,17 @@ export default function Medicine() {
           variant: "destructive",
         });
         navigate('/login');
+        return;
+      }
+
+      // Validate delivery location
+      if (!deliveryLatitude || !deliveryLongitude) {
+        toast({
+          title: "Location Required",
+          description: "Please select delivery location using the map pin button",
+          variant: "destructive",
+        });
+        setIsLocationPickerOpen(true);
         return;
       }
 
@@ -634,6 +653,11 @@ export default function Medicine() {
             <h1 className="text-3xl font-bold mb-2">Quick Medicine</h1>
             <p className="text-muted-foreground">
               Order medicines and healthcare products from nearby verified pharmacies
+              {customLocation && (
+                <span className="block text-xs text-primary mt-1">
+                  📍 Using custom location
+                </span>
+              )}
             </p>
           </div>
           <Button
@@ -647,8 +671,29 @@ export default function Medicine() {
           </Button>
         </div>
 
+        {/* Location Info Banner */}
+        {activeLocation && (
+          <Alert className="mb-6 border-primary/20 bg-primary/5">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertTitle>Location Active</AlertTitle>
+            <AlertDescription className="text-sm">
+              Your selected location is being used to:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Find nearby pharmacies with available stock</li>
+                <li>Calculate delivery distances and fees</li>
+                <li>Enable delivery partners to navigate to you</li>
+              </ul>
+              {customLocation && (
+                <p className="mt-2 text-xs">
+                  📍 <strong>Custom location active</strong> - Click "Change Location" to update
+                </p>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Location Permission Banner */}
-        {!userLocation && (
+        {!activeLocation && (
           <Card className="mb-6 border-2 border-primary/20">
             <CardContent className="p-6">
               {permissionState === 'prompt' && (
@@ -967,16 +1012,31 @@ export default function Medicine() {
         onClose={() => setIsLocationPickerOpen(false)}
         onLocationSelect={(location) => {
           console.log('Location selected:', location);
+          
+          // Store custom location for pharmacy search and order placement
+          const customLoc = { lat: location.latitude, lng: location.longitude };
+          setCustomLocation(customLoc);
+          setSearchLocation(customLoc); // Update search location in hook
+          setDeliveryLatitude(location.latitude);
+          setDeliveryLongitude(location.longitude);
+          setDeliveryAddress(location.address);
+          
           toast({
             title: "Location Updated",
             description: `Searching medicines near ${location.address}`,
           });
           
           // Update search with new location
-          searchMedicines(searchTerm, selectedCategory === 'all' ? undefined : selectedCategory);
+          searchMedicines(searchTerm, selectedCategory === 'all' ? undefined : selectedCategory, customLoc);
           setIsLocationPickerOpen(false);
         }}
-        initialLocation={userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng } : undefined}
+        initialLocation={
+          customLocation 
+            ? { latitude: customLocation.lat, longitude: customLocation.lng }
+            : userLocation 
+            ? { latitude: userLocation.lat, longitude: userLocation.lng } 
+            : undefined
+        }
       />
 
       {/* Checkout Dialog */}

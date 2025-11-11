@@ -211,12 +211,15 @@ export function MapboxLocationPicker({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 gap-0 flex flex-col">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Select Delivery Location</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            This location will be used for finding nearby pharmacies and delivery
+          </p>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="h-96 flex items-center justify-center bg-muted rounded-lg">
               <div className="text-center">
@@ -225,13 +228,13 @@ export function MapboxLocationPicker({
               </div>
             </div>
           ) : (
-            <>
+            <div className="space-y-4">
               <div className="relative h-96 rounded-lg overflow-hidden border">
                 <div ref={mapContainer} className="w-full h-full" />
                 
                 <Button
                   onClick={handleUseCurrentLocation}
-                  className="absolute top-4 left-4 shadow-lg"
+                  className="absolute top-4 left-4 shadow-lg z-10"
                   size="sm"
                 >
                   <MapPin className="h-4 w-4 mr-2" />
@@ -250,12 +253,17 @@ export function MapboxLocationPicker({
                 <p className="text-xs text-muted-foreground">
                   Click on the map or drag the marker to select your location
                 </p>
+                {position && (
+                  <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                    📍 Coordinates: {position.lat.toFixed(6)}, {position.lng.toFixed(6)}
+                  </div>
+                )}
               </div>
-            </>
+            </div>
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t bg-muted/20">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

@@ -16,16 +16,19 @@ export function useMedicines() {
     isLoading: locationLoading,
     requestPermission: requestLocationPermission 
   } = useLocationPermission();
+  const [customSearchLocation, setCustomSearchLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const searchMedicines = async (searchTerm: string, category?: string) => {
+  const searchMedicines = async (searchTerm: string, category?: string, customLocation?: { lat: number; lng: number }) => {
     setLoading(true);
     try {
-      if (userLocation) {
+      const locationToUse = customLocation || customSearchLocation || userLocation;
+      
+      if (locationToUse) {
         // Use fallback strategy
         const results = await medicineService.searchMedicinesWithFallback(
           searchTerm,
           category,
-          userLocation
+          locationToUse
         );
         setMedicines(results.medicines);
         setSearchStrategy(results.searchStrategy);
@@ -47,6 +50,10 @@ export function useMedicines() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const setSearchLocation = (location: { lat: number; lng: number } | null) => {
+    setCustomSearchLocation(location);
   };
 
   const uploadPrescription = async (file: File, orderId?: string) => {
@@ -80,6 +87,7 @@ export function useMedicines() {
     locationLoading,
     requestLocationPermission,
     searchMedicines,
-    uploadPrescription
+    uploadPrescription,
+    setSearchLocation
   };
 }
