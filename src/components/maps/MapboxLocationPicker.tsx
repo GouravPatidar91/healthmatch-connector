@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin, Loader2, Search, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MapboxLocationPickerProps {
   open: boolean;
@@ -40,6 +41,10 @@ export function MapboxLocationPicker({
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(
     initialLocation ? { lat: initialLocation.latitude, lng: initialLocation.longitude } : null
   );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -151,6 +156,72 @@ export function MapboxLocationPicker({
     }
   };
 
+  const searchLocation = async (query: string) => {
+    if (!query.trim() || !mapboxToken) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Use current position as proximity bias if available
+      const proximity = position ? `${position.lng},${position.lat}` : '77.5946,12.9716'; // Default to Bangalore
+      
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&proximity=${proximity}&types=address,place,locality,neighborhood,poi&limit=5`
+      );
+      
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        setSearchResults(data.features);
+        setShowSearchResults(true);
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    } catch (error) {
+      console.error('Location search error:', error);
+      toast({
+        title: 'Search Error',
+        description: 'Could not search for locations. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchResultClick = (result: any) => {
+    const [lng, lat] = result.center;
+    const newPos = { lat, lng };
+    
+    setPosition(newPos);
+    setAddress(result.place_name);
+    setSearchQuery(result.place_name);
+    setShowSearchResults(false);
+    
+    if (map.current && marker.current) {
+      map.current.flyTo({
+        center: [lng, lat],
+        zoom: 15,
+      });
+      marker.current.setLngLat([lng, lat]);
+    }
+  };
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        searchLocation(searchQuery);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, mapboxToken]);
+
   const handleUseCurrentLocation = () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -229,6 +300,61 @@ export function MapboxLocationPicker({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Search Box */}
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search for a location, address, or landmark..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSearchResults([]);
+                        setShowSearchResults(false);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {isSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                
+                {/* Search Results Dropdown */}
+                {showSearchResults && searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg z-50 max-h-60 overflow-hidden">
+                    <ScrollArea className="max-h-60">
+                      {searchResults.map((result, index) => (
+                        <button
+                          key={result.id || index}
+                          onClick={() => handleSearchResultClick(result)}
+                          className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b last:border-b-0"
+                        >
+                          <div className="flex items-start gap-3">
+                            <MapPin className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{result.text}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {result.place_name}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </ScrollArea>
+                  </div>
+                )}
+              </div>
+
               <div className="relative h-96 rounded-lg overflow-hidden border">
                 <div ref={mapContainer} className="w-full h-full" />
                 
