@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ActiveOrderTracking } from '@/components/delivery/ActiveOrderTracking';
 import { DeliveryRequestNotificationEnhanced } from '@/components/delivery/DeliveryRequestNotificationEnhanced';
+import { LiveLocationTracker } from '@/components/delivery/LiveLocationTracker';
 import { deliveryRequestService } from '@/services/deliveryRequestService';
 import { Bike, Package, CheckCircle, Clock, AlertCircle, Bell, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -538,6 +539,19 @@ export default function DeliveryPartnerDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Live Location Tracker */}
+        {activeOrders.length > 0 && activeOrders.some(order => 
+          order.order_status === 'out_for_delivery' || order.order_status === 'ready_for_pickup'
+        ) && (
+          <LiveLocationTracker 
+            partnerId={partner.id}
+            orderId={activeOrders.find(o => o.order_status === 'out_for_delivery' || o.order_status === 'ready_for_pickup')?.id || ''}
+            isActive={activeOrders.some(order => 
+              order.order_status === 'out_for_delivery' || order.order_status === 'ready_for_pickup'
+            )}
+          />
+        )}
 
         {/* Orders */}
         <Tabs defaultValue="active" className="space-y-4">
