@@ -44,24 +44,32 @@ export function DeliveryRequestNotificationEnhanced({
   const handleAccept = async () => {
     setAccepting(true);
     try {
+      console.log('[DeliveryRequestNotification] Accepting request:', request.id);
       const result = await deliveryRequestService.acceptRequest(request.id, partnerId);
+      
       if (result.success) {
         toast({
-          title: "Request Accepted",
-          description: "You've accepted this delivery request.",
+          title: "Request Accepted ✓",
+          description: "Order assigned successfully. You can now view it in your active orders.",
         });
         onClose();
       } else {
+        console.error('[DeliveryRequestNotification] Accept failed:', result.error);
         toast({
-          title: "Error",
-          description: result.error || "Failed to accept request",
+          title: "Unable to Accept Request",
+          description: result.error || "This request may have been assigned to another partner. Please try another request.",
           variant: "destructive",
         });
+        // Close the notification if it failed due to already being assigned
+        if (result.error?.includes('already processed') || result.error?.includes('expired')) {
+          setTimeout(() => onClose(), 2000);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[DeliveryRequestNotification] Unexpected error:', error);
       toast({
         title: "Error",
-        description: "Failed to accept request",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
