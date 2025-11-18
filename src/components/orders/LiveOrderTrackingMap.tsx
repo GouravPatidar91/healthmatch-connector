@@ -126,26 +126,21 @@ export function LiveOrderTrackingMap({
   const pharmacyIcon = createCustomIcon('hsl(142, 76%, 36%)', '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22v-10h6v10"/>');
   const customerIcon = createCustomIcon('hsl(221, 83%, 53%)', '<path d="M12 2c3.9 0 7 3.1 7 7 0 5.3-7 13-7 13S5 14.3 5 9c0-3.9 3.1-7 7-7z"/><circle cx="12" cy="9" r="2.5"/>');
 
+  // Fetch initial location and subscribe to updates
   useEffect(() => {
-    // Fetch initial location
-    const fetchLocation = async () => {
+    const loadInitialLocation = async () => {
       const location = await deliveryPartnerLocationService.getCurrentLocation(deliveryPartnerId);
-      if (location) {
-        setDeliveryLocation(location);
-        updateDistanceAndETA(location.latitude, location.longitude);
-        updateLastUpdateTime(location.timestamp);
-      }
+      setDeliveryLocation(location);
     };
 
-    fetchLocation();
+    loadInitialLocation();
 
-    // Subscribe to real-time updates
+    // Subscribe to real-time location updates
     const channel = deliveryPartnerLocationService.subscribeToLocationUpdates(
       deliveryPartnerId,
       (location) => {
         setDeliveryLocation(location);
-        updateDistanceAndETA(location.latitude, location.longitude);
-        updateLastUpdateTime(location.timestamp);
+        setLastUpdate(new Date().toLocaleTimeString());
       }
     );
 
