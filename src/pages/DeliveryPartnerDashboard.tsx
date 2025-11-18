@@ -104,6 +104,12 @@ export default function DeliveryPartnerDashboard() {
         async (payload) => {
           console.log('Delivery request updated:', payload);
           
+          // Reload orders when a request is accepted
+          if (payload.new.status === 'accepted') {
+            console.log('Request accepted, reloading orders...');
+            await loadOrders();
+          }
+          
           // If this partner accepted, reload active orders and clear pending
           if (payload.new.status === 'accepted') {
             console.log('Request accepted, reloading active orders');
@@ -157,10 +163,36 @@ export default function DeliveryPartnerDashboard() {
       setUnreadCount(transformedRequests.length);
     });
 
+    // Subscribe to medicine_orders to detect when delivery_partner_id is assigned
+    const ordersChannel = supabase
+      .channel(`orders-assignment-${partner.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'medicine_orders',
+          filter: `delivery_partner_id=eq.${partner.id}`,
+        },
+        async (payload) => {
+          console.log('Order assigned to partner:', payload);
+          
+          // Reload orders immediately when assigned
+          await loadOrders();
+          
+          toast({
+            title: "New order assigned!",
+            description: `Order #${payload.new.order_number} has been assigned to you.`,
+          });
+        }
+      )
+      .subscribe();
+
     // Cleanup subscriptions
     return () => {
       requestChannel.unsubscribe();
       supabase.removeChannel(statusChannel);
+      supabase.removeChannel(ordersChannel);
     };
   }, [partner]);
 

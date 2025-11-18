@@ -91,6 +91,8 @@ class DeliveryRequestService {
     requestId: string,
     partnerId: string
   ): Promise<{ success: boolean; error?: string }> {
+    console.log('[DeliveryRequestService] Accepting request:', { requestId, partnerId });
+    
     try {
       // Get the request details
       const { data: request, error: requestError } = await supabase
@@ -100,20 +102,28 @@ class DeliveryRequestService {
         .eq('delivery_partner_id', partnerId)
         .single();
 
-      if (requestError) throw requestError;
+      if (requestError) {
+        console.error('[DeliveryRequestService] Error fetching request:', requestError);
+        throw requestError;
+      }
+      
       if (!request) {
+        console.error('[DeliveryRequestService] Request not found');
         return { success: false, error: 'Request not found' };
       }
 
       if (request.status !== 'pending') {
+        console.warn('[DeliveryRequestService] Request already processed:', request.status);
         return { success: false, error: 'Request already processed' };
       }
 
       if (new Date(request.expires_at) < new Date()) {
+        console.warn('[DeliveryRequestService] Request has expired');
         return { success: false, error: 'Request has expired' };
       }
 
-      // Start a transaction-like operation
+      console.log('[DeliveryRequestService] Request validated, updating status...');
+
       // 1. Update the request to accepted
       const { error: updateRequestError } = await supabase
         .from('delivery_requests')
@@ -123,7 +133,12 @@ class DeliveryRequestService {
         })
         .eq('id', requestId);
 
-      if (updateRequestError) throw updateRequestError;
+      if (updateRequestError) {
+        console.error('[DeliveryRequestService] Error updating request:', updateRequestError);
+        throw updateRequestError;
+      }
+
+      console.log('[DeliveryRequestService] Request status updated, fetching partner...');
 
       // 2. Get delivery partner record
       const { data: partner, error: partnerError } = await supabase
@@ -132,9 +147,14 @@ class DeliveryRequestService {
         .eq('id', partnerId)
         .single();
 
-      if (partnerError) throw partnerError;
+      if (partnerError) {
+        console.error('[DeliveryRequestService] Error fetching partner:', partnerError);
+        throw partnerError;
+      }
 
-      // 3. Assign partner to order (keep existing status until vendor marks ready)
+      console.log('[DeliveryRequestService] Partner fetched, assigning to order...');
+
+      // 3. Assign partner to order - The RLS policy now allows this
       const { error: orderError } = await supabase
         .from('medicine_orders')
         .update({
@@ -142,7 +162,26 @@ class DeliveryRequestService {
         })
         .eq('id', request.order_id);
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('[DeliveryRequestService] Error assigning partner to order:', orderError);
+        console.error('[DeliveryRequestService] Full error details:', JSON.stringify(orderError, null, 2));
+        
+        // Rollback: Reset request status if order assignment fails
+        await supabase
+          .from('delivery_requests')
+          .update({
+            status: 'pending',
+            responded_at: null,
+          })
+          .eq('id', requestId);
+        
+        return { 
+          success: false, 
+          error: `Failed to assign delivery partner: ${orderError.message}. Please try again.` 
+        };
+      }
+
+      console.log('[DeliveryRequestService] Partner assigned to order successfully');
 
       // 4. Reject all other pending requests for this order
       const { error: rejectError } = await supabase
@@ -156,15 +195,25 @@ class DeliveryRequestService {
         .eq('status', 'pending')
         .neq('id', requestId);
 
-      if (rejectError) console.error('Error rejecting other requests:', rejectError);
+      if (rejectError) {
+        console.error('[DeliveryRequestService] Error rejecting other requests:', rejectError);
+        // Don't fail the whole operation for this
+      }
 
       // 5. Start location tracking for the partner
-      await deliveryPartnerLocationService.startLocationTracking(partnerId);
+      try {
+        await deliveryPartnerLocationService.startLocationTracking(partnerId);
+        console.log('[DeliveryRequestService] Location tracking started');
+      } catch (locationError) {
+        console.error('[DeliveryRequestService] Error starting location tracking:', locationError);
+        // Don't fail the whole operation for this
+      }
 
+      console.log('[DeliveryRequestService] Accept request completed successfully');
       return { success: true };
     } catch (error: any) {
-      console.error('Error accepting request:', error);
-      return { success: false, error: error.message };
+      console.error('[DeliveryRequestService] Unexpected error accepting request:', error);
+      return { success: false, error: error.message || 'An unexpected error occurred' };
     }
   }
 
