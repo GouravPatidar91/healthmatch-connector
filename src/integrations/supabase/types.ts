@@ -1713,8 +1713,8 @@ export type Database = {
         Args: { expires_at: string }
         Returns: boolean
       }
-      is_vendor_for_order: {
-        Args: { _order_id: string; _user_id: string }
+      is_vendor_owner: {
+        Args: { _user_id: string; _vendor_id: string }
         Returns: boolean
       }
     }
