@@ -1713,6 +1713,10 @@ export type Database = {
         Args: { expires_at: string }
         Returns: boolean
       }
+      is_vendor_for_order: {
+        Args: { _order_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "patient" | "pharmacy" | "admin" | "delivery_partner"
