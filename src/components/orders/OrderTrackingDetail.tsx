@@ -147,8 +147,8 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
             )}
             
             {/* Live Tracking Map - Show when order is out for delivery or ready for pickup */}
-            {['out_for_delivery', 'ready_for_pickup'].includes(order.order_status) && 
-             order.delivery_partner?.id && 
+            {order.delivery_partner?.id && 
+             !['delivered', 'cancelled'].includes(order.order_status) &&
              order.delivery_latitude && 
              order.delivery_longitude && 
              order.vendor?.latitude && 
