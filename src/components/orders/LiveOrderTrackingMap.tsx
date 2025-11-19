@@ -341,7 +341,7 @@ export function LiveOrderTrackingMap({
           )}
         </MapContainer>
       </div>
-    </div>
+      </div>
     </Card>
   );
 }
