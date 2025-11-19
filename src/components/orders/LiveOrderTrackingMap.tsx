@@ -24,6 +24,7 @@ interface LiveOrderTrackingMapProps {
   customerLocation: { lat: number; lng: number };
   customerAddress: string;
   orderStatus: string;
+  className?: string;
 }
 
 export function LiveOrderTrackingMap({
@@ -35,6 +36,7 @@ export function LiveOrderTrackingMap({
   customerLocation,
   customerAddress,
   orderStatus,
+  className
 }: LiveOrderTrackingMapProps) {
   const [deliveryLocation, setDeliveryLocation] = useState<DeliveryPartnerLocation | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
@@ -211,6 +213,7 @@ export function LiveOrderTrackingMap({
 
   return (
     <Card className="overflow-hidden shadow-lg">
+      <div className={cn("relative", className)}>
         <div className="p-5 bg-gradient-to-br from-primary/5 via-muted/30 to-background border-b">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-4">
