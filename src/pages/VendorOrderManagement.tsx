@@ -14,6 +14,7 @@ import { OrderStatusActions } from '@/components/orders/OrderStatusActions';
 import { OrderStatusTimeline } from '@/components/orders/OrderStatusTimeline';
 import { DeliveryRequestStatus } from '@/components/orders/DeliveryRequestStatus';
 import { OrderMiniMap } from '@/components/orders/OrderMiniMap';
+import { LiveOrderTrackingMap } from '@/components/orders/LiveOrderTrackingMap';
 
 interface OrderData {
   id: string;
@@ -290,22 +291,41 @@ export default function VendorOrderManagement() {
                 <CardTitle>Customer Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Mini Map showing user location */}
+                {/* Mini Map showing user location or Live Tracking Map */}
                 {order.delivery_latitude && order.delivery_longitude && 
                  vendorInfo?.latitude && vendorInfo?.longitude && (
                   <div className="mb-4">
-                    <OrderMiniMap
-                      pharmacyLocation={{
-                        lat: vendorInfo.latitude,
-                        lng: vendorInfo.longitude
-                      }}
-                      pharmacyName={vendorInfo.pharmacy_name}
-                      customerLocation={{
-                        lat: order.delivery_latitude,
-                        lng: order.delivery_longitude
-                      }}
-                      customerAddress={order.delivery_address}
-                    />
+                    {order.delivery_partner_id && ['out_for_delivery', 'ready_for_pickup'].includes(order.order_status) ? (
+                      <LiveOrderTrackingMap
+                        deliveryPartnerId={order.delivery_partner_id}
+                        pharmacyLocation={{
+                          lat: vendorInfo.latitude,
+                          lng: vendorInfo.longitude
+                        }}
+                        pharmacyName={vendorInfo.pharmacy_name}
+                        customerLocation={{
+                          lat: order.delivery_latitude,
+                          lng: order.delivery_longitude
+                        }}
+                        customerAddress={order.delivery_address}
+                        deliveryPartnerName={order.delivery_partner?.name || 'Delivery Partner'}
+                        vehicleType={order.delivery_partner?.vehicle_type || 'bike'}
+                        orderStatus={order.order_status}
+                      />
+                    ) : (
+                      <OrderMiniMap
+                        pharmacyLocation={{
+                          lat: vendorInfo.latitude,
+                          lng: vendorInfo.longitude
+                        }}
+                        pharmacyName={vendorInfo.pharmacy_name}
+                        customerLocation={{
+                          lat: order.delivery_latitude,
+                          lng: order.delivery_longitude
+                        }}
+                        customerAddress={order.delivery_address}
+                      />
+                    )}
                   </div>
                 )}
                 

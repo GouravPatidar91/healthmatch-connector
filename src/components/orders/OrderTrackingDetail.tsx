@@ -42,23 +42,25 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
     if (open && orderId) {
       loadOrderDetails();
       
-      // Auto-redirect to live tracking when status changes to out_for_delivery
+      // Subscribe to order updates
       const unsubscribe = orderTrackingService.subscribeToOrderUpdates(orderId, (updatedOrder) => {
-        if (updatedOrder) {
-          loadOrderDetails();
-          
-          // Check if status changed to out_for_delivery
-          if (updatedOrder.order_status === 'out_for_delivery' && order?.order_status !== 'out_for_delivery') {
-            toast({
-              title: 'Delivery Partner On The Way! 🚀',
-              description: 'Track your order in real-time',
-            });
-          } else {
-            toast({
-              title: 'Order Updated',
-              description: 'Your order status has been updated',
-            });
-          }
+        const previousStatus = order?.order_status;
+        setOrder(updatedOrder);
+        
+        // Show notification when order is picked up
+        if (updatedOrder.order_status === 'out_for_delivery' && previousStatus !== 'out_for_delivery') {
+          toast({
+            title: "Order Picked Up",
+            description: "Your order has been picked up and is on the way!",
+          });
+        }
+
+        // Show notification when order is delivered
+        if (updatedOrder.order_status === 'delivered' && previousStatus !== 'delivered') {
+          toast({
+            title: "Order Delivered",
+            description: "Your order has been delivered!",
+          });
         }
       });
 
@@ -144,8 +146,8 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
               </div>
             )}
             
-            {/* Live Tracking Map - Show when order is out for delivery */}
-            {order.order_status === 'out_for_delivery' && 
+            {/* Live Tracking Map - Show when order is out for delivery or ready for pickup */}
+            {['out_for_delivery', 'ready_for_pickup'].includes(order.order_status) && 
              order.delivery_partner?.id && 
              order.delivery_latitude && 
              order.delivery_longitude && 
