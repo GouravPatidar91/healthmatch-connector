@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Bike, Store, Home, MapPin, Clock } from 'lucide-react';
 import { deliveryPartnerLocationService, DeliveryPartnerLocation } from '@/services/deliveryPartnerLocationService';
+import { cn } from '@/lib/utils';
 
 // Fix Leaflet default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -340,6 +341,7 @@ export function LiveOrderTrackingMap({
           )}
         </MapContainer>
       </div>
+    </div>
     </Card>
   );
 }
