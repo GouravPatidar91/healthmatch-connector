@@ -25,7 +25,60 @@ const MyOrders: React.FC = () => {
     }
   }, [user]);
 
-  // Subscribe to real-time order updates
+  // Subscribe to real-time order updates for all user orders
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('user-orders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'medicine_orders',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Order update received:', payload);
+          
+          // Show notification for status changes
+          if (payload.eventType === 'UPDATE' && payload.new.order_status !== payload.old.order_status) {
+            const statusMap: Record<string, string> = {
+              'confirmed': 'Order confirmed by pharmacy',
+              'preparing': 'Your order is being prepared',
+              'ready_for_pickup': 'Order is ready for pickup',
+              'out_for_delivery': 'Delivery partner is on the way!',
+              'delivered': 'Order has been delivered'
+            };
+            
+            const message = statusMap[payload.new.order_status as string];
+            if (message) {
+              toast({
+                title: 'Order Status Updated',
+                description: message,
+              });
+              
+              // Auto-open tracking when order goes out for delivery
+              if (payload.new.order_status === 'out_for_delivery') {
+                setSelectedOrderId(payload.new.id);
+                setTrackingDialogOpen(true);
+              }
+            }
+          }
+          
+          // Reload orders to reflect changes
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  // Subscribe to real-time order updates for specific active orders
   useEffect(() => {
     if (!orders.length) return;
 
