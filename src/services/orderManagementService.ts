@@ -106,6 +106,47 @@ class OrderManagementService {
     }
   }
 
+  async updateOrderStatusWithHistory(
+    orderId: string, 
+    status: string, 
+    notes?: string,
+    userId?: string,
+    userRole?: string
+  ) {
+    try {
+      // Update order status
+      const { error: orderError } = await supabase
+        .from('medicine_orders')
+        .update({
+          order_status: status,
+          updated_at: new Date().toISOString(),
+          ...(status === 'delivered' && { delivered_at: new Date().toISOString() })
+        })
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+
+      // Insert status history
+      const { error: historyError } = await supabase
+        .from('medicine_order_status_history')
+        .insert({
+          order_id: orderId,
+          status,
+          notes,
+          updated_by: userId,
+          updated_by_role: userRole,
+          created_at: new Date().toISOString()
+        });
+
+      if (historyError) throw historyError;
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating order status with history:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
   async getAvailableDeliveryPartners(vendorLocation?: { latitude: number; longitude: number }, radius = 10): Promise<DeliveryPartner[]> {
     try {
       let query = supabase

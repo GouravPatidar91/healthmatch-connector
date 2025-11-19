@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MapPin, Phone, Navigation, CheckCircle, AlertCircle } from 'lucide-react';
+import { MapPin, Phone, Navigation, CheckCircle, AlertCircle, Package } from 'lucide-react';
 import { deliveryPartnerLocationService } from '@/services/deliveryPartnerLocationService';
+import { orderManagementService } from '@/services/orderManagementService';
 import { toast } from '@/hooks/use-toast';
 
 interface OrderDetails {
@@ -107,9 +108,76 @@ export function ActiveOrderTracking({
     });
   };
 
-  const handleMarkDelivered = () => {
-    if (onOrderComplete) {
-      onOrderComplete();
+  const handleConfirmPickup = async () => {
+    try {
+      const result = await orderManagementService.updateOrderStatusWithHistory(
+        order.id,
+        'out_for_delivery',
+        'Order picked up from pharmacy',
+        deliveryPartnerId,
+        'delivery_partner'
+      );
+
+      if (result.success) {
+        // Start tracking automatically after pickup
+        if (!isTracking) {
+          setIsTracking(true);
+        }
+        
+        toast({
+          title: 'Order Picked Up',
+          description: 'You have confirmed pickup. Location tracking started.',
+        });
+
+        if (onOrderComplete) {
+          onOrderComplete();
+        }
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to confirm pickup. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleMarkDelivered = async () => {
+    try {
+      const result = await orderManagementService.updateOrderStatusWithHistory(
+        order.id,
+        'delivered',
+        'Order delivered to customer',
+        deliveryPartnerId,
+        'delivery_partner'
+      );
+
+      if (result.success) {
+        // Stop tracking automatically after delivery
+        if (isTracking) {
+          deliveryPartnerLocationService.stopLocationTracking();
+          setIsTracking(false);
+        }
+
+        toast({
+          title: 'Order Delivered',
+          description: 'Order marked as delivered successfully.',
+        });
+
+        if (onOrderComplete) {
+          onOrderComplete();
+        }
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to mark order as delivered. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -224,6 +292,17 @@ export function ActiveOrderTracking({
                 onClick={handleStopTracking}
               >
                 Stop Tracking
+              </Button>
+            )}
+
+            {order.orderStatus === 'ready_for_pickup' && (
+              <Button
+                onClick={handleConfirmPickup}
+                className="w-full"
+                variant="default"
+              >
+                <Package className="w-4 h-4 mr-2" />
+                Confirm Pickup from Pharmacy
               </Button>
             )}
 
