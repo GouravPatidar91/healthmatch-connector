@@ -295,7 +295,7 @@ export default function VendorOrderManagement() {
                 {order.delivery_latitude && order.delivery_longitude && 
                  vendorInfo?.latitude && vendorInfo?.longitude && (
                   <div className="mb-4">
-                    {order.delivery_partner_id && !['delivered', 'cancelled'].includes(order.order_status) ? (
+                    {!['delivered', 'cancelled'].includes(order.order_status) && order.delivery_partner_id ? (
                       <LiveOrderTrackingMap
                         deliveryPartnerId={order.delivery_partner_id}
                         pharmacyLocation={{

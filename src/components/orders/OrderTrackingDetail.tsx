@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -42,7 +43,7 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
     if (open && orderId) {
       loadOrderDetails();
       
-      // Subscribe to order updates
+      // Subscribe to order updates from orderTrackingService
       const unsubscribe = orderTrackingService.subscribeToOrderUpdates(orderId, (updatedOrder) => {
         const previousStatus = order?.order_status;
         setOrder(updatedOrder);
@@ -147,8 +148,7 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
             )}
             
             {/* Live Tracking Map - Show when order is out for delivery or ready for pickup */}
-            {order.delivery_partner?.id && 
-             !['delivered', 'cancelled'].includes(order.order_status) &&
+            {!['delivered', 'cancelled'].includes(order.order_status) &&
              order.delivery_latitude && 
              order.delivery_longitude && 
              order.vendor?.latitude && 
@@ -156,9 +156,9 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
               <div>
                 <h3 className="font-semibold mb-4">Live Tracking</h3>
                 <LiveOrderTrackingMap
-                  deliveryPartnerId={order.delivery_partner.id}
-                  deliveryPartnerName={order.delivery_partner.name}
-                  vehicleType={order.delivery_partner.vehicle_type || 'Vehicle'}
+                  deliveryPartnerId={order.delivery_partner?.id || ''}
+                  deliveryPartnerName={order.delivery_partner?.name}
+                  vehicleType={order.delivery_partner?.vehicle_type || 'Vehicle'}
                   pharmacyLocation={{
                     lat: order.vendor.latitude,
                     lng: order.vendor.longitude
