@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, Package, ShoppingCart, Eye, CheckCircle, XCircle, Clock, Plus, Edit, Trash2, Search } from 'lucide-react';
+import { 
+  Bell, Package, ShoppingCart, Eye, CheckCircle, XCircle, Clock, Plus, Edit, Trash2, Search,
+  LayoutDashboard, Store, LogOut, FileText, AlertCircle, CheckCircle2, X
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { medicineService, Medicine, VendorMedicine, CustomMedicine } from '@/services/medicineService';
 import { PrescriptionNotificationModal } from '@/components/pharmacy/PrescriptionNotificationModal';
@@ -519,668 +523,566 @@ export default function VendorDashboard() {
     );
   }
 
+  const [activeTab, setActiveTab] = useState('orders');
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
-  const pendingOrders = orders.filter(o => o.order_status === 'placed').length;
+  const pendingOrders = orders.filter(o => o.order_status === 'pending').length;
   const completedOrders = orders.filter(o => o.order_status === 'delivered').length;
 
+  const stats = [
+    { label: 'Total Orders', value: orders.length.toString(), icon: ShoppingCart, color: 'bg-blue-50 text-blue-600' },
+    { label: 'Pending', value: pendingOrders.toString(), icon: Clock, color: 'bg-orange-50 text-orange-500' },
+    { label: 'Alerts', value: unreadNotifications.toString(), icon: Bell, color: 'bg-red-50 text-red-500' },
+    { label: 'Completed', value: completedOrders.toString(), icon: CheckCircle2, color: 'bg-green-50 text-green-600' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {vendorInfo.pharmacy_name}!
-          </h1>
-          <p className="text-gray-600">Manage your pharmacy inventory and orders</p>
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <motion.aside 
+        initial={{ x: -300 }}
+        animate={{ x: 0 }}
+        className="w-64 bg-card border-r border-border fixed h-full z-20 flex flex-col"
+      >
+        <div className="p-6 flex items-center gap-2 border-b border-border">
+          <div className="bg-primary p-1.5 rounded-lg">
+            <Store className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <span className="text-xl font-bold tracking-tight">
+            Curezy <span className="text-xs font-normal text-muted-foreground bg-muted px-1.5 py-0.5 rounded ml-1">Vendor</span>
+          </span>
+        </div>
+        
+        <div className="flex-1 px-4 space-y-2 mt-4">
+          <button 
+            onClick={() => setActiveTab('orders')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+              activeTab === 'orders' 
+                ? 'bg-primary/10 text-primary' 
+                : 'text-muted-foreground hover:bg-muted/50'
+            }`}
+          >
+            <ShoppingCart size={20} />
+            <span className="text-sm">Orders</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('inventory')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+              activeTab === 'inventory' 
+                ? 'bg-primary/10 text-primary' 
+                : 'text-muted-foreground hover:bg-muted/50'
+            }`}
+          >
+            <Package size={20} />
+            <span className="text-sm">Inventory</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('notifications')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all relative ${
+              activeTab === 'notifications' 
+                ? 'bg-primary/10 text-primary' 
+                : 'text-muted-foreground hover:bg-muted/50'
+            }`}
+          >
+            <Bell size={20} />
+            <span className="text-sm">Notifications</span>
+            {unreadNotifications > 0 && (
+              <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadNotifications}
+              </span>
+            )}
+          </button>
+        </div>
+        
+        <div className="p-4 border-t border-border">
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted/50 transition-all"
+          >
+            <LogOut size={20} />
+            <span className="text-sm">Logout</span>
+          </button>
+        </div>
+      </motion.aside>
+
+      {/* Main Content */}
+      <main className="flex-1 ml-64 p-8 max-w-7xl mx-auto w-full">
+        {/* Top Bar */}
+        <motion.header 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex justify-between items-center mb-8"
+        >
+          <div></div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full border border-green-100">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-wide">Store Open</span>
+            </div>
+            <div className="flex items-center gap-3 bg-card px-3 py-1.5 rounded-full border border-border shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                {vendorInfo.pharmacy_name.substring(0, 2).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium pr-2">{vendorInfo.pharmacy_name}</span>
+            </div>
+          </div>
+        </motion.header>
+
+        {/* Welcome Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <h1 className="text-3xl font-bold">Welcome back, {vendorInfo.pharmacy_name}!</h1>
+          <p className="text-muted-foreground mt-1">Manage your pharmacy inventory and orders</p>
+        </motion.div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + index * 0.1 }}
+              whileHover={{ y: -5 }}
+              className="bg-card p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between"
+            >
+              <div>
+                <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">{stat.label}</p>
+                <h3 className="text-3xl font-bold mt-1">{stat.value}</h3>
+              </div>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}>
+                <stat.icon size={24} />
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <ShoppingCart className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-yellow-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{pendingOrders}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Bell className="h-8 w-8 text-red-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Notifications</p>
-                  <p className="text-2xl font-bold text-gray-900">{unreadNotifications}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">{completedOrders}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="orders" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="orders" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold">Order #{order.order_number}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Badge className={getStatusColor(order.order_status)}>
-                          {order.order_status}
-                        </Badge>
+        {/* Tabs Content */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden min-h-[500px] flex flex-col"
+        >
+          <div className="flex border-b border-border">
+            {[
+              { id: 'orders', label: 'Orders' },
+              { id: 'inventory', label: 'Inventory' },
+              { id: 'notifications', label: 'Notifications' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 py-4 text-sm font-bold relative transition-colors ${
+                  activeTab === tab.id 
+                    ? 'text-primary bg-primary/5' 
+                    : 'text-muted-foreground hover:bg-muted/30'
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <motion.div 
+                    layoutId="activeTab" 
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+          
+          <div className="p-8 flex-1 bg-muted/20">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {activeTab === 'orders' && (
+                  <div className="space-y-4">
+                    {orders.length === 0 ? (
+                      <div className="text-center py-16">
+                        <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-bold mb-2">No orders yet</h3>
+                        <p className="text-muted-foreground">Orders will appear here once customers place them.</p>
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-sm font-medium">Customer:</p>
-                          <p className="text-sm">{order.customer_phone}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Total Amount:</p>
-                          <p className="text-sm">₹{order.final_amount}</p>
-                        </div>
-                      </div>
-
-                      <div className="mb-4">
-                        <p className="text-sm font-medium mb-2">Items:</p>
-                        <div className="space-y-1">
-                          {order.items.map((item, index) => (
-                            <div key={index} className="text-sm flex justify-between">
-                              <span>{item.medicine_name} x {item.quantity}</span>
-                              <span>₹{item.total_price}</span>
+                    ) : (
+                      orders.map((order, i) => (
+                        <motion.div
+                          key={order.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                          className="bg-card border border-border rounded-2xl p-6 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <h3 className="text-lg font-bold">{order.order_number}</h3>
+                                {order.prescription_required && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Rx Required
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(order.created_at).toLocaleString()}
+                              </p>
                             </div>
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">Total Amount</p>
+                              <p className="text-xl font-bold">₹{order.final_amount}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-end justify-between">
+                            <div>
+                              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Customer</p>
+                              <p className="text-sm font-medium">{order.customer_phone}</p>
+                              {order.prescription_url && (
+                                <button
+                                  onClick={() => window.open(order.prescription_url, '_blank')}
+                                  className="mt-3 text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                                >
+                                  <FileText size={12} /> View Prescription
+                                </button>
+                              )}
+                            </div>
+                            <div>
+                              <Badge 
+                                variant={
+                                  order.order_status === 'delivered' ? 'default' :
+                                  order.order_status === 'pending' ? 'secondary' : 
+                                  'outline'
+                                }
+                                className="flex items-center gap-1.5"
+                              >
+                                {order.order_status === 'delivered' && <CheckCircle2 size={14} />}
+                                {order.order_status === 'pending' && <Clock size={14} />}
+                                {order.order_status}
+                              </Badge>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                )}
+                
+                {activeTab === 'inventory' && (
+                  <div>
+                    {vendorMedicines.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                          <Package className="text-primary/30" size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">Medicine Inventory</h3>
+                        <p className="text-muted-foreground mb-8 max-w-sm">
+                          Your inventory is currently empty. Add medicines from the master catalog or create custom entries.
+                        </p>
+                        <Button 
+                          onClick={() => setIsAddMedicineOpen(true)}
+                          className="shadow-lg flex items-center gap-2"
+                        >
+                          <Plus size={18} /> Add Medicine
+                        </Button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-lg font-bold">Your Inventory ({vendorMedicines.length} items)</h3>
+                          <Button onClick={() => setIsAddMedicineOpen(true)}>
+                            <Plus className="h-4 w-4 mr-2" /> Add Medicine
+                          </Button>
+                        </div>
+                        <div className="grid gap-4">
+                          {vendorMedicines.map(medicine => (
+                            <motion.div
+                              key={medicine.vendor_medicine_id}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+                            >
+                              <div>
+                                <h4 className="font-bold">{medicine.name}</h4>
+                                <p className="text-sm text-muted-foreground">{medicine.brand}</p>
+                                <div className="flex gap-4 mt-2 text-xs">
+                                  <span className="text-muted-foreground">Stock: <span className="font-bold text-foreground">{medicine.stock_quantity}</span></span>
+                                  <span className="text-muted-foreground">Price: <span className="font-bold text-foreground">₹{medicine.selling_price}</span></span>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingMedicine(medicine);
+                                    setNewMedicine({
+                                      medicine_id: medicine.id,
+                                      selling_price: medicine.selling_price.toString(),
+                                      stock_quantity: medicine.stock_quantity.toString(),
+                                      discount_percentage: (medicine.discount_percentage || 0).toString(),
+                                      expiry_date: medicine.expiry_date || '',
+                                      batch_number: medicine.batch_number || ''
+                                    });
+                                    setIsEditMedicineOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteMedicine(medicine.vendor_medicine_id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </motion.div>
                           ))}
                         </div>
                       </div>
-
-                      {order.prescription_required && (
-                        <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-                          <p className="text-sm font-medium text-yellow-800 mb-2">
-                            Prescription Required
-                          </p>
-                          {order.prescription_url ? (
-                            <div className="flex items-center gap-2">
-                              <a 
-                                href={order.prescription_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline text-sm"
-                              >
-                                View Prescription
-                              </a>
-                              <Badge variant={order.prescription_status === 'approved' ? 'default' : 'destructive'}>
-                                {order.prescription_status}
-                              </Badge>
-                              {order.prescription_status === 'pending' && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => approvePrescription(order.id, true)}
-                                    className="h-8"
-                                  >
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => approvePrescription(order.id, false)}
-                                    className="h-8"
-                                  >
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-yellow-700">Waiting for prescription upload</p>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
-                        {order.order_status === 'placed' && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, 'confirmed')}
-                          >
-                            Confirm Order
-                          </Button>
-                        )}
-                        {order.order_status === 'confirmed' && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, 'processing')}
-                          >
-                            Start Processing
-                          </Button>
-                        )}
-                        {order.order_status === 'processing' && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, 'shipped')}
-                          >
-                            Mark as Shipped
-                          </Button>
-                        )}
-                        {order.order_status === 'shipped' && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, 'delivered')}
-                          >
-                            Mark as Delivered
-                          </Button>
-                        )}
+                    )}
+                  </div>
+                )}
+                
+                {activeTab === 'notifications' && (
+                  <div className="space-y-4">
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-16">
+                        <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-bold mb-2">No notifications</h3>
+                        <p className="text-muted-foreground">Notifications will appear here.</p>
                       </div>
-                    </div>
-                  ))}
-
-                  {orders.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No orders yet. Orders will appear here when customers place them.
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="inventory" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Medicine Inventory</CardTitle>
-                  <Dialog open={isAddMedicineOpen} onOpenChange={setIsAddMedicineOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Medicine
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Add Medicine to Inventory</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 mt-4">
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="custom-medicine"
-                              checked={isCustomMedicine}
-                              onChange={(e) => setIsCustomMedicine(e.target.checked)}
-                              className="rounded border-gray-300"
-                            />
-                            <Label htmlFor="custom-medicine">Add Custom Medicine</Label>
-                          </div>
-
-                          {!isCustomMedicine ? (
-                            <div>
-                              <Label htmlFor="medicine-select">Select Medicine from Catalog *</Label>
-                              <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                                <Input
-                                  id="medicine-search"
-                                  placeholder="Search medicines..."
-                                  value={medicineSearch}
-                                  onChange={(e) => setMedicineSearch(e.target.value)}
-                                  className="pl-10 mb-2"
-                                />
-                              </div>
-                              <Select value={newMedicine.medicine_id} onValueChange={(value) => setNewMedicine({...newMedicine, medicine_id: value})}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a medicine" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {filteredMedicines.map((medicine) => (
-                                    <SelectItem key={medicine.id} value={medicine.id}>
-                                      <div>
-                                        <div className="font-medium">{medicine.name}</div>
-                                        <div className="text-sm text-muted-foreground">{medicine.brand} - {medicine.dosage}</div>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                    ) : (
+                      notifications.map((notification) => (
+                        <motion.div
+                          key={notification.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          onClick={() => {
+                            if (notification.type === 'prescription_upload' && (notification as any).metadata) {
+                              const metadata = (notification as any).metadata;
+                              setActiveNotification({
+                                id: notification.id,
+                                broadcast_id: metadata?.broadcast_id,
+                                prescription_id: metadata?.prescription_id,
+                                order_id: notification.order_id,
+                                patient_latitude: metadata?.patient_latitude,
+                                patient_longitude: metadata?.patient_longitude,
+                                distance_km: metadata?.distance_km,
+                                timeout_at: metadata?.timeout_at,
+                                prescription_url: metadata?.prescription_url
+                              });
+                            }
+                            if (!notification.is_read) {
+                              markNotificationAsRead(notification.id);
+                            }
+                          }}
+                          className={`p-4 border rounded-xl cursor-pointer hover:shadow-md transition-all ${
+                            notification.is_read ? 'bg-card border-border' : 'bg-primary/5 border-primary/20'
+                          }`}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="mt-1">
+                              <Clock size={16} className="text-muted-foreground" />
                             </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <h4 className="font-medium">Custom Medicine Details</h4>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label htmlFor="custom-name">Medicine Name *</Label>
-                                  <Input
-                                    id="custom-name"
-                                    value={customMedicine.name}
-                                    onChange={(e) => setCustomMedicine({...customMedicine, name: e.target.value})}
-                                    placeholder="Enter medicine name"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="custom-brand">Brand *</Label>
-                                  <Input
-                                    id="custom-brand"
-                                    value={customMedicine.brand}
-                                    onChange={(e) => setCustomMedicine({...customMedicine, brand: e.target.value})}
-                                    placeholder="Enter brand name"
-                                  />
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label htmlFor="custom-manufacturer">Manufacturer *</Label>
-                                  <Input
-                                    id="custom-manufacturer"
-                                    value={customMedicine.manufacturer}
-                                    onChange={(e) => setCustomMedicine({...customMedicine, manufacturer: e.target.value})}
-                                    placeholder="Enter manufacturer"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="custom-category">Category</Label>
-                                  <Input
-                                    id="custom-category"
-                                    value={customMedicine.category}
-                                    onChange={(e) => setCustomMedicine({...customMedicine, category: e.target.value})}
-                                    placeholder="Enter category"
-                                  />
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label htmlFor="custom-dosage">Dosage</Label>
-                                  <Input
-                                    id="custom-dosage"
-                                    value={customMedicine.dosage}
-                                    onChange={(e) => setCustomMedicine({...customMedicine, dosage: e.target.value})}
-                                    placeholder="e.g., 500mg"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="custom-form">Form</Label>
-                                  <Input
-                                    id="custom-form"
-                                    value={customMedicine.form}
-                                    onChange={(e) => setCustomMedicine({...customMedicine, form: e.target.value})}
-                                    placeholder="e.g., Tablet, Syrup"
-                                  />
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label htmlFor="custom-pack-size">Pack Size</Label>
-                                  <Input
-                                    id="custom-pack-size"
-                                    value={customMedicine.pack_size}
-                                    onChange={(e) => setCustomMedicine({...customMedicine, pack_size: e.target.value})}
-                                    placeholder="e.g., 10 tablets"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="custom-mrp">MRP (₹)</Label>
-                                  <Input
-                                    id="custom-mrp"
-                                    type="number"
-                                    step="0.01"
-                                    value={customMedicine.mrp}
-                                    onChange={(e) => setCustomMedicine({...customMedicine, mrp: parseFloat(e.target.value) || 0})}
-                                    placeholder="Enter MRP"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="selling-price">Selling Price (₹) *</Label>
-                            <Input
-                              id="selling-price"
-                              type="number"
-                              step="0.01"
-                              value={newMedicine.selling_price}
-                              onChange={(e) => setNewMedicine({...newMedicine, selling_price: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="stock-quantity">Stock Quantity *</Label>
-                            <Input
-                              id="stock-quantity"
-                              type="number"
-                              value={newMedicine.stock_quantity}
-                              onChange={(e) => setNewMedicine({...newMedicine, stock_quantity: e.target.value})}
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="discount">Discount (%)</Label>
-                            <Input
-                              id="discount"
-                              type="number"
-                              step="0.01"
-                              value={newMedicine.discount_percentage}
-                              onChange={(e) => setNewMedicine({...newMedicine, discount_percentage: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="expiry-date">Expiry Date</Label>
-                            <Input
-                              id="expiry-date"
-                              type="date"
-                              value={newMedicine.expiry_date}
-                              onChange={(e) => setNewMedicine({...newMedicine, expiry_date: e.target.value})}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="batch-number">Batch Number</Label>
-                          <Input
-                            id="batch-number"
-                            value={newMedicine.batch_number}
-                            onChange={(e) => setNewMedicine({...newMedicine, batch_number: e.target.value})}
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button onClick={handleAddMedicine} className="flex-1">
-                            Add Medicine
-                          </Button>
-                          <Button variant="outline" onClick={() => setIsAddMedicineOpen(false)} className="flex-1">
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  {vendorMedicines.map((medicine) => (
-                    <Card key={medicine.vendor_medicine_id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
-                                {medicine.image_url ? (
-                                  <img src={medicine.image_url} alt={medicine.name} className="w-full h-full object-cover rounded-lg" />
-                                ) : (
-                                  <span className="text-2xl">💊</span>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-bold">{notification.title}</h4>
+                              <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant={notification.priority === 'high' ? 'destructive' : 'secondary'} className="text-[10px]">
+                                  {notification.priority}
+                                </Badge>
+                                {!notification.is_read && (
+                                  <span className="text-[10px] font-bold text-primary">NEW</span>
                                 )}
                               </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-semibold">{medicine.name}</h4>
-                                  {medicine.is_custom_medicine && (
-                                    <Badge variant="secondary">Custom</Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground">{medicine.brand} - {medicine.dosage}</p>
-                              </div>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">Price:</span>
-                                <p className="font-medium">₹{medicine.selling_price}</p>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Stock:</span>
-                                <p className="font-medium">{medicine.stock_quantity}</p>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Discount:</span>
-                                <p className="font-medium">{medicine.discount_percentage}%</p>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Status:</span>
-                                <Badge variant={medicine.is_available && medicine.stock_quantity > 0 ? "default" : "destructive"}>
-                                  {medicine.is_available && medicine.stock_quantity > 0 ? "Available" : "Out of Stock"}
-                                </Badge>
-                              </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {new Date(notification.created_at).toLocaleTimeString()}
                             </div>
-                            {medicine.batch_number && (
-                              <p className="text-xs text-muted-foreground mt-2">Batch: {medicine.batch_number}</p>
-                            )}
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingMedicine(medicine);
-                                setNewMedicine({
-                                  medicine_id: medicine.id,
-                                  selling_price: medicine.selling_price.toString(),
-                                  stock_quantity: medicine.stock_quantity.toString(),
-                                  discount_percentage: medicine.discount_percentage.toString(),
-                                  expiry_date: medicine.expiry_date || '',
-                                  batch_number: medicine.batch_number || ''
-                                });
-                                setIsEditMedicineOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteMedicine(medicine.vendor_medicine_id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      </main>
 
-                  {vendorMedicines.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No medicines in inventory. Add medicines to start selling.
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notifications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${
-                        notification.is_read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'
-                      }`}
-                      onClick={() => {
-                        // Handle prescription notifications
-                        if (notification.type === 'prescription_upload' && (notification as any).metadata) {
-                          const metadata = (notification as any).metadata;
-                          setActiveNotification({
-                            id: notification.id,
-                            broadcast_id: metadata?.broadcast_id,
-                            prescription_id: metadata?.prescription_id,
-                            order_id: notification.order_id,
-                            patient_latitude: metadata?.patient_latitude,
-                            patient_longitude: metadata?.patient_longitude,
-                            distance_km: metadata?.distance_km,
-                            timeout_at: metadata?.timeout_at,
-                            prescription_url: metadata?.prescription_url
-                          });
-                        }
-                        
-                        // Mark as read
-                        if (!notification.is_read) {
-                          markNotificationAsRead(notification.id);
-                        }
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">{notification.title}</h4>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              notification.priority === 'high' ? 'destructive' :
-                              notification.priority === 'medium' ? 'default' : 'secondary'
-                            }
-                          >
-                            {notification.priority}
-                          </Badge>
-                          {!notification.is_read && (
-                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(notification.created_at).toLocaleString()}
-                      </p>
-                      {notification.type === 'prescription_upload' && (
-                        <Badge variant="outline" className="mt-2">
-                          Click to view prescription
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-
-                  {notifications.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No notifications yet.
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Edit Medicine Dialog */}
-        <Dialog open={isEditMedicineOpen} onOpenChange={setIsEditMedicineOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Medicine</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-selling-price">Selling Price (₹) *</Label>
-                  <Input
-                    id="edit-selling-price"
-                    type="number"
-                    step="0.01"
-                    value={newMedicine.selling_price}
-                    onChange={(e) => setNewMedicine({...newMedicine, selling_price: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-stock-quantity">Stock Quantity *</Label>
-                  <Input
-                    id="edit-stock-quantity"
-                    type="number"
-                    value={newMedicine.stock_quantity}
-                    onChange={(e) => setNewMedicine({...newMedicine, stock_quantity: e.target.value})}
-                  />
-                </div>
+      {/* Add Medicine Dialog */}
+      <AnimatePresence>
+        {isAddMedicineOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddMedicineOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card w-full max-w-md rounded-2xl shadow-2xl z-10 p-6 border border-border"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Add Medicine</h3>
+                <button onClick={() => setIsAddMedicineOpen(false)}>
+                  <X size={20} className="text-muted-foreground hover:text-foreground" />
+                </button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-discount">Discount (%)</Label>
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3.5 text-muted-foreground" size={18} />
                   <Input
-                    id="edit-discount"
-                    type="number"
-                    step="0.01"
-                    value={newMedicine.discount_percentage}
-                    onChange={(e) => setNewMedicine({...newMedicine, discount_percentage: e.target.value})}
+                    type="text"
+                    placeholder="Search medicines..."
+                    value={medicineSearch}
+                    onChange={(e) => setMedicineSearch(e.target.value)}
+                    className="pl-10"
                   />
                 </div>
+                <Select
+                  value={newMedicine.medicine_id}
+                  onValueChange={(value) => setNewMedicine({...newMedicine, medicine_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select medicine" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredMedicines.slice(0, 10).map(medicine => (
+                      <SelectItem key={medicine.id} value={medicine.id}>
+                        {medicine.name} - {medicine.brand}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider">Selling Price (₹)</Label>
+                    <Input
+                      type="number"
+                      value={newMedicine.selling_price}
+                      onChange={(e) => setNewMedicine({...newMedicine, selling_price: e.target.value})}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider">Stock Qty</Label>
+                    <Input
+                      type="number"
+                      value={newMedicine.stock_quantity}
+                      onChange={(e) => setNewMedicine({...newMedicine, stock_quantity: e.target.value})}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
                 <div>
-                  <Label htmlFor="edit-expiry-date">Expiry Date</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider">Expiry Date</Label>
                   <Input
-                    id="edit-expiry-date"
                     type="date"
                     value={newMedicine.expiry_date}
                     onChange={(e) => setNewMedicine({...newMedicine, expiry_date: e.target.value})}
+                    className="mt-1.5"
                   />
                 </div>
+                <Button
+                  onClick={handleAddMedicine}
+                  className="w-full shadow-lg mt-2"
+                >
+                  Add to Inventory
+                </Button>
               </div>
-              <div>
-                <Label htmlFor="edit-batch-number">Batch Number</Label>
-                <Input
-                  id="edit-batch-number"
-                  value={newMedicine.batch_number}
-                  onChange={(e) => setNewMedicine({...newMedicine, batch_number: e.target.value})}
-                />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Medicine Dialog */}
+      <AnimatePresence>
+        {isEditMedicineOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsEditMedicineOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card w-full max-w-md rounded-2xl shadow-2xl z-10 p-6 border border-border"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Edit Medicine</h3>
+                <button onClick={() => setIsEditMedicineOpen(false)}>
+                  <X size={20} className="text-muted-foreground hover:text-foreground" />
+                </button>
               </div>
-              <div className="flex gap-2">
-                <Button onClick={handleEditMedicine} className="flex-1">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider">Selling Price (₹)</Label>
+                    <Input
+                      type="number"
+                      value={newMedicine.selling_price}
+                      onChange={(e) => setNewMedicine({...newMedicine, selling_price: e.target.value})}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider">Stock Qty</Label>
+                    <Input
+                      type="number"
+                      value={newMedicine.stock_quantity}
+                      onChange={(e) => setNewMedicine({...newMedicine, stock_quantity: e.target.value})}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider">Expiry Date</Label>
+                  <Input
+                    type="date"
+                    value={newMedicine.expiry_date}
+                    onChange={(e) => setNewMedicine({...newMedicine, expiry_date: e.target.value})}
+                    className="mt-1.5"
+                  />
+                </div>
+                <Button
+                  onClick={handleEditMedicine}
+                  className="w-full shadow-lg mt-2"
+                >
                   Update Medicine
                 </Button>
-                <Button variant="outline" onClick={() => setIsEditMedicineOpen(false)} className="flex-1">
-                  Cancel
-                </Button>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Real-time Prescription Notification Modal */}
-        {activeNotification && vendorInfo && (
-          <PrescriptionNotificationModal
-            notification={activeNotification}
-            vendorId={vendorInfo.id}
-            onClose={() => {
-              setActiveNotification(null);
-              loadVendorData(); // Refresh orders and notifications
-            }}
-          />
+            </motion.div>
+          </div>
         )}
-      </div>
+      </AnimatePresence>
+
+      {/* Real-time Prescription Notification Modal */}
+      {activeNotification && vendorInfo && (
+        <PrescriptionNotificationModal
+          notification={activeNotification}
+          vendorId={vendorInfo.id}
+          onClose={() => {
+            setActiveNotification(null);
+            loadVendorData();
+          }}
+        />
+      )}
     </div>
   );
 }
