@@ -64,6 +64,7 @@ export default function VendorDashboard() {
   const [medicineSearch, setMedicineSearch] = useState('');
   const [isCustomMedicine, setIsCustomMedicine] = useState(false);
   const [activeNotification, setActiveNotification] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('orders');
   
   // Form state for adding medicines
   const [newMedicine, setNewMedicine] = useState({
@@ -523,7 +524,6 @@ export default function VendorDashboard() {
     );
   }
 
-  const [activeTab, setActiveTab] = useState('orders');
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
   const pendingOrders = orders.filter(o => o.order_status === 'pending').length;
   const completedOrders = orders.filter(o => o.order_status === 'delivered').length;
