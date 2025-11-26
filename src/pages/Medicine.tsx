@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ShoppingCart, Plus, Minus, Upload, Star, Badge, MapPin, Clock, Phone, FileText, Camera, AlertCircle, Info, Building } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Plus, Minus, Upload, Star, Badge, MapPin, Clock, Phone, FileText, Camera, AlertCircle, Info, Building, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import PrescriptionProcessingModal from '@/components/prescription/PrescriptionP
 import { CheckoutDialog } from '@/components/medicine/CheckoutDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { MapboxLocationPicker } from '@/components/maps/MapboxLocationPicker';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const categories = [
   { name: 'All Categories', icon: '🏥', value: 'all' },
@@ -81,10 +82,8 @@ export default function Medicine() {
   const activeLocation = customLocation || userLocation;
 
   useEffect(() => {
-    // Initial load
     searchMedicines('', selectedCategory === 'all' ? undefined : selectedCategory);
     
-    // Fetch user profile for delivery info and saved location
     const fetchUserProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -98,7 +97,6 @@ export default function Medicine() {
           setDeliveryAddress(profile.address || profile.delivery_address || '');
           setCustomerPhone(profile.phone || '');
           
-          // Load saved delivery location if available
           if (profile.delivery_latitude && profile.delivery_longitude) {
             const savedLocation = {
               lat: profile.delivery_latitude,
@@ -112,12 +110,6 @@ export default function Medicine() {
               setDeliveryAddress(profile.delivery_address);
             }
             
-            toast({
-              title: "Saved Location Loaded",
-              description: "Using your preferred delivery location",
-            });
-            
-            // Search with saved location
             searchMedicines('', selectedCategory === 'all' ? undefined : selectedCategory, savedLocation);
           }
         }
@@ -128,7 +120,6 @@ export default function Medicine() {
   }, []);
 
   useEffect(() => {
-    // Search when term or category changes
     const delayedSearch = setTimeout(() => {
       searchMedicines(searchTerm, selectedCategory === 'all' ? undefined : selectedCategory);
     }, 300);
@@ -138,9 +129,7 @@ export default function Medicine() {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
+    if (file) setSelectedFile(file);
   };
 
   const handleDragOver = (event: React.DragEvent) => {
@@ -179,27 +168,24 @@ export default function Medicine() {
       return;
     }
 
-      if (!userLocation) {
-        toast({
-          title: "Location Required",
-          description: "Please enable location access to find nearby pharmacies.",
-          variant: "destructive",
-        });
-        return;
-      }
+    if (!userLocation) {
+      toast({
+        title: "Location Required",
+        description: "Please enable location access to find nearby pharmacies.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      // Use custom location if set for prescription upload
-      const locationToUse = activeLocation || userLocation;
+    const locationToUse = activeLocation || userLocation;
+    setIsUploading(true);
 
-      setIsUploading(true);
-
-      try {
-        // Upload prescription and immediately broadcast to nearby pharmacies
-        const uploadResult = await medicineService.uploadPrescription(
-          selectedFile,
-          undefined,
-          { latitude: locationToUse.lat, longitude: locationToUse.lng }
-        );
+    try {
+      const uploadResult = await medicineService.uploadPrescription(
+        selectedFile,
+        undefined,
+        { latitude: locationToUse.lat, longitude: locationToUse.lng }
+      );
       
       if (!uploadResult.success) {
         toast({
@@ -212,7 +198,6 @@ export default function Medicine() {
         return;
       }
 
-      // Show processing modal if broadcast was initiated
       if (uploadResult.broadcast_id) {
         toast({
           title: "Prescription Uploaded",
@@ -224,7 +209,6 @@ export default function Medicine() {
         setIsUploadModalOpen(false);
         setSelectedFile(null);
       } else {
-        // This shouldn't happen with the new logic, but handle just in case
         toast({
           title: "Upload Complete",
           description: "Prescription saved but no nearby pharmacies found",
@@ -233,7 +217,6 @@ export default function Medicine() {
         setIsUploadModalOpen(false);
         setSelectedFile(null);
       }
-
     } catch (error) {
       console.error('Prescription upload error:', error);
       toast({
@@ -244,16 +227,6 @@ export default function Medicine() {
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const handleProcessingSuccess = (vendorId: string) => {
-    setIsProcessingModalOpen(false);
-    setCurrentBroadcastId(null);
-    
-    toast({
-      title: "Success!",
-      description: "Your prescription order has been accepted by a pharmacy.",
-    });
   };
 
   const handleCheckout = () => {
@@ -273,7 +246,6 @@ export default function Medicine() {
     try {
       setIsProcessingOrder(true);
 
-      // Check user authentication
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -285,7 +257,6 @@ export default function Medicine() {
         return;
       }
 
-      // Validate delivery location
       if (!deliveryLatitude || !deliveryLongitude) {
         toast({
           title: "Location Required",
@@ -296,7 +267,6 @@ export default function Medicine() {
         return;
       }
 
-      // Validate inputs
       if (!deliveryAddress || deliveryAddress.trim().length < 10) {
         toast({
           title: "Invalid Address",
@@ -315,12 +285,11 @@ export default function Medicine() {
         return;
       }
 
-      // Check for multiple vendors
       const vendors = new Set(cartItems.map(item => item.vendor_id));
       if (vendors.size > 1) {
         toast({
           title: "Multiple Vendors",
-          description: "You can only order from one pharmacy at a time. Please remove items from other pharmacies.",
+          description: "You can only order from one pharmacy at a time.",
           variant: "destructive",
         });
         return;
@@ -331,11 +300,8 @@ export default function Medicine() {
       const totalDiscount = getTotalDiscount();
       const deliveryFee = subtotal > 500 ? 0 : 50;
       const finalAmount = getTotalPrice() + deliveryFee;
-
-      // Check if any item requires prescription
       const prescriptionRequired = cartItems.some(item => item.prescription_required);
 
-      // Prepare order data
       const orderData = {
         vendor_id: vendorId,
         total_amount: subtotal,
@@ -358,14 +324,12 @@ export default function Medicine() {
         }))
       };
 
-      // Create order
       const result = await medicineService.createOrder(orderData);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to create order');
       }
 
-      // Clear cart
       cartItems.forEach(item => removeFromCart(item.vendor_medicine_id));
 
       toast({
@@ -374,8 +338,6 @@ export default function Medicine() {
       });
 
       setIsCheckoutDialogOpen(false);
-      
-      // Navigate to order success page
       navigate(`/order-success?orderId=${result.orderId}`);
 
     } catch (error) {
@@ -406,619 +368,435 @@ export default function Medicine() {
     const savings = medicine.mrp - discountedPrice;
 
     return (
-      <Card className="h-full flex flex-col hover:shadow-lg transition-shadow duration-300">
-        <CardContent className="p-4 flex-1">
-          <div className="aspect-square w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
-            {medicine.image_url ? (
-              <img src={medicine.image_url} alt={medicine.name} className="w-full h-full object-cover rounded-lg" />
-            ) : (
-              <span className="text-4xl">💊</span>
-            )}
-          </div>
-          
-          <div className="text-center mb-4">
-            <h3 className="font-semibold text-lg mb-1 line-clamp-2">{medicine.name}</h3>
-            <p className="text-sm text-muted-foreground mb-2">{medicine.brand}</p>
-            {medicine.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2">{medicine.description}</p>
-            )}
-          </div>
-
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-lg font-bold text-primary">₹{discountedPrice.toFixed(2)}</span>
-              {savings > 0 && (
-                <span className="text-sm text-muted-foreground line-through">₹{medicine.mrp.toFixed(2)}</span>
-              )}
-            </div>
-            {savings > 0 && (
-              <p className="text-xs text-green-600">Save ₹{savings.toFixed(2)}</p>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between mb-3">
-            {isVendorMedicine && (medicine as VendorMedicine).distance_km && (
-              <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">
-                  {(medicine as VendorMedicine).distance_km.toFixed(1)} km
-                </span>
-              </div>
-            )}
-            {!isVendorMedicine && (
-              <div className="text-xs text-muted-foreground">
-                Enable location to see nearby vendors
-              </div>
-            )}
-            <UIBadge 
-              variant={isVendorMedicine 
-                ? ((medicine as VendorMedicine).stock_quantity > 0 ? "default" : "destructive")
-                : "secondary"
-              } 
-              className="text-xs"
-            >
-              {isVendorMedicine 
-                ? ((medicine as VendorMedicine).stock_quantity > 0 ? "In Stock" : "Out of Stock")
-                : "Catalog Item"
-              }
-            </UIBadge>
-          </div>
-
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Pack Size:</span>
-              <span className="font-medium">{medicine.pack_size}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Dosage:</span>
-              <span className="font-medium">{medicine.dosage}</span>
-            </div>
-            {isVendorMedicine && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Pharmacy:</span>
-                <span className="font-medium text-xs">{(medicine as VendorMedicine).pharmacy_name}</span>
-              </div>
-            )}
-          </div>
-
-          {medicine.prescription_required && (
-            <UIBadge variant="outline" className="w-full justify-center mb-3 text-xs">
-              📋 Prescription Required
-            </UIBadge>
-          )}
-        </CardContent>
-        
-        <div className="p-4 pt-0">
-          {cartItem ? (
-            <div className="flex items-center justify-between bg-primary/5 rounded-lg p-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => updateQuantity(
-                  isVendorMedicine ? (medicine as VendorMedicine).vendor_medicine_id : (medicine as Medicine).id, 
-                  -1
-                )}
-                className="h-8 w-8 p-0"
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="font-medium px-4">{cartItem.quantity}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => updateQuantity(
-                  isVendorMedicine ? (medicine as VendorMedicine).vendor_medicine_id : (medicine as Medicine).id, 
-                  1
-                )}
-                className="h-8 w-8 p-0"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <>
-              {!isVendorMedicine ? (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  disabled
-                >
-                  Not Available Nearby
-                </Button>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -5, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.1)" }}
+        transition={{ type: "spring", stiffness: 200 }}
+      >
+        <Card className="h-full flex flex-col overflow-hidden border-border/50 transition-all group">
+          <CardContent className="p-5 flex-1">
+            <div className="h-32 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+              {medicine.image_url ? (
+                <img src={medicine.image_url} alt={medicine.name} className="w-full h-full object-cover rounded-2xl" />
               ) : (
-                <Button
-                  onClick={() => addToCart(medicine as VendorMedicine)}
-                  className="w-full"
-                  disabled={(medicine as VendorMedicine).stock_quantity === 0}
+                <motion.span 
+                  className="text-5xl"
+                  whileHover={{ scale: 1.2 }}
+                  transition={{ type: "spring" }}
                 >
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Add to Cart
-                </Button>
+                  💊
+                </motion.span>
               )}
-            </>
-          )}
-        </div>
-      </Card>
-    );
-  };
-
-  // Cart Summary Component
-  const CartSummary = () => {
-    if (cartItems.length === 0) return null;
-
-    const subtotal = getSubtotal();
-    const totalDiscount = getTotalDiscount();
-    const deliveryFee = subtotal > 500 ? 0 : 50;
-
-    return (
-      <Card className="sticky top-6">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Cart ({getTotalItems()})
-            </span>
-            <span className="text-lg font-bold text-primary">₹{getTotalPrice().toFixed(2)}</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            {cartItems.map((item) => {
-              const isVendorMedicine = 'vendor_medicine_id' in item;
-              const price = isVendorMedicine 
-                ? (item as any).selling_price * (1 - (item as any).discount_percentage / 100) 
-                : (item as any).mrp;
-              const itemId = isVendorMedicine ? (item as any).vendor_medicine_id : (item as any).id;
-              
-              return (
-                <div key={itemId} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.brand}</p>
-                    {isVendorMedicine && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {(item as any).pharmacy_name}
-                      </p>
-                    )}
-                    <p className="text-sm font-bold text-primary">₹{price.toFixed(2)} × {item.quantity}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(itemId, -1)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(itemId, 1)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-bold text-foreground line-clamp-2">{medicine.name}</h3>
+                  <p className="text-xs text-muted-foreground">{medicine.brand}</p>
                 </div>
-              );
-            })}
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Subtotal ({getTotalItems()} items):</span>
-              <span>₹{subtotal.toFixed(2)}</span>
-            </div>
-            {totalDiscount > 0 && (
-              <div className="flex justify-between text-sm text-green-600">
-                <span>Discount:</span>
-                <span>-₹{totalDiscount.toFixed(2)}</span>
+                <div className="text-right">
+                  <span className="block font-bold text-primary">₹{discountedPrice.toFixed(2)}</span>
+                  {savings > 0 && (
+                    <span className="text-xs text-muted-foreground line-through">₹{medicine.mrp.toFixed(2)}</span>
+                  )}
+                </div>
               </div>
-            )}
-            <div className="flex justify-between text-sm">
-              <span>Delivery Fee:</span>
-              <span className={deliveryFee === 0 ? 'text-green-600' : ''}>
-                {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
-              </span>
-            </div>
-            <Separator />
-            <div className="flex justify-between font-bold">
-              <span>Total:</span>
-              <span className="text-primary">₹{(getTotalPrice() + deliveryFee).toFixed(2)}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            {/* Location Picker Button */}
-            <Button 
-              variant="outline"
-              className="w-full" 
-              onClick={() => setIsLocationPickerOpen(true)}
-            >
-              <MapPin className="mr-2 h-4 w-4" />
-              {deliveryLatitude && deliveryLongitude ? 'Change Delivery Location' : 'Set Delivery Location'}
-            </Button>
-            
-            {deliveryLatitude && deliveryLongitude && (
-              <div className="text-xs text-muted-foreground p-2 bg-muted rounded-md">
-                ✓ Location selected: {deliveryAddress.substring(0, 50)}...
+              
+              {savings > 0 && (
+                <p className="text-xs text-green-600 mb-2">Save ₹{savings.toFixed(2)}</p>
+              )}
+              
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted p-2 rounded-lg mb-3">
+                <span className="font-medium">{medicine.pack_size}</span>
+                <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
+                <span>{medicine.dosage}</span>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between mb-3">
+              {isVendorMedicine && (medicine as VendorMedicine).distance_km && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {(medicine as VendorMedicine).distance_km.toFixed(1)} km
+                  </span>
+                </div>
+              )}
+              <UIBadge 
+                variant={isVendorMedicine 
+                  ? ((medicine as VendorMedicine).stock_quantity > 0 ? "default" : "destructive")
+                  : "secondary"
+                } 
+                className="text-xs"
+              >
+                {isVendorMedicine 
+                  ? ((medicine as VendorMedicine).stock_quantity > 0 ? "In Stock" : "Out of Stock")
+                  : "Catalog"
+                }
+              </UIBadge>
+            </div>
+
+            {cartItem ? (
+              <div className="flex items-center justify-center gap-3 border-2 border-primary rounded-xl p-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateQuantity(
+                    isVendorMedicine ? (medicine as VendorMedicine).vendor_medicine_id : (medicine as Medicine).id, 
+                    -1
+                  )}
+                  className="h-8 w-8 p-0"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="font-bold text-lg px-2">{cartItem.quantity}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateQuantity(
+                    isVendorMedicine ? (medicine as VendorMedicine).vendor_medicine_id : (medicine as Medicine).id, 
+                    1
+                  )}
+                  className="h-8 w-8 p-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                {!isVendorMedicine ? (
+                  <Button
+                    variant="outline"
+                    className="w-full border-2"
+                    disabled
+                  >
+                    Not Available Nearby
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => addToCart(medicine as VendorMedicine)}
+                    className="w-full rounded-xl font-semibold border-2 border-primary shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all group-hover:scale-105"
+                    disabled={(medicine as VendorMedicine).stock_quantity === 0}
+                  >
+                    Add to Cart
+                    <Plus className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </>
             )}
-            
-            <Button 
-              className="w-full" 
-              size="lg"
-              onClick={handleCheckout}
-            >
-              Proceed to Checkout
-            </Button>
-            
-            <p className="text-xs text-muted-foreground text-center">
-              {subtotal < 500 && `Add ₹${(500 - subtotal).toFixed(2)} more for free delivery`}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Quick Medicine</h1>
-            <p className="text-muted-foreground">
-              Order medicines and healthcare products from nearby verified pharmacies
-              {customLocation && (
-                <span className="block text-xs text-primary mt-1">
-                  📍 Using custom location
-                </span>
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header */}
+      <div className="bg-card/80 backdrop-blur-lg border-b sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Quick Medicine</h1>
+              <p className="text-muted-foreground mt-1">Order medicines and healthcare products</p>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* Cart Button */}
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handleCheckout}
+                className="relative hover:scale-105 transition-transform bg-card"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {getTotalItems() > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-bounce">
+                    {getTotalItems()}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Quick Action Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <motion.button
+            onClick={() => setIsUploadModalOpen(true)}
+            whileHover={{ y: -5, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.1)" }}
+            whileTap={{ scale: 0.98 }}
+            className="bg-card hover:bg-card/80 p-6 rounded-2xl border border-border/50 text-left transition-all group"
+          >
+            <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Upload className="text-purple-600" size={24} />
+            </div>
+            <h3 className="font-bold text-foreground">Upload Prescription</h3>
+            <p className="text-xs text-muted-foreground mt-1">For Rx medicines</p>
+          </motion.button>
+          
+          <div className="bg-card p-6 rounded-2xl border border-border/50 text-left">
+            <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
+              <Clock className="text-green-600" size={24} />
+            </div>
+            <h3 className="font-bold text-foreground">Fast Delivery</h3>
+            <p className="text-xs text-muted-foreground mt-1">Within 30 mins</p>
+          </div>
+          
+          <div className="bg-card p-6 rounded-2xl border border-border/50 text-left">
+            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mb-4">
+              <Phone className="text-blue-600" size={24} />
+            </div>
+            <h3 className="font-bold text-foreground">24/7 Support</h3>
+            <p className="text-xs text-muted-foreground mt-1">Always available</p>
+          </div>
+          
+          <div className="bg-card p-6 rounded-2xl border border-border/50 text-left">
+            <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center mb-4">
+              <Badge className="text-orange-600" size={24} />
+            </div>
+            <h3 className="font-bold text-foreground">Verified Meds</h3>
+            <p className="text-xs text-muted-foreground mt-1">100% authentic</p>
+          </div>
+        </div>
+
+        {/* Location Status */}
+        <div className="mb-8 space-y-4">
+          {permissionState === 'prompt' && (
+            <Alert className="bg-primary/5 border-primary/20">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertTitle className="text-primary">Enable Location</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>Allow location access to find medicines from nearby pharmacies</span>
+                <Button 
+                  onClick={requestLocationPermission}
+                  size="sm"
+                  className="ml-4"
+                >
+                  Enable Location
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {permissionState === 'denied' && (
+            <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Location Access Denied</AlertTitle>
+              <AlertDescription>
+                Please enable location permissions in your browser settings to find nearby pharmacies.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {activeLocation && (
+            <div className="flex items-center justify-between bg-card border border-border p-4 rounded-xl shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">
+                    {customLocation ? 'Selected Location' : 'Current Location'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Searching within 10 km radius
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsLocationPickerOpen(true)}
+                className="hover:scale-105 transition-transform"
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Change
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-8">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search medicines, brands, or symptoms..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 pr-4 py-6 rounded-2xl border-2 focus:border-primary shadow-sm text-base"
+            />
+          </div>
+        </div>
+
+        {/* Categories */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+            <div className="w-1.5 h-7 bg-primary rounded-full"></div>
+            Browse by Category
+          </h2>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {categories.map((category) => (
+              <Button
+                key={category.value}
+                variant={selectedCategory === category.value ? 'default' : 'outline'}
+                size="lg"
+                onClick={() => setSelectedCategory(category.value)}
+                className={`flex-shrink-0 rounded-xl transition-all ${
+                  selectedCategory === category.value 
+                    ? 'shadow-lg scale-105' 
+                    : 'hover:scale-105'
+                }`}
+              >
+                <span className="mr-2 text-lg">{category.icon}</span>
+                {category.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Medicines Grid */}
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold flex items-center gap-3">
+              <div className="w-1.5 h-7 bg-primary rounded-full"></div>
+              {selectedCategory === 'all' ? 'Popular Medicines' : selectedCategory}
+            </h2>
+            <p className="text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+              {medicines.length} items
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsLocationPickerOpen(true)}
-            className="gap-2 flex-shrink-0"
-          >
-            <MapPin className="h-4 w-4" />
-            Change Location
-          </Button>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : medicines.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground text-lg mb-2">No medicines found</p>
+              <p className="text-sm text-muted-foreground">Try adjusting your search or category filter</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {medicines.map((medicine, index) => (
+                <MedicineCard key={medicine.id} medicine={medicine} />
+              ))}
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Location Info Banner */}
-        {activeLocation && (
-          <Alert className="mb-6 border-primary/20 bg-primary/5">
-            <Info className="h-4 w-4 text-primary" />
-            <AlertTitle>Location Active</AlertTitle>
-            <AlertDescription className="text-sm">
-              Your confirmed location is being used to:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Find nearby pharmacies with available stock</li>
-                <li>Calculate delivery distances and fees</li>
-                <li>Enable delivery partners to navigate to you</li>
-              </ul>
-              {customLocation && (
-                <p className="mt-2 text-xs">
-                  ✅ <strong>Location saved to your profile</strong> - Will be used for future orders
+      {/* Upload Prescription Modal */}
+      <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                <Upload className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">Upload Prescription</h3>
+                <p className="text-sm text-muted-foreground font-normal mt-1">
+                  Our pharmacists will review and pack your medicines
                 </p>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Location Permission Banner */}
-        {!activeLocation && (
-          <Card className="mb-6 border-2 border-primary/20">
-            <CardContent className="p-6">
-              {permissionState === 'prompt' && (
-                <div className="flex items-start gap-4">
-                  <MapPin className="h-8 w-8 text-primary mt-1 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-2">
-                      Enable Location for Best Experience
-                    </h3>
-                    <p className="text-muted-foreground mb-4 text-sm">
-                      We'll show you medicines available at nearby pharmacies with
-                      accurate prices and stock. If no nearby pharmacies found, we'll search your entire city.
-                    </p>
-                    <Button onClick={requestLocationPermission} size="sm">
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Enable Location Access
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {!selectedFile ? (
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+                  isDragOver 
+                    ? 'border-primary bg-primary/10 scale-[1.02]' 
+                    : 'border-border/50 hover:bg-muted/30'
+                }`}
+              >
+                <Label htmlFor="file-upload" className="cursor-pointer">
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center">
+                      <Camera className="h-8 w-8 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-foreground mb-1">
+                        Choose a file or drag & drop
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        PNG, JPG or PDF (max. 10MB)
+                      </p>
+                    </div>
+                    <Button type="button" variant="outline" className="mt-2">
+                      Browse Files
                     </Button>
                   </div>
-                </div>
-              )}
-              
-              {permissionState === 'denied' && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Location Access Denied</AlertTitle>
-                  <AlertDescription>
-                    Please enable location in your browser settings to see nearby
-                    pharmacies. Without location, you'll see the medicine catalog only.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {permissionState === 'unavailable' && (
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertTitle>Location Not Available</AlertTitle>
-                  <AlertDescription>
-                    Your browser doesn't support location services. Showing all available medicines.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Search and Filter Section */}
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search medicines, brands, or symptoms..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full md:w-64">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.value} value={category.value}>
-                      <div className="flex items-center gap-2">
-                        <span>{category.icon}</span>
-                        {category.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
-            <DialogTrigger asChild>
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Upload className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="font-medium">Upload Prescription</p>
-                  <p className="text-xs text-muted-foreground">For Rx medicines</p>
-                </CardContent>
-              </Card>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Upload Prescription
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                {/* File Upload Area */}
-                <div
-                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                    isDragOver ? 'border-primary bg-primary/5' : 'border-border'
-                  } ${selectedFile ? 'border-green-500 bg-green-50' : ''}`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  {selectedFile ? (
-                    <div className="space-y-2">
-                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto">
-                        <FileText className="h-6 w-6 text-green-600" />
-                      </div>
-                      <p className="font-medium text-green-700">{selectedFile.name}</p>
-                      <p className="text-sm text-green-600">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedFile(null)}
-                        className="mt-2"
-                      >
-                        Remove File
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-                        <Upload className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Drop your prescription here</p>
-                        <p className="text-sm text-muted-foreground">or click to browse files</p>
-                      </div>
-                      <Label htmlFor="prescription" className="cursor-pointer">
-                        <Button variant="outline" className="mt-2" asChild>
-                          <span>
-                            <Camera className="h-4 w-4 mr-2" />
-                            Choose File
-                          </span>
-                        </Button>
-                      </Label>
-                      <Input
-                        id="prescription"
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* File Requirements */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-800 mb-2">File Requirements:</h4>
-                  <div className="text-sm text-blue-700 space-y-1">
-                    <p>• Supported formats: JPG, PNG, PDF</p>
-                    <p>• Maximum file size: 10MB</p>
-                    <p>• Ensure prescription is clearly visible</p>
-                    <p>• Include doctor's signature and stamp</p>
-                  </div>
-                </div>
-
-                {/* Process Info */}
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h4 className="font-medium text-orange-800 mb-2">What happens next?</h4>
-                  <div className="text-sm text-orange-700 space-y-1">
-                    <p>• Your prescription will be sent to nearby pharmacies</p>
-                    <p>• Pharmacies will review your prescription manually</p>
-                    <p>• First pharmacy to accept will prepare your order</p>
-                    <p>• You'll be notified when a pharmacy accepts</p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <Button 
-                    onClick={() => {
-                      setIsUploadModalOpen(false);
-                      setSelectedFile(null);
-                    }} 
-                    variant="outline" 
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleSubmitPrescription}
-                    className="flex-1"
-                    disabled={!selectedFile || isUploading}
-                  >
-                    {isUploading ? "Uploading..." : "Submit Prescription"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Clock className="h-6 w-6 text-green-600" />
-              </div>
-              <p className="font-medium">Fast Delivery</p>
-              <p className="text-xs text-muted-foreground">Within 30 mins</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Phone className="h-6 w-6 text-blue-600" />
-              </div>
-              <p className="font-medium">24/7 Support</p>
-              <p className="text-xs text-muted-foreground">Always available</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Badge className="h-6 w-6 text-purple-600" />
-              </div>
-              <p className="font-medium">Verified Meds</p>
-              <p className="text-xs text-muted-foreground">100% authentic</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search Strategy Indicator */}
-        {medicines.length > 0 && (
-          <div className="mb-4 flex items-center gap-2">
-            {searchStrategy === 'nearby' && (
-              <UIBadge variant="default" className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                Showing nearby pharmacies within 10km
-              </UIBadge>
-            )}
-            {searchStrategy === 'city' && (
-              <UIBadge variant="secondary" className="flex items-center gap-1">
-                <Building className="h-3 w-3" />
-                No nearby pharmacies found. Showing city-wide options
-              </UIBadge>
-            )}
-            {searchStrategy === 'catalog' && (
-              <UIBadge variant="outline" className="flex items-center gap-1">
-                <Info className="h-3 w-3" />
-                Showing medicine catalog (enable location for availability)
-              </UIBadge>
-            )}
-          </div>
-        )}
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Medicine Grid */}
-          <div className="lg:col-span-3">
-            {/* Medicine Grid */}
-            {loading ? (
-              <div className="col-span-full text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading medicines...</p>
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </Label>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {medicines.length > 0 ? (
-                  medicines.map((medicine) => (
-                    <MedicineCard 
-                      key={'vendor_medicine_id' in medicine ? medicine.vendor_medicine_id : medicine.id} 
-                      medicine={medicine} 
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <div className="text-6xl mb-4">🔍</div>
-                    <h3 className="text-xl font-semibold mb-2">No medicines found</h3>
-                    <p className="text-muted-foreground mb-4">
-                      {!userLocation 
-                        ? "Please enable location access to see medicines from nearby pharmacies."
-                        : "Try adjusting your search terms or browse different categories."
-                      }
-                    </p>
-                    {!userLocation && (
-                      <Button onClick={() => window.location.reload()}>
-                        Enable Location
-                      </Button>
-                    )}
-                  </div>
-                )}
+              <div className="border-2 border-primary/20 bg-primary/5 rounded-2xl p-8 text-center">
+                <FileText className="h-12 w-12 mx-auto text-primary mb-4" />
+                <p className="font-semibold text-foreground mb-1">{selectedFile.name}</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {(selectedFile.size / 1024).toFixed(2)} KB
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedFile(null)}
+                >
+                  Remove File
+                </Button>
               </div>
             )}
-          </div>
 
-          {/* Cart Sidebar */}
-          <div className="lg:col-span-1">
-            <CartSummary />
-          </div>
-        </div>
+            <Alert className="bg-primary/5 border-primary/20">
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 mt-0.5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="h-3 w-3 text-primary" />
+                </div>
+                <AlertDescription className="text-sm">
+                  Your data is encrypted and shared only with verified pharmacists. 
+                  We'll notify you once approved.
+                </AlertDescription>
+              </div>
+            </Alert>
 
-        {/* Prescription Processing Modal */}
+            <Button 
+              onClick={handleSubmitPrescription} 
+              disabled={!selectedFile || isUploading}
+              className="w-full h-12 rounded-xl font-semibold shadow-lg"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Uploading & Broadcasting...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-5 w-5" />
+                  Upload Prescription
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Processing Modal */}
+      {currentBroadcastId && (
         <PrescriptionProcessingModal
           isOpen={isProcessingModalOpen}
           onClose={() => {
@@ -1026,115 +804,58 @@ export default function Medicine() {
             setCurrentBroadcastId(null);
           }}
           broadcastId={currentBroadcastId}
-          onSuccess={handleProcessingSuccess}
+          onSuccess={(vendorId) => {
+            setIsProcessingModalOpen(false);
+            setCurrentBroadcastId(null);
+            toast({
+              title: "Success!",
+              description: "Your prescription order has been accepted by a pharmacy.",
+            });
+          }}
         />
+      )}
 
-      {/* Location Picker Dialog */}
+      {/* Location Picker */}
       <MapboxLocationPicker
         open={isLocationPickerOpen}
         onClose={() => setIsLocationPickerOpen(false)}
+        initialLocation={activeLocation ? {
+          latitude: activeLocation.lat,
+          longitude: activeLocation.lng
+        } : undefined}
         onLocationSelect={(location) => {
-          console.log('Location selected in parent:', location);
-          
-          // Close dialog immediately
-          setIsLocationPickerOpen(false);
-          
-          // Store custom location for pharmacy search and order placement
           const customLoc = { lat: location.latitude, lng: location.longitude };
           setCustomLocation(customLoc);
           setSearchLocation(customLoc);
           setDeliveryLatitude(location.latitude);
           setDeliveryLongitude(location.longitude);
-          setDeliveryAddress(location.address);
+          setDeliveryAddress(location.address || deliveryAddress);
           
-          // Save to database for persistent use (async in background)
-          (async () => {
-            try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) {
-                const { error } = await supabase
-                  .from('profiles')
-                  .update({
-                    delivery_latitude: location.latitude,
-                    delivery_longitude: location.longitude,
-                    delivery_address: location.address
-                  })
-                  .eq('id', user.id);
-                
-                if (error) {
-                  console.error('Error saving location:', error);
-                  toast({
-                    title: "Location Set",
-                    description: "Location saved for this session only.",
-                  });
-                } else {
-                  toast({
-                    title: "✅ Location Saved",
-                    description: `Saved: ${location.address.substring(0, 50)}${location.address.length > 50 ? '...' : ''}`,
-                  });
-                }
-              } else {
-                toast({
-                  title: "Location Set",
-                  description: "Location set for this session. Sign in to save permanently.",
-                });
-              }
-            } catch (error) {
-              console.error('Error saving location:', error);
-              toast({
-                title: "Location Set",
-                description: "Using location for this session.",
-              });
-            }
-          })();
-          
-          // Update search with new location
           searchMedicines(searchTerm, selectedCategory === 'all' ? undefined : selectedCategory, customLoc);
+          
+          toast({
+            title: "Location Updated",
+            description: "Searching for medicines in your area...",
+          });
         }}
-        initialLocation={
-          customLocation 
-            ? { latitude: customLocation.lat, longitude: customLocation.lng }
-            : userLocation 
-            ? { latitude: userLocation.lat, longitude: userLocation.lng } 
-            : undefined
-        }
       />
 
       {/* Checkout Dialog */}
       <CheckoutDialog
-          open={isCheckoutDialogOpen}
-          onOpenChange={setIsCheckoutDialogOpen}
-          cartItems={cartItems}
-          subtotal={getSubtotal()}
-          totalDiscount={getTotalDiscount()}
-          deliveryFee={getSubtotal() > 500 ? 0 : 50}
-          total={getTotalPrice() + (getSubtotal() > 500 ? 0 : 50)}
-          deliveryAddress={deliveryAddress}
-          setDeliveryAddress={setDeliveryAddress}
-          customerPhone={customerPhone}
-          setCustomerPhone={setCustomerPhone}
-          onConfirmOrder={handleConfirmOrder}
-          isProcessing={isProcessingOrder}
-        />
-
-        {/* Location Picker Dialog */}
-        <MapboxLocationPicker
-          open={isLocationPickerOpen}
-          onClose={() => setIsLocationPickerOpen(false)}
-          onLocationSelect={(location) => {
-            setDeliveryLatitude(location.latitude);
-            setDeliveryLongitude(location.longitude);
-            setDeliveryAddress(location.address);
-          }}
-          initialLocation={
-            deliveryLatitude && deliveryLongitude
-              ? { latitude: deliveryLatitude, longitude: deliveryLongitude }
-              : userLocation 
-              ? { latitude: userLocation.lat, longitude: userLocation.lng }
-              : undefined
-          }
-        />
-      </div>
+        open={isCheckoutDialogOpen}
+        onOpenChange={setIsCheckoutDialogOpen}
+        cartItems={cartItems}
+        subtotal={getSubtotal()}
+        totalDiscount={getTotalDiscount()}
+        deliveryFee={getSubtotal() > 500 ? 0 : 50}
+        total={getTotalPrice() + (getSubtotal() > 500 ? 0 : 50)}
+        deliveryAddress={deliveryAddress}
+        setDeliveryAddress={setDeliveryAddress}
+        customerPhone={customerPhone}
+        setCustomerPhone={setCustomerPhone}
+        onConfirmOrder={handleConfirmOrder}
+        isProcessing={isProcessingOrder}
+      />
     </div>
   );
 }
