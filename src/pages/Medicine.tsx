@@ -38,6 +38,7 @@ const categories = [
 export default function Medicine() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { 
     medicines, 
     loading, 
@@ -713,37 +714,44 @@ export default function Medicine() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
                   isDragOver 
                     ? 'border-primary bg-primary/10 scale-[1.02]' 
                     : 'border-border/50 hover:bg-muted/30'
                 }`}
               >
-                <Label htmlFor="file-upload" className="cursor-pointer">
-                  <div className="space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold text-foreground mb-1">
-                        Choose a file or drag & drop
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        PNG, JPG or PDF (max. 10MB)
-                      </p>
-                    </div>
-                    <Button type="button" variant="outline" className="mt-2">
-                      Browse Files
-                    </Button>
+                <div className="space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center">
+                    <Camera className="h-8 w-8 text-primary" />
                   </div>
-                  <Input
-                    id="file-upload"
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                </Label>
+                  <div>
+                    <p className="text-base font-semibold text-foreground mb-1">
+                      Choose a file or drag & drop
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      PNG, JPG or PDF (max. 10MB)
+                    </p>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                  >
+                    Browse Files
+                  </Button>
+                </div>
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
               </div>
             ) : (
               <div className="border-2 border-primary/20 bg-primary/5 rounded-2xl p-8 text-center">
