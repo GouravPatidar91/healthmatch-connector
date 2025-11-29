@@ -9,6 +9,7 @@ import { deliveryPartnerLocationService, DeliveryPartnerLocation } from '@/servi
 import { cn } from '@/lib/utils';
 import { MapIconSVGs, MapIconColors, getVehicleIconData } from '@/components/maps/MapIcons';
 import { MapLegend } from '@/components/maps/MapLegend';
+import { routingService } from '@/services/routingService';
 
 // Fix Leaflet default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -45,6 +46,7 @@ export function LiveOrderTrackingMap({
   const [distance, setDistance] = useState<number | null>(null);
   const [eta, setETA] = useState<number | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('');
+  const [actualRoute, setActualRoute] = useState<[number, number][]>([]);
   const mapRef = useRef<L.Map | null>(null);
 
   // Get vehicle icon data
@@ -157,6 +159,16 @@ export function LiveOrderTrackingMap({
     );
     setDistance(dist);
     setETA(deliveryPartnerLocationService.estimateETA(dist));
+    
+    // Fetch actual road route
+    routingService.getRoute(
+      { lat, lng },
+      { lat: customerLocation.lat, lng: customerLocation.lng }
+    ).then(route => {
+      if (route.length > 0) {
+        setActualRoute(route);
+      }
+    });
   };
 
   const updateLastUpdateTime = (timestamp: string) => {
@@ -326,7 +338,7 @@ export function LiveOrderTrackingMap({
 
               {/* Route Line */}
               <Polyline
-                positions={routeCoordinates}
+                positions={actualRoute.length > 0 ? actualRoute : routeCoordinates}
                 color={vehicleIconData.color}
                 weight={4}
                 opacity={0.8}
