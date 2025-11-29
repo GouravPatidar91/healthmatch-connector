@@ -169,7 +169,7 @@ export function CheckoutDialog({
                   Location set: {deliveryLatitude.toFixed(4)}, {deliveryLongitude.toFixed(4)}
                 </p>
               )}
-              {!deliveryLatitude || !deliveryLongitude && (
+              {(!deliveryLatitude || !deliveryLongitude) && (
                 <p className="text-xs text-orange-600 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   Please select your location using the map pin button
@@ -288,7 +288,7 @@ export function CheckoutDialog({
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={isProcessing || !agreedToTerms}
+              disabled={isProcessing || !agreedToTerms || !deliveryLatitude || !deliveryLongitude}
               className="flex-1"
             >
               {isProcessing ? 'Placing Order...' : 'Confirm Order'}
