@@ -1706,6 +1706,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      has_pending_delivery_request: {
+        Args: { _order_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
