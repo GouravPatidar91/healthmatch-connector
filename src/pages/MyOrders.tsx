@@ -25,7 +25,7 @@ const MyOrders: React.FC = () => {
     }
   }, [user]);
 
-  // Subscribe to real-time order updates for all user orders
+  // Subscribe to real-time order updates
   useEffect(() => {
     if (!user?.id) return;
 
@@ -34,7 +34,7 @@ const MyOrders: React.FC = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'medicine_orders',
           filter: `user_id=eq.${user.id}`
@@ -43,7 +43,7 @@ const MyOrders: React.FC = () => {
           console.log('Order update received:', payload);
           
           // Show notification for status changes
-          if (payload.eventType === 'UPDATE' && payload.new.order_status !== payload.old.order_status) {
+          if (payload.new.order_status !== payload.old?.order_status) {
             const statusMap: Record<string, string> = {
               'confirmed': 'Order confirmed by pharmacy',
               'preparing': 'Your order is being prepared',
@@ -71,52 +71,32 @@ const MyOrders: React.FC = () => {
           loadOrders();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'delivery_requests',
+          filter: `order_id=in.(${orders.map(o => o.id).join(',')})`
+        },
+        (payload) => {
+          console.log('Delivery request update:', payload);
+          // When delivery partner accepts, reload orders
+          if (payload.new && 'status' in payload.new && payload.new.status === 'accepted') {
+            loadOrders();
+            toast({
+              title: 'Delivery Partner Assigned!',
+              description: 'Your order is now being picked up',
+            });
+          }
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
-
-  // Subscribe to real-time order updates for specific active orders
-  useEffect(() => {
-    if (!orders.length) return;
-
-    const channels = orders
-      .filter(order => ['ready_for_pickup', 'out_for_delivery'].includes(order.order_status))
-      .map(order => 
-        supabase
-          .channel(`order-${order.id}`)
-          .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'medicine_orders',
-            filter: `id=eq.${order.id}`
-          }, (payload: any) => {
-            const newStatus = payload.new.order_status;
-            const oldStatus = payload.old.order_status;
-
-            // Auto-open tracking when delivery partner is assigned
-            if (newStatus === 'out_for_delivery' && oldStatus === 'ready_for_pickup') {
-              setSelectedOrderId(order.id);
-              setTrackingDialogOpen(true);
-              
-              toast({
-                title: 'Delivery Partner Assigned!',
-                description: 'Your order is now out for delivery. Track it live!',
-              });
-            }
-
-            // Reload orders to reflect new status
-            loadOrders();
-          })
-          .subscribe()
-      );
-    
-    return () => {
-      channels.forEach(ch => supabase.removeChannel(ch));
-    };
-  }, [orders]);
+  }, [user?.id, orders]);
 
   // Check for ?track= parameter in URL
   useEffect(() => {

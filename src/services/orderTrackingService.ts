@@ -272,8 +272,9 @@ class OrderTrackingService {
           table: 'medicine_orders',
           filter: `id=eq.${orderId}`
         },
-        (payload) => {
-          callback(payload.new);
+        () => {
+          // Fetch full order details with all relations instead of using raw payload
+          this.getOrderDetails(orderId).then(callback);
         }
       )
       .on(

@@ -122,28 +122,37 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
             {/* Mini Map - Show when order is confirmed and has location */}
             {(order.order_status === 'confirmed' || 
               order.order_status === 'preparing' || 
-              (order.order_status === 'ready_for_pickup' && !order.delivery_partner?.id)) &&
-             order.delivery_latitude && 
-             order.delivery_longitude && 
-             order.vendor?.latitude && 
-             order.vendor?.longitude && (
+              (order.order_status === 'ready_for_pickup' && !order.delivery_partner?.id)) && (
               <div>
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
                   Order Location
                 </h3>
-                <OrderMiniMap
-                  pharmacyLocation={{
-                    lat: order.vendor.latitude,
-                    lng: order.vendor.longitude
-                  }}
-                  pharmacyName={order.vendor.pharmacy_name}
-                  customerLocation={{
-                    lat: order.delivery_latitude,
-                    lng: order.delivery_longitude
-                  }}
-                  customerAddress={order.delivery_address}
-                />
+                {order.delivery_latitude && 
+                 order.delivery_longitude && 
+                 order.vendor?.latitude && 
+                 order.vendor?.longitude ? (
+                  <OrderMiniMap
+                    pharmacyLocation={{
+                      lat: order.vendor.latitude,
+                      lng: order.vendor.longitude
+                    }}
+                    pharmacyName={order.vendor.pharmacy_name}
+                    customerLocation={{
+                      lat: order.delivery_latitude,
+                      lng: order.delivery_longitude
+                    }}
+                    customerAddress={order.delivery_address}
+                  />
+                ) : (
+                  <Card className="p-6 text-center border-2">
+                    <div className="flex flex-col items-center gap-2">
+                      <p className="text-muted-foreground">
+                        📍 Location coordinates not available for this order
+                      </p>
+                    </div>
+                  </Card>
+                )}
               </div>
             )}
 
