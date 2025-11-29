@@ -156,10 +156,10 @@ export const DeliveryRequestNotification: React.FC<DeliveryRequestNotificationPr
         <div className="flex gap-2 pt-2">
           <Button
             onClick={handleAccept}
-            disabled={loading || timeRemaining === 0}
+            disabled={loading || timeRemaining < 10}
             className="flex-1"
           >
-            Accept Delivery
+            {timeRemaining < 10 ? 'Expired' : 'Accept Delivery'}
           </Button>
           <Button
             onClick={handleDecline}

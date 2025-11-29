@@ -197,12 +197,12 @@ export function DeliveryRequestNotificationEnhanced({
         <div className="flex gap-2">
           <Button
             onClick={handleAccept}
-            disabled={accepting || declining}
+            disabled={accepting || declining || timeLeft < 10}
             className="flex-1"
             size="lg"
           >
             <CheckCircle className="mr-2 h-4 w-4" />
-            {accepting ? 'Accepting...' : 'Accept'}
+            {timeLeft < 10 ? 'Expired' : (accepting ? 'Accepting...' : 'Accept')}
           </Button>
           <Button
             onClick={handleDecline}
