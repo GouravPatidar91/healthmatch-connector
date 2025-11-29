@@ -122,6 +122,23 @@ class DeliveryRequestService {
         return { success: false, error: 'Request has expired' };
       }
 
+      // Check if order is already assigned to another partner
+      const { data: orderCheck, error: orderCheckError } = await supabase
+        .from('medicine_orders')
+        .select('delivery_partner_id')
+        .eq('id', request.order_id)
+        .single();
+
+      if (orderCheckError) {
+        console.error('[DeliveryRequestService] Error checking order status:', orderCheckError);
+        return { success: false, error: 'Failed to verify order status' };
+      }
+
+      if (orderCheck?.delivery_partner_id) {
+        console.warn('[DeliveryRequestService] Order already assigned to another partner');
+        return { success: false, error: 'This order has already been assigned to another partner' };
+      }
+
       console.log('[DeliveryRequestService] Request validated, fetching partner...');
 
       // 1. Get delivery partner record FIRST
@@ -166,6 +183,7 @@ class DeliveryRequestService {
       console.log('[DeliveryRequestService] Now updating request status to accepted...');
 
       // 3. NOW update the request to accepted
+      // The database trigger will automatically reject other pending requests
       const { error: updateRequestError } = await supabase
         .from('delivery_requests')
         .update({
@@ -189,24 +207,9 @@ class DeliveryRequestService {
         return { success: false, error: 'Failed to confirm acceptance of delivery request' };
       }
 
-      // 4. Reject all other pending requests for this order
-      const { error: rejectError } = await supabase
-        .from('delivery_requests')
-        .update({
-          status: 'rejected',
-          responded_at: new Date().toISOString(),
-          rejection_reason: 'Another partner accepted',
-        })
-        .eq('order_id', request.order_id)
-        .eq('status', 'pending')
-        .neq('id', requestId);
+      console.log('[DeliveryRequestService] Request accepted, trigger will auto-reject others');
 
-      if (rejectError) {
-        console.error('[DeliveryRequestService] Error rejecting other requests:', rejectError);
-        // Don't fail the whole operation for this
-      }
-
-      // 5. Start location tracking for the partner
+      // 4. Start location tracking for the partner
       try {
         await deliveryPartnerLocationService.startLocationTracking(partnerId);
         console.log('[DeliveryRequestService] Location tracking started');
@@ -284,6 +287,7 @@ class DeliveryRequestService {
             delivery_latitude,
             delivery_longitude,
             final_amount,
+            delivery_partner_id,
             medicine_vendors!vendor_id (
               pharmacy_name,
               address,
@@ -299,9 +303,18 @@ class DeliveryRequestService {
 
       if (error) throw error;
       
-      // Additional client-side filter to ensure validity
+      // Additional client-side filters to ensure validity
       const now = Date.now();
       const validRequests = (data || []).filter(request => {
+        const order = request.medicine_orders;
+        
+        // Skip if order is already assigned to another partner
+        if (order?.delivery_partner_id) {
+          console.log(`Request ${request.id}: order already assigned, skipping`);
+          return false;
+        }
+        
+        // Check expiry
         const expiresAt = new Date(request.expires_at).getTime();
         const timeLeft = Math.floor((expiresAt - now) / 1000);
         console.log(`Request ${request.id}: expires at ${request.expires_at}, time left: ${timeLeft}s`);
