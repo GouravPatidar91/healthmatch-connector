@@ -60,8 +60,8 @@ class DeliveryRequestService {
         return { success: false, error: 'No delivery partners within radius' };
       }
 
-      // Create delivery requests (expire in 3 minutes)
-      const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString();
+      // Create delivery requests (expire in 5 minutes)
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
       const requests = partnersWithDistance.map((partner) => ({
         order_id: orderId,
         vendor_id: vendorId,
@@ -271,8 +271,8 @@ class DeliveryRequestService {
 
   async getPendingRequests(partnerId: string): Promise<any[]> {
     try {
-      // Add 5 second buffer to account for clock drift
-      const bufferTime = new Date(Date.now() - 5000).toISOString();
+      // Add 30 second buffer to account for clock drift and grace period
+      const bufferTime = new Date(Date.now() - 30000).toISOString();
       
       const { data, error } = await supabase
         .from('delivery_requests')
