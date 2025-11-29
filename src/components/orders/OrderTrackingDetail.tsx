@@ -122,7 +122,7 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
             {/* Mini Map - Show when order is confirmed and has location */}
             {(order.order_status === 'confirmed' || 
               order.order_status === 'preparing' || 
-              order.order_status === 'ready_for_pickup') &&
+              (order.order_status === 'ready_for_pickup' && !order.delivery_partner?.id)) &&
              order.delivery_latitude && 
              order.delivery_longitude && 
              order.vendor?.latitude && 
@@ -146,9 +146,23 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
                 />
               </div>
             )}
+
+            {/* Waiting for Delivery Partner */}
+            {order.order_status === 'ready_for_pickup' && !order.delivery_partner?.id && (
+              <Card className="p-6 text-center border-2 border-dashed">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="animate-pulse text-4xl">⏳</div>
+                  <p className="font-medium text-lg">Waiting for Delivery Partner</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your order is ready and we're finding a delivery partner nearby
+                  </p>
+                </div>
+              </Card>
+            )}
             
-            {/* Live Tracking Map - Show when order is out for delivery or ready for pickup */}
-            {!['delivered', 'cancelled'].includes(order.order_status) &&
+            {/* Live Tracking Map - Show when delivery partner is assigned and order is active */}
+            {order.delivery_partner?.id &&
+             ['out_for_delivery', 'ready_for_pickup'].includes(order.order_status) &&
              order.delivery_latitude && 
              order.delivery_longitude && 
              order.vendor?.latitude && 
@@ -156,9 +170,9 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
               <div>
                 <h3 className="font-semibold mb-4">Live Tracking</h3>
                 <LiveOrderTrackingMap
-                  deliveryPartnerId={order.delivery_partner?.id || ''}
-                  deliveryPartnerName={order.delivery_partner?.name}
-                  vehicleType={order.delivery_partner?.vehicle_type || 'Vehicle'}
+                  deliveryPartnerId={order.delivery_partner.id}
+                  deliveryPartnerName={order.delivery_partner.name || 'Delivery Partner'}
+                  vehicleType={order.delivery_partner.vehicle_type || 'Vehicle'}
                   pharmacyLocation={{
                     lat: order.vendor.latitude,
                     lng: order.vendor.longitude
