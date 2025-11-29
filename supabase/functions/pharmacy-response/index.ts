@@ -135,6 +135,8 @@ serve(async (req) => {
             payment_method: 'pending',
             delivery_address: 'To be confirmed',
             customer_phone: 'To be confirmed',
+            delivery_latitude: broadcast.patient_latitude,
+            delivery_longitude: broadcast.patient_longitude,
             prescription_required: true,
             prescription_url: prescriptionData?.file_url,
             prescription_status: 'approved',
