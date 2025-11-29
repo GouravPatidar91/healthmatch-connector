@@ -213,6 +213,15 @@
     margin: 0 !important;
     padding: 0 !important;
   }
+
+  /* Custom Leaflet zoom control positioning for mobile-friendly access */
+  .leaflet-control-zoom {
+    position: absolute !important;
+    bottom: 20px !important;
+    right: 10px !important;
+    top: auto !important;
+    left: auto !important;
+  }
  }
 
 /* Mobile-specific fixes */

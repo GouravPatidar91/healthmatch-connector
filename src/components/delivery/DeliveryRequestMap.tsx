@@ -147,7 +147,11 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
           center={center}
           zoom={13}
           style={{ height: '100%', width: '100%' }}
-          scrollWheelZoom={false}
+          scrollWheelZoom={true}
+          dragging={true}
+          zoomControl={true}
+          doubleClickZoom={true}
+          touchZoom={true}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
