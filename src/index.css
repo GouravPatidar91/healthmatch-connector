@@ -195,6 +195,20 @@
   .leaflet-control-attribution {
     @apply bg-white/90 text-xs text-gray-600;
   }
+
+  /* Custom Leaflet div icon styles - remove default background/border */
+  .custom-mini-icon,
+  .custom-icon,
+  .custom-vehicle-icon,
+  .delivery-partner-icon {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .leaflet-div-icon {
+    background: transparent;
+    border: none;
+  }
 }
 
 /* Mobile-specific fixes */
