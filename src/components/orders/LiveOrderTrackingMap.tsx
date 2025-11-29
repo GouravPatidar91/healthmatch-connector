@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Bike, Store, Home, MapPin, Clock } from 'lucide-react';
 import { deliveryPartnerLocationService, DeliveryPartnerLocation } from '@/services/deliveryPartnerLocationService';
 import { cn } from '@/lib/utils';
+import { MapIconSVGs, MapIconColors, getVehicleIconData } from '@/components/maps/MapIcons';
+import { MapLegend } from '@/components/maps/MapLegend';
 
 // Fix Leaflet default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -45,32 +47,8 @@ export function LiveOrderTrackingMap({
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const mapRef = useRef<L.Map | null>(null);
 
-  // Vehicle-specific icons with professional SVG paths
-  const getVehicleIcon = (vehicleType: string) => {
-    const type = vehicleType.toLowerCase();
-    let iconSvg = '';
-    let color = 'hsl(var(--primary))';
-
-    if (type.includes('bike') || type.includes('motorcycle')) {
-      iconSvg = '<path d="M5 19m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M19 19m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M12 4l-3 9l4 -2l2 3h3.5"/><path d="M17.5 14l-1.5 -3.5"/><path d="M6 14l1 -3h3.5l2.5 -4"/>';
-      color = 'hsl(25, 95%, 53%)';
-    } else if (type.includes('car')) {
-      iconSvg = '<path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/>';
-      color = 'hsl(217, 91%, 60%)';
-    } else if (type.includes('scooter')) {
-      iconSvg = '<path d="M6 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M16 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M8 17h5a6 6 0 0 1 5 -5v-5a2 2 0 0 0 -2 -2h-1"/><path d="M6 9h3"/>';
-      color = 'hsl(142, 76%, 36%)';
-    } else if (type.includes('bicycle') || type.includes('cycle')) {
-      iconSvg = '<path d="M5 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M19 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M12 19v-4l-3 -3l5 -4l2 3l3 0"/><path d="M17 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>';
-      color = 'hsl(280, 65%, 60%)';
-    } else {
-      iconSvg = '<path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v6m0 5h-6m-4 -8h15m-6 0v-3"/>';
-    }
-
-    return { iconSvg, color };
-  };
-
-  const vehicleIconData = getVehicleIcon(vehicleType);
+  // Get vehicle icon data
+  const vehicleIconData = getVehicleIconData(vehicleType);
 
   const createCustomIcon = (color: string, iconSvg: string, isVehicle: boolean = false) => {
     const pulseAnimation = isVehicle 
@@ -126,8 +104,8 @@ export function LiveOrderTrackingMap({
   };
 
   const deliveryIcon = createCustomIcon(vehicleIconData.color, vehicleIconData.iconSvg, true);
-  const pharmacyIcon = createCustomIcon('hsl(142, 76%, 36%)', '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22v-10h6v10"/>');
-  const customerIcon = createCustomIcon('hsl(221, 83%, 53%)', '<path d="M12 2c3.9 0 7 3.1 7 7 0 5.3-7 13-7 13S5 14.3 5 9c0-3.9 3.1-7 7-7z"/><circle cx="12" cy="9" r="2.5"/>');
+  const pharmacyIcon = createCustomIcon(MapIconColors.shop, MapIconSVGs.shop);
+  const customerIcon = createCustomIcon(MapIconColors.home, MapIconSVGs.home);
 
   // Fetch initial location and subscribe to updates
   useEffect(() => {
@@ -355,11 +333,14 @@ export function LiveOrderTrackingMap({
                 dashArray="10, 5"
                 className="animate-pulse"
               />
-            </>
-          )}
-        </MapContainer>
-      </div>
-      </div>
-    </Card>
-  );
-}
+              </>
+            )}
+          </MapContainer>
+          
+          {/* Map Legend */}
+          <MapLegend />
+        </div>
+        </div>
+      </Card>
+    );
+  }
