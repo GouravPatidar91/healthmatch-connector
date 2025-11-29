@@ -290,6 +290,11 @@ export function LiveOrderTrackingMap({
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
           className="rounded-b-lg"
+          scrollWheelZoom={true}
+          dragging={true}
+          zoomControl={true}
+          doubleClickZoom={true}
+          touchZoom={true}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
