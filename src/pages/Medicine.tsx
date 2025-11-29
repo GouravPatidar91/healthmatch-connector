@@ -243,6 +243,33 @@ export default function Medicine() {
     setIsCheckoutDialogOpen(true);
   };
 
+  const handleLocationSelect = async (location: { latitude: number; longitude: number; address: string }) => {
+    setDeliveryLatitude(location.latitude);
+    setDeliveryLongitude(location.longitude);
+    setDeliveryAddress(location.address);
+    setCustomLocation({ lat: location.latitude, lng: location.longitude });
+    setSearchLocation({ lat: location.latitude, lng: location.longitude });
+
+    // Save to user profile
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({
+          delivery_latitude: location.latitude,
+          delivery_longitude: location.longitude,
+          delivery_address: location.address
+        })
+        .eq('id', user.id);
+    }
+
+    setIsLocationPickerOpen(false);
+    
+    // Re-search medicines with new location
+    searchMedicines('', selectedCategory === 'all' ? undefined : selectedCategory, 
+      { lat: location.latitude, lng: location.longitude });
+  };
+
   const handleConfirmOrder = async () => {
     try {
       setIsProcessingOrder(true);
@@ -863,6 +890,9 @@ export default function Medicine() {
         setCustomerPhone={setCustomerPhone}
         onConfirmOrder={handleConfirmOrder}
         isProcessing={isProcessingOrder}
+        deliveryLatitude={deliveryLatitude}
+        deliveryLongitude={deliveryLongitude}
+        onOpenLocationPicker={() => setIsLocationPickerOpen(true)}
       />
     </div>
   );

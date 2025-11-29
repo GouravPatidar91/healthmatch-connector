@@ -23,6 +23,9 @@ interface CheckoutDialogProps {
   setCustomerPhone: (phone: string) => void;
   onConfirmOrder: () => void;
   isProcessing: boolean;
+  deliveryLatitude: number | null;
+  deliveryLongitude: number | null;
+  onOpenLocationPicker: () => void;
 }
 
 export function CheckoutDialog({
@@ -38,7 +41,10 @@ export function CheckoutDialog({
   customerPhone,
   setCustomerPhone,
   onConfirmOrder,
-  isProcessing
+  isProcessing,
+  deliveryLatitude,
+  deliveryLongitude,
+  onOpenLocationPicker
 }: CheckoutDialogProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [addressError, setAddressError] = useState('');
@@ -135,17 +141,40 @@ export function CheckoutDialog({
 
             <div className="space-y-2">
               <Label htmlFor="address">Delivery Address *</Label>
-              <Input
-                id="address"
-                placeholder="Enter your complete delivery address"
-                value={deliveryAddress}
-                onChange={(e) => {
-                  setDeliveryAddress(e.target.value);
-                  if (addressError) validateAddress(e.target.value);
-                }}
-                onBlur={(e) => validateAddress(e.target.value)}
-                className={addressError ? 'border-red-500' : ''}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="address"
+                  placeholder="Enter your complete delivery address"
+                  value={deliveryAddress}
+                  onChange={(e) => {
+                    setDeliveryAddress(e.target.value);
+                    if (addressError) validateAddress(e.target.value);
+                  }}
+                  onBlur={(e) => validateAddress(e.target.value)}
+                  className={addressError ? 'border-red-500' : 'flex-1'}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={onOpenLocationPicker}
+                  title="Select location on map"
+                >
+                  <MapPin className="h-4 w-4" />
+                </Button>
+              </div>
+              {deliveryLatitude && deliveryLongitude && (
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Location set: {deliveryLatitude.toFixed(4)}, {deliveryLongitude.toFixed(4)}
+                </p>
+              )}
+              {!deliveryLatitude || !deliveryLongitude && (
+                <p className="text-xs text-orange-600 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Please select your location using the map pin button
+                </p>
+              )}
               {addressError && (
                 <p className="text-sm text-red-500 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
