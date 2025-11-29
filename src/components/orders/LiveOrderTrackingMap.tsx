@@ -131,9 +131,21 @@ export function LiveOrderTrackingMap({
 
   // Fetch initial location and subscribe to updates
   useEffect(() => {
+    if (!deliveryPartnerId) return;
+
+    let isSubscribed = true;
+
     const loadInitialLocation = async () => {
-      const location = await deliveryPartnerLocationService.getCurrentLocation(deliveryPartnerId);
-      setDeliveryLocation(location);
+      try {
+        const location = await deliveryPartnerLocationService.getCurrentLocation(deliveryPartnerId);
+        if (isSubscribed && location) {
+          setDeliveryLocation(location);
+          updateDistanceAndETA(location.latitude, location.longitude);
+          updateLastUpdateTime(location.timestamp);
+        }
+      } catch (err) {
+        console.error('Failed to load delivery partner location:', err);
+      }
     };
 
     loadInitialLocation();
@@ -142,15 +154,21 @@ export function LiveOrderTrackingMap({
     const channel = deliveryPartnerLocationService.subscribeToLocationUpdates(
       deliveryPartnerId,
       (location) => {
-        setDeliveryLocation(location);
-        setLastUpdate(new Date().toLocaleTimeString());
+        if (isSubscribed) {
+          setDeliveryLocation(location);
+          updateDistanceAndETA(location.latitude, location.longitude);
+          setLastUpdate(new Date().toLocaleTimeString());
+        }
       }
     );
 
     return () => {
-      channel.unsubscribe();
+      isSubscribed = false;
+      if (channel) {
+        channel.unsubscribe();
+      }
     };
-  }, [deliveryPartnerId]);
+  }, [deliveryPartnerId, customerLocation]);
 
   const updateDistanceAndETA = (lat: number, lng: number) => {
     const dist = deliveryPartnerLocationService.calculateDistance(

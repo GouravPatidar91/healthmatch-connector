@@ -144,15 +144,28 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
                     }}
                     customerAddress={order.delivery_address}
                   />
-                ) : (
-                  <Card className="p-6 text-center border-2">
-                    <div className="flex flex-col items-center gap-2">
-                      <p className="text-muted-foreground">
-                        📍 Location coordinates not available for this order
-                      </p>
-                    </div>
-                  </Card>
-                )}
+                 ) : (
+                   <Card className="p-6 text-center border-2 border-dashed border-orange-500/50 bg-orange-50/50">
+                     <div className="flex flex-col items-center gap-3">
+                       <MapPin className="h-8 w-8 text-orange-600" />
+                       <div>
+                         <p className="font-medium text-orange-900 mb-1">
+                           Location Not Available
+                         </p>
+                         <p className="text-sm text-orange-700 mb-3">
+                           {!order.delivery_latitude || !order.delivery_longitude 
+                             ? "Delivery coordinates were not captured for this order."
+                             : "Pharmacy location is not available."}
+                         </p>
+                         <p className="text-xs text-muted-foreground">
+                           Pharmacy: {order.vendor?.pharmacy_name || 'Unknown'}
+                           <br />
+                           {order.vendor?.address || 'Address not available'}
+                         </p>
+                       </div>
+                     </div>
+                   </Card>
+                 )}
               </div>
             )}
 

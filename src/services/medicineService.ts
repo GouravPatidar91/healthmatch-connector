@@ -68,6 +68,8 @@ export interface MedicineOrder {
   payment_method: string;
   delivery_address: string;
   customer_phone: string;
+  delivery_latitude?: number;
+  delivery_longitude?: number;
   prescription_required: boolean;
   prescription_url?: string;
   items: OrderItem[];
@@ -295,6 +297,8 @@ class MedicineService {
           payment_method: orderData.payment_method,
           delivery_address: orderData.delivery_address,
           customer_phone: orderData.customer_phone,
+          delivery_latitude: orderData.delivery_latitude,
+          delivery_longitude: orderData.delivery_longitude,
           prescription_required: orderData.prescription_required,
           prescription_url: orderData.prescription_url
         })

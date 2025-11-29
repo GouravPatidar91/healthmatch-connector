@@ -12,6 +12,8 @@ import { useUserProfile, Profile as ProfileType } from "@/services/userDataServi
 import { getWorldCities, getCurrentPosition, getNearbyCities } from "@/utils/geolocation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MapPin, Loader2 } from "lucide-react";
+import { MapboxLocationPicker } from "@/components/maps/MapboxLocationPicker";
+import { supabase } from "@/integrations/supabase/client";
 
 // Simple location selector without map dependency
 
@@ -36,6 +38,7 @@ const Profile = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   
   const [passwordForm, setPasswordForm] = useState({
     password: "",
@@ -393,9 +396,19 @@ const Profile = () => {
                         <MapPin className="h-4 w-4" />
                       )}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsLocationPickerOpen(true)}
+                      className="shrink-0"
+                      title="Select location on map"
+                    >
+                      <MapPin className="h-4 w-4 mr-1" />
+                      Map
+                    </Button>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Use GPS to automatically fill your current location
+                    Use GPS for current location or select precise location on map
                   </p>
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -571,6 +584,38 @@ const Profile = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Location Picker Dialog */}
+      <MapboxLocationPicker
+        open={isLocationPickerOpen}
+        onClose={() => setIsLocationPickerOpen(false)}
+        initialLocation={formData.address ? undefined : undefined}
+        onLocationSelect={async (location) => {
+          setFormData(prev => ({
+            ...prev,
+            address: location.address,
+          }));
+          
+          // Also save to database immediately
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('profiles')
+              .update({
+                delivery_latitude: location.latitude,
+                delivery_longitude: location.longitude,
+                delivery_address: location.address
+              })
+              .eq('id', user.id);
+          }
+          
+          setIsLocationPickerOpen(false);
+          toast({
+            title: "Location Updated",
+            description: "Your delivery location has been set successfully.",
+          });
+        }}
+      />
     </div>
   );
 };
