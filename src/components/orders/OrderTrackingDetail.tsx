@@ -12,9 +12,10 @@ import { CancelOrderDialog } from './CancelOrderDialog';
 import { CouponInput } from './CouponInput';
 import { TipSelector } from './TipSelector';
 import { OrderRatingDialog } from './OrderRatingDialog';
+import { FullScreenOrderTracking } from './FullScreenOrderTracking';
 import { orderTrackingService, OrderWithTracking } from '@/services/orderTrackingService';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MapPin, Phone, CreditCard, Download } from 'lucide-react';
+import { Loader2, MapPin, Phone, CreditCard, Download, Maximize2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,7 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
   const [loading, setLoading] = useState(true);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [showFullScreenTracking, setShowFullScreenTracking] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -124,10 +126,21 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
               order.order_status === 'preparing' || 
               (order.order_status === 'ready_for_pickup' && !order.delivery_partner?.id)) && (
               <div>
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Order Location
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Order Location
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFullScreenTracking(true)}
+                    className="gap-2"
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                    Full Screen
+                  </Button>
+                </div>
                 {order.delivery_latitude && 
                  order.delivery_longitude && 
                  order.vendor?.latitude && 
@@ -190,7 +203,18 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
              order.vendor?.latitude && 
              order.vendor?.longitude && (
               <div>
-                <h3 className="font-semibold mb-4">Live Tracking</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold">Live Tracking</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFullScreenTracking(true)}
+                    className="gap-2"
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                    Full Screen
+                  </Button>
+                </div>
                 <LiveOrderTrackingMap
                   deliveryPartnerId={order.delivery_partner.id}
                   deliveryPartnerName={order.delivery_partner.name || 'Delivery Partner'}
@@ -433,6 +457,22 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
           });
         }}
       />
+
+      {showFullScreenTracking && order && (
+        <FullScreenOrderTracking
+          order={order}
+          onClose={() => setShowFullScreenTracking(false)}
+          onCancelOrder={() => {
+            setShowFullScreenTracking(false);
+            setShowCancelDialog(true);
+          }}
+          onRateOrder={() => {
+            setShowFullScreenTracking(false);
+            setShowRatingDialog(true);
+          }}
+          onReorder={handleReorder}
+        />
+      )}
     </>
   );
 };
