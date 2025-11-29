@@ -147,24 +147,29 @@ class DeliveryRequestService {
         .eq('id', partnerId)
         .single();
 
-      if (partnerError) {
+      if (partnerError || !partner) {
         console.error('[DeliveryRequestService] Error fetching partner:', partnerError);
-        throw partnerError;
+        return { success: false, error: 'Partner not found' };
       }
 
-      console.log('[DeliveryRequestService] Partner fetched, assigning to order...');
+      console.log('[DeliveryRequestService] Partner fetched:', partner.id);
 
-      // 3. Assign partner to order - The RLS policy now allows this
-      const { error: orderError } = await supabase
+      console.log('[DeliveryRequestService] Assigning to order:', request.order_id);
+
+      // 3. Assign partner to order and update status - verify update succeeds
+      const { data: updatedOrder, error: orderError } = await supabase
         .from('medicine_orders')
         .update({
           delivery_partner_id: partner.id,
+          order_status: 'out_for_delivery',
         })
-        .eq('id', request.order_id);
+        .eq('id', request.order_id)
+        .select('id, delivery_partner_id, order_status')
+        .single();
 
-      if (orderError) {
-        console.error('[DeliveryRequestService] Error assigning partner to order:', orderError);
-        console.error('[DeliveryRequestService] Full error details:', JSON.stringify(orderError, null, 2));
+      if (orderError || !updatedOrder) {
+        console.error('[DeliveryRequestService] Failed to assign partner:', orderError);
+        console.error('[DeliveryRequestService] Update returned no data - likely RLS blocked update');
         
         // Rollback: Reset request status if order assignment fails
         await supabase
@@ -177,11 +182,11 @@ class DeliveryRequestService {
         
         return { 
           success: false, 
-          error: `Failed to assign delivery partner: ${orderError.message}. Please try again.` 
+          error: 'Failed to assign delivery partner. The order may have already been assigned or RLS policies prevented the update.' 
         };
       }
 
-      console.log('[DeliveryRequestService] Partner assigned to order successfully');
+      console.log('[DeliveryRequestService] Partner assigned successfully:', updatedOrder);
 
       // 4. Reject all other pending requests for this order
       const { error: rejectError } = await supabase
