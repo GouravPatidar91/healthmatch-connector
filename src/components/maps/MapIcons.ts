@@ -1,14 +1,14 @@
 // Professional SVG icon paths for map markers
 export const MapIconSVGs = {
   // Shop/Pharmacy - Building with medical cross
-  shop: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="white" fill-opacity="0.2"/>
-         <path d="M9 22V12h6v10" fill="white" fill-opacity="0.15"/>
-         <rect x="10" y="7" width="4" height="1.5" fill="white"/>
-         <rect x="11.25" y="5.5" width="1.5" height="5" fill="white"/>`,
+  shop: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+         <path d="M9 22V12h6v10"/>
+         <line x1="10" y1="8" x2="14" y2="8"/>
+         <line x1="12" y1="6" x2="12" y2="10"/>`,
   
   // Home - House with door
-  home: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="white" fill-opacity="0.2"/>
-         <path d="M9 22v-6h6v6" fill="white" fill-opacity="0.3"/>`,
+  home: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+         <polyline points="9 22 9 12 15 12 15 22"/>`,
   
   // Delivery partner vehicle icons
   bike: `<path d="M5 19m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>

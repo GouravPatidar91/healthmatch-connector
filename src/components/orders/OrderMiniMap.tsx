@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Store, Home } from 'lucide-react';
 import { MapIconSVGs, MapIconColors } from '@/components/maps/MapIcons';
 import { MapLegend } from '@/components/maps/MapLegend';
+import { routingService } from '@/services/routingService';
 
 // Fix Leaflet default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -29,6 +30,20 @@ export function OrderMiniMap({
   customerAddress,
   distance,
 }: OrderMiniMapProps) {
+  const [actualRoute, setActualRoute] = useState<[number, number][]>([]);
+
+  // Fetch actual road route on mount
+  useEffect(() => {
+    routingService.getRoute(
+      { lat: pharmacyLocation.lat, lng: pharmacyLocation.lng },
+      { lat: customerLocation.lat, lng: customerLocation.lng }
+    ).then(route => {
+      if (route.length > 0) {
+        setActualRoute(route);
+      }
+    });
+  }, [pharmacyLocation, customerLocation]);
+
   // Custom icons with enhanced styling
   const createCustomIcon = (color: string, iconType: 'shop' | 'home') => {
     const iconSvg = iconType === 'shop' ? MapIconSVGs.shop : MapIconSVGs.home;
@@ -127,11 +142,10 @@ export function OrderMiniMap({
 
         {/* Route Line */}
         <Polyline
-          positions={routeCoordinates}
+          positions={actualRoute.length > 0 ? actualRoute : routeCoordinates}
           color="hsl(var(--primary))"
-          weight={2}
-          opacity={0.6}
-          dashArray="5, 5"
+          weight={3}
+          opacity={0.7}
         />
       </MapContainer>
 
