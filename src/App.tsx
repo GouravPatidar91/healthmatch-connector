@@ -67,8 +67,6 @@ const App = () => (
               <Route path="/health-check-history" element={<HealthCheckHistory />} />
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/medicine" element={<Medicine />} />
-              <Route path="/vendor-dashboard" element={<VendorDashboard />} />
-              <Route path="/vendor-dashboard/order/:orderId" element={<VendorOrderManagement />} />
               <Route path="/vendor-registration" element={<VendorRegistration />} />
               <Route path="/medical-reports" element={<MedicalReports />} />
               <Route path="/emergency" element={<Emergency />} />
@@ -81,6 +79,24 @@ const App = () => (
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/delivery-partner-dashboard" element={<DeliveryPartnerDashboard />} />
             </Route>
+
+            {/* Vendor Dashboard Routes - Standalone (no MainLayout) */}
+            <Route
+              path="/vendor-dashboard"
+              element={
+                <RequireAuth>
+                  <VendorDashboard />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/vendor-dashboard/order/:orderId"
+              element={
+                <RequireAuth>
+                  <VendorOrderManagement />
+                </RequireAuth>
+              }
+            />
 
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

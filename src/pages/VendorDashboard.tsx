@@ -10,9 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Bell, Package, ShoppingCart, Eye, CheckCircle, XCircle, Clock, Plus, Edit, Trash2, Search,
-  LayoutDashboard, Store, LogOut, FileText, AlertCircle, CheckCircle2, X
+  LayoutDashboard, Store, LogOut, FileText, AlertCircle, CheckCircle2, X, User
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { medicineService, Medicine, VendorMedicine, CustomMedicine } from '@/services/medicineService';
@@ -50,7 +57,7 @@ interface MedicineOrder {
 }
 
 export default function VendorDashboard() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<VendorNotification[]>([]);
   const [orders, setOrders] = useState<MedicineOrder[]>([]);
@@ -483,6 +490,23 @@ export default function VendorDashboard() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Success",
+        description: "Logged out successfully.",
+      });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to logout.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'placed': return 'bg-blue-100 text-blue-800';
@@ -595,7 +619,7 @@ export default function VendorDashboard() {
         
         <div className="p-4 border-t border-border">
           <button 
-            onClick={() => window.location.href = '/'}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted/50 transition-all"
           >
             <LogOut size={20} />
@@ -618,12 +642,28 @@ export default function VendorDashboard() {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <span className="text-xs font-bold uppercase tracking-wide">Store Open</span>
             </div>
-            <div className="flex items-center gap-3 bg-card px-3 py-1.5 rounded-full border border-border shadow-sm">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                {vendorInfo.pharmacy_name.substring(0, 2).toUpperCase()}
-              </div>
-              <span className="text-sm font-medium pr-2">{vendorInfo.pharmacy_name}</span>
-            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 bg-card px-3 py-1.5 rounded-full border border-border shadow-sm cursor-pointer hover:bg-muted/50 transition-all">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                    {vendorInfo.pharmacy_name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium pr-2">{vendorInfo.pharmacy_name}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-card">
+                <DropdownMenuItem className="gap-2">
+                  <User size={16} />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="gap-2 text-red-600 focus:text-red-600">
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </motion.header>
 
