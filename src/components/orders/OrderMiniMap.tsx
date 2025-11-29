@@ -3,6 +3,8 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Store, Home } from 'lucide-react';
+import { MapIconSVGs, MapIconColors } from '@/components/maps/MapIcons';
+import { MapLegend } from '@/components/maps/MapLegend';
 
 // Fix Leaflet default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -27,26 +29,54 @@ export function OrderMiniMap({
   customerAddress,
   distance,
 }: OrderMiniMapProps) {
-  // Custom icons
-  const createCustomIcon = (color: string, iconType: 'store' | 'home') => {
-    const iconSvg = iconType === 'store'
-      ? '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>'
-      : '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle>';
+  // Custom icons with enhanced styling
+  const createCustomIcon = (color: string, iconType: 'shop' | 'home') => {
+    const iconSvg = iconType === 'shop' ? MapIconSVGs.shop : MapIconSVGs.home;
+    const label = iconType === 'shop' ? 'Pharmacy' : 'Delivery';
 
     return L.divIcon({
-      html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          ${iconSvg}
-        </svg>
-      </div>`,
+      html: `
+        <div style="position: relative;">
+          <div style="
+            background: linear-gradient(135deg, ${color} 0%, ${color} 100%);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              ${iconSvg}
+            </svg>
+          </div>
+          <div style="
+            position: absolute;
+            bottom: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.75);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+          ">
+            ${label}
+          </div>
+        </div>`,
       className: 'custom-mini-icon',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
+      iconSize: [44, 68],
+      iconAnchor: [22, 34],
     });
   };
 
-  const pharmacyIcon = createCustomIcon('hsl(142, 76%, 36%)', 'store');
-  const customerIcon = createCustomIcon('hsl(221, 83%, 53%)', 'home');
+  const pharmacyIcon = createCustomIcon(MapIconColors.shop, 'shop');
+  const customerIcon = createCustomIcon(MapIconColors.home, 'home');
 
   // Calculate center point between pharmacy and customer
   const centerLat = (pharmacyLocation.lat + customerLocation.lat) / 2;
@@ -113,6 +143,9 @@ export function OrderMiniMap({
           </p>
         </div>
       )}
+
+      {/* Map Legend */}
+      <MapLegend />
     </div>
   );
 }
