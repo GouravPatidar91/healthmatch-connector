@@ -122,25 +122,9 @@ class DeliveryRequestService {
         return { success: false, error: 'Request has expired' };
       }
 
-      console.log('[DeliveryRequestService] Request validated, updating status...');
+      console.log('[DeliveryRequestService] Request validated, fetching partner...');
 
-      // 1. Update the request to accepted
-      const { error: updateRequestError } = await supabase
-        .from('delivery_requests')
-        .update({
-          status: 'accepted',
-          responded_at: new Date().toISOString(),
-        })
-        .eq('id', requestId);
-
-      if (updateRequestError) {
-        console.error('[DeliveryRequestService] Error updating request:', updateRequestError);
-        throw updateRequestError;
-      }
-
-      console.log('[DeliveryRequestService] Request status updated, fetching partner...');
-
-      // 2. Get delivery partner record
+      // 1. Get delivery partner record FIRST
       const { data: partner, error: partnerError } = await supabase
         .from('delivery_partners')
         .select('id')
@@ -153,10 +137,11 @@ class DeliveryRequestService {
       }
 
       console.log('[DeliveryRequestService] Partner fetched:', partner.id);
+      console.log('[DeliveryRequestService] Assigning to order while request is still pending:', request.order_id);
 
-      console.log('[DeliveryRequestService] Assigning to order:', request.order_id);
-
-      // 3. Assign partner to order and update status - verify update succeeds
+      // 2. Assign partner to order and update status WHILE request is still pending
+      // This must happen before we mark the delivery_request as accepted so that
+      // RLS policy can_delivery_partner_accept_order() still sees a pending request.
       const { data: updatedOrder, error: orderError } = await supabase
         .from('medicine_orders')
         .update({
@@ -170,23 +155,39 @@ class DeliveryRequestService {
       if (orderError || !updatedOrder) {
         console.error('[DeliveryRequestService] Failed to assign partner:', orderError);
         console.error('[DeliveryRequestService] Update returned no data - likely RLS blocked update');
-        
-        // Rollback: Reset request status if order assignment fails
-        await supabase
-          .from('delivery_requests')
-          .update({
-            status: 'pending',
-            responded_at: null,
-          })
-          .eq('id', requestId);
-        
-        return { 
-          success: false, 
-          error: 'Failed to assign delivery partner. The order may have already been assigned or RLS policies prevented the update.' 
+        return {
+          success: false,
+          error:
+            'Failed to assign delivery partner. The order may have already been assigned or RLS policies prevented the update.',
         };
       }
 
       console.log('[DeliveryRequestService] Partner assigned successfully:', updatedOrder);
+      console.log('[DeliveryRequestService] Now updating request status to accepted...');
+
+      // 3. NOW update the request to accepted
+      const { error: updateRequestError } = await supabase
+        .from('delivery_requests')
+        .update({
+          status: 'accepted',
+          responded_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+
+      if (updateRequestError) {
+        console.error('[DeliveryRequestService] Error updating request after order assignment:', updateRequestError);
+
+        // Best-effort rollback: reset order assignment if we can't mark request as accepted
+        await supabase
+          .from('medicine_orders')
+          .update({
+            delivery_partner_id: null,
+            order_status: 'ready_for_pickup',
+          })
+          .eq('id', request.order_id);
+
+        return { success: false, error: 'Failed to confirm acceptance of delivery request' };
+      }
 
       // 4. Reject all other pending requests for this order
       const { error: rejectError } = await supabase
