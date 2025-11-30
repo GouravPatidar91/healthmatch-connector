@@ -48,6 +48,7 @@ interface DeliveryRequestMapProps {
   vendorAddress: string;
   deliveryLocation: { latitude: number; longitude: number };
   deliveryAddress: string;
+  customerPhone?: string;
 }
 
 export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
@@ -57,6 +58,7 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
   vendorAddress,
   deliveryLocation,
   deliveryAddress,
+  customerPhone,
 }) => {
   const [partnerLocation, setPartnerLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
@@ -180,6 +182,9 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
               <div className="text-sm">
                 <p className="font-semibold">Delivery Location</p>
                 <p className="text-muted-foreground">{deliveryAddress}</p>
+                {customerPhone && (
+                  <p className="text-muted-foreground mt-1">📞 {customerPhone}</p>
+                )}
               </div>
             </Popup>
           </Marker>

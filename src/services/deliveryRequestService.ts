@@ -288,6 +288,7 @@ class DeliveryRequestService {
             delivery_longitude,
             final_amount,
             delivery_partner_id,
+            customer_phone,
             medicine_vendors!vendor_id (
               pharmacy_name,
               address,

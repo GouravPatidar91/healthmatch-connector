@@ -345,10 +345,8 @@ export function LiveOrderTrackingMap({
               <Polyline
                 positions={actualRoute.length > 0 ? actualRoute : routeCoordinates}
                 color={vehicleIconData.color}
-                weight={4}
-                opacity={0.8}
-                dashArray="10, 5"
-                className="animate-pulse"
+                weight={5}
+                opacity={0.9}
               />
               </>
             )}

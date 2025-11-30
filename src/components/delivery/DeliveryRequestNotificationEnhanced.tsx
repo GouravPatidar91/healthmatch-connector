@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DeliveryRequestMap } from './DeliveryRequestMap';
 import { deliveryRequestService } from '@/services/deliveryRequestService';
-import { Package, MapPin, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Package, MapPin, Clock, CheckCircle, XCircle, Phone } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface DeliveryRequestNotificationEnhancedProps {
@@ -157,6 +157,7 @@ export function DeliveryRequestNotificationEnhanced({
               longitude: request.order.delivery_longitude || 0
             }}
             deliveryAddress={request.order.delivery_address || 'Address not available'}
+            customerPhone={request.order.customer_phone}
           />
         )}
 
@@ -182,6 +183,29 @@ export function DeliveryRequestNotificationEnhanced({
               <p className="text-sm text-muted-foreground">
                 {request.order?.delivery_address || 'Address not available'}
               </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2">
+            <Phone className="h-4 w-4 mt-1 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Customer Phone</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-muted-foreground">
+                  {request.order?.customer_phone || 'Phone not available'}
+                </p>
+                {request.order?.customer_phone && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => window.location.href = `tel:${request.order.customer_phone}`}
+                    className="h-7 text-xs"
+                  >
+                    <Phone className="h-3 w-3 mr-1" />
+                    Call
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
