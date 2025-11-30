@@ -20,6 +20,7 @@ import { CheckoutDialog } from '@/components/medicine/CheckoutDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { MapboxLocationPicker } from '@/components/maps/MapboxLocationPicker';
 import { motion, AnimatePresence } from 'framer-motion';
+import { calculateOrderCharges } from '@/services/chargeCalculatorService';
 
 const categories = [
   { name: 'All Categories', icon: '🏥', value: 'all' },
@@ -78,6 +79,8 @@ export default function Medicine() {
   const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(null);
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [customLocation, setCustomLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [handlingCharges, setHandlingCharges] = useState(30);
+  const [deliveryFee, setDeliveryFee] = useState(50);
 
   // Use custom location if set, otherwise use detected location
   const activeLocation = customLocation || userLocation;
@@ -271,19 +274,10 @@ export default function Medicine() {
   };
 
   const handleConfirmOrder = async () => {
+    if (!cartItems.length) return;
+
     try {
       setIsProcessingOrder(true);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Not Logged In",
-          description: "Please login to place order",
-          variant: "destructive",
-        });
-        navigate('/login');
-        return;
-      }
 
       if (!deliveryLatitude || !deliveryLongitude) {
         toast({
@@ -324,16 +318,41 @@ export default function Medicine() {
       }
 
       const vendorId = cartItems[0].vendor_id;
+      
+      // Get vendor location
+      const { data: vendor, error: vendorError } = await supabase
+        .from('medicine_vendors')
+        .select('latitude, longitude')
+        .eq('id', vendorId)
+        .single();
+
+      if (vendorError || !vendor?.latitude || !vendor?.longitude) {
+        toast({
+          title: "Vendor Location Error",
+          description: "Unable to calculate delivery charges. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Calculate distance-based charges
+      const charges = calculateOrderCharges(
+        vendor.latitude,
+        vendor.longitude,
+        deliveryLatitude,
+        deliveryLongitude
+      );
+
       const subtotal = getSubtotal();
       const totalDiscount = getTotalDiscount();
-      const deliveryFee = subtotal > 500 ? 0 : 50;
-      const finalAmount = getTotalPrice() + deliveryFee;
+      const finalAmount = subtotal - totalDiscount + charges.handlingCharges + charges.deliveryFee;
       const prescriptionRequired = cartItems.some(item => item.prescription_required);
 
       const orderData = {
         vendor_id: vendorId,
         total_amount: subtotal,
-        delivery_fee: deliveryFee,
+        delivery_fee: charges.deliveryFee,
+        handling_charges: charges.handlingCharges,
         discount_amount: totalDiscount,
         final_amount: finalAmount,
         payment_method: 'cod',
@@ -362,7 +381,7 @@ export default function Medicine() {
 
       toast({
         title: "Order Placed Successfully! 🎉",
-        description: "Your order has been placed and the pharmacy has been notified.",
+        description: `Order total: ₹${finalAmount.toFixed(2)} (Distance: ${charges.distance}km)`,
       });
 
       setIsCheckoutDialogOpen(false);
@@ -882,8 +901,9 @@ export default function Medicine() {
         cartItems={cartItems}
         subtotal={getSubtotal()}
         totalDiscount={getTotalDiscount()}
-        deliveryFee={getSubtotal() > 500 ? 0 : 50}
-        total={getTotalPrice() + (getSubtotal() > 500 ? 0 : 50)}
+        handlingCharges={handlingCharges}
+        deliveryFee={deliveryFee}
+        total={getSubtotal() - getTotalDiscount() + handlingCharges + deliveryFee}
         deliveryAddress={deliveryAddress}
         setDeliveryAddress={setDeliveryAddress}
         customerPhone={customerPhone}
