@@ -1725,6 +1725,56 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          bank_details: Json | null
+          created_at: string | null
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          requested_at: string | null
+          status: string
+          user_id: string
+          wallet_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          bank_details?: Json | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_at?: string | null
+          status?: string
+          user_id: string
+          wallet_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          bank_details?: Json | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_at?: string | null
+          status?: string
+          user_id?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_requests_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1829,6 +1879,10 @@ export type Database = {
       is_vendor_owner: {
         Args: { _user_id: string; _vendor_id: string }
         Returns: boolean
+      }
+      process_withdrawal: {
+        Args: { _admin_notes: string; _approved: boolean; _request_id: string }
+        Returns: undefined
       }
     }
     Enums: {

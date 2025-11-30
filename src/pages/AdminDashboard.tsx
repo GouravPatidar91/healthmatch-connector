@@ -13,6 +13,13 @@ import { ExternalLink, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/useUserRole";
+import { AdminWalletStats } from "@/components/admin/AdminWalletStats";
+import { AdminWithdrawalRequests } from "@/components/admin/AdminWithdrawalRequests";
+import { TransactionHistory } from "@/components/wallet/TransactionHistory";
+import { adminWalletService } from "@/services/adminWalletService";
+import type { AdminWalletStats as StatsType } from "@/services/adminWalletService";
+import type { WalletTransaction } from "@/services/walletService";
+import type { WithdrawalRequest } from "@/services/adminWalletService";
 
 interface UserProfile {
   id: string;
@@ -50,6 +57,19 @@ const AdminDashboard = () => {
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorApplication | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("users");
+  
+  // Wallet management states
+  const [walletStats, setWalletStats] = useState<StatsType>({
+    totalWallets: 0,
+    totalBalance: 0,
+    totalEarnings: 0,
+    totalWithdrawals: 0,
+    pendingWithdrawals: 0,
+    pendingWithdrawalAmount: 0,
+  });
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
+  const [walletLoading, setWalletLoading] = useState(false);
 
   // Check if current user is admin
   useEffect(() => {
@@ -153,9 +173,32 @@ const AdminDashboard = () => {
       }
     };
     
+    // Fetch wallet data
+    const fetchWalletData = async () => {
+      if (!isAdmin) return;
+      
+      setWalletLoading(true);
+      try {
+        const [statsData, transactionsData, requestsData] = await Promise.all([
+          adminWalletService.getAdminStats(),
+          adminWalletService.getAllTransactions({ limit: 50 }),
+          adminWalletService.getWithdrawalRequests(),
+        ]);
+
+        setWalletStats(statsData);
+        setTransactions(transactionsData);
+        setWithdrawalRequests(requestsData);
+      } catch (error) {
+        console.error("Error loading wallet data:", error);
+      } finally {
+        setWalletLoading(false);
+      }
+    };
+    
     if (isAdmin) {
       fetchUsers();
       fetchDoctorApplications();
+      fetchWalletData();
     }
   }, [isAdmin, toast]);
 
@@ -234,9 +277,17 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-4xl grid-cols-3">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="doctors">Doctor Applications</TabsTrigger>
+            <TabsTrigger value="wallets">
+              💰 Wallets
+              {walletStats.pendingWithdrawals > 0 && (
+                <span className="ml-2 bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {walletStats.pendingWithdrawals}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="users">
@@ -362,6 +413,43 @@ const AdminDashboard = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="wallets" className="space-y-6">
+            <AdminWalletStats stats={walletStats} loading={walletLoading} />
+            
+            <Tabs defaultValue="transactions" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="transactions">All Transactions</TabsTrigger>
+                <TabsTrigger value="withdrawals">
+                  Withdrawal Requests
+                  {walletStats.pendingWithdrawals > 0 && (
+                    <span className="ml-2 bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
+                      {walletStats.pendingWithdrawals}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="transactions">
+                <TransactionHistory transactions={transactions} loading={walletLoading} />
+              </TabsContent>
+
+              <TabsContent value="withdrawals">
+                <AdminWithdrawalRequests
+                  requests={withdrawalRequests}
+                  loading={walletLoading}
+                  onUpdate={async () => {
+                    const [statsData, requestsData] = await Promise.all([
+                      adminWalletService.getAdminStats(),
+                      adminWalletService.getWithdrawalRequests(),
+                    ]);
+                    setWalletStats(statsData);
+                    setWithdrawalRequests(requestsData);
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
