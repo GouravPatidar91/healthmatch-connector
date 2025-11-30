@@ -125,6 +125,18 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
 
   const getAvailableActions = () => {
     switch (currentStatus) {
+      case 'placed':
+        return (
+          <Button
+            onClick={() => handleStatusUpdate('confirmed', 'Order confirmed by pharmacy')}
+            disabled={loading}
+            className="w-full"
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Confirm Order
+          </Button>
+        );
+      
       case 'confirmed':
         return (
           <Button
