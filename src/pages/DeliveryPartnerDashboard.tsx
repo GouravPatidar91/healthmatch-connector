@@ -33,6 +33,8 @@ interface Order {
   order_number: string;
   order_status: string;
   final_amount: number;
+  delivery_fee?: number;
+  tip_amount?: number;
   delivery_address: string;
   delivery_latitude: number;
   delivery_longitude: number;
@@ -662,7 +664,8 @@ export default function DeliveryPartnerDashboard() {
                     pharmacyName: order.vendor.pharmacy_name,
                     pharmacyAddress: order.vendor.address,
                     orderStatus: order.order_status,
-                    totalAmount: order.final_amount,
+                    deliveryFee: order.delivery_fee || 0,
+                    tipAmount: order.tip_amount || 0,
                   }}
                   deliveryPartnerId={partner.id}
                   onOrderComplete={() => handleOrderComplete(order.id)}
@@ -699,9 +702,15 @@ export default function DeliveryPartnerDashboard() {
                       <p className="text-sm">
                         <span className="font-medium">Pharmacy:</span> {order.vendor.pharmacy_name}
                       </p>
-                      <p className="text-sm">
-                        <span className="font-medium">Amount:</span> ₹{order.final_amount.toFixed(2)}
-                      </p>
+                      <div className="pt-2 border-t">
+                        <p className="text-sm font-semibold text-green-600">
+                          Your Earnings: ₹{((order.delivery_fee || 0) + (order.tip_amount || 0)).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Delivery Fee: ₹{(order.delivery_fee || 0).toFixed(2)}
+                          {order.tip_amount && order.tip_amount > 0 && ` + Tip: ₹${order.tip_amount.toFixed(2)}`}
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

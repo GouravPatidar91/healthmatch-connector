@@ -351,8 +351,8 @@ export default function VendorOrderManagement() {
               orderId={order.id}
               orderStatus={order.order_status}
               items={order.items}
-              currentHandlingCharges={order.handling_charges}
-              currentDeliveryFee={order.delivery_fee}
+              currentHandlingCharges={0}
+              currentDeliveryFee={0}
               onPricesUpdated={loadOrderData}
             />
 

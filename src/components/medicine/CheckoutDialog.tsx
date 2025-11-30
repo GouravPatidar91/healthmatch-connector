@@ -15,6 +15,7 @@ interface CheckoutDialogProps {
   cartItems: CartItem[];
   subtotal: number;
   totalDiscount: number;
+  handlingCharges: number;
   deliveryFee: number;
   total: number;
   deliveryAddress: string;
@@ -34,6 +35,7 @@ export function CheckoutDialog({
   cartItems,
   subtotal,
   totalDiscount,
+  handlingCharges,
   deliveryFee,
   total,
   deliveryAddress,
@@ -238,20 +240,22 @@ export function CheckoutDialog({
             <h3 className="font-semibold text-lg mb-3">Price Details</h3>
             <div className="space-y-2 p-4 bg-secondary/30 rounded-lg">
               <div className="flex justify-between text-sm">
-                <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
+                <span>Medicines Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
                 <span>₹{subtotal.toFixed(2)}</span>
               </div>
               {totalDiscount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
-                  <span>Discount</span>
+                  <span>Savings</span>
                   <span>-₹{totalDiscount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Handling Charges</span>
+                <span>₹{handlingCharges.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Delivery Fee</span>
-                <span className={deliveryFee === 0 ? 'text-green-600' : ''}>
-                  {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
-                </span>
+                <span>₹{deliveryFee.toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold text-lg">
@@ -259,6 +263,9 @@ export function CheckoutDialog({
                 <span className="text-primary">₹{total.toFixed(2)}</span>
               </div>
               <p className="text-xs text-muted-foreground text-center pt-2">
+                * Charges calculated based on delivery distance
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
                 To be paid at the time of delivery
               </p>
             </div>

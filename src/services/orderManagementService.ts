@@ -17,47 +17,67 @@ export interface PriceUpdate {
     medicine_id: string;
     unit_price: number;
   }>;
-  handling_charges?: number;
-  delivery_fee?: number;
 }
 
 class OrderManagementService {
-  async updateOrderPrices(orderId: string, priceUpdate: PriceUpdate) {
+  async updateOrderPrices(orderId: string, priceUpdate: PriceUpdate): Promise<{ success: boolean; error?: string }> {
     try {
-      // Calculate total
-      const itemsTotal = priceUpdate.items.reduce((sum, item) => sum + item.unit_price, 0);
-      const handlingCharges = priceUpdate.handling_charges || 30;
-      const deliveryFee = priceUpdate.delivery_fee || 50;
-      const totalAmount = itemsTotal;
-      const finalAmount = itemsTotal + handlingCharges + deliveryFee;
-
-      // Update order
-      const { error: orderError } = await supabase
+      // Get existing order to preserve system-calculated charges
+      const { data: existingOrder, error: fetchError } = await supabase
         .from('medicine_orders')
-        .update({
-          total_amount: totalAmount,
-          final_amount: finalAmount,
-          handling_charges: handlingCharges,
-          delivery_fee: deliveryFee,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId);
+        .select('handling_charges, delivery_fee, discount_amount, coupon_discount, tip_amount')
+        .eq('id', orderId)
+        .single();
 
-      if (orderError) throw orderError;
+      if (fetchError) throw fetchError;
 
-      // Update order items
+      // Update individual item prices and calculate new medicine total
+      let medicineTotal = 0;
       for (const item of priceUpdate.items) {
+        // Get quantity for this item
+        const { data: orderItem, error: itemFetchError } = await supabase
+          .from('medicine_order_items')
+          .select('quantity')
+          .eq('order_id', orderId)
+          .eq('medicine_id', item.medicine_id)
+          .single();
+
+        if (itemFetchError) throw itemFetchError;
+
+        const totalPrice = item.unit_price * orderItem.quantity;
+        medicineTotal += totalPrice;
+
         const { error: itemError } = await supabase
           .from('medicine_order_items')
           .update({
             unit_price: item.unit_price,
-            total_price: item.unit_price // Assuming quantity is 1, adjust if needed
+            total_price: totalPrice
           })
           .eq('order_id', orderId)
           .eq('medicine_id', item.medicine_id);
 
         if (itemError) throw itemError;
       }
+
+      // Calculate final amount: medicine total + system charges
+      const finalAmount = medicineTotal + 
+        existingOrder.handling_charges + 
+        existingOrder.delivery_fee + 
+        (existingOrder.tip_amount || 0) -
+        (existingOrder.discount_amount || 0) -
+        (existingOrder.coupon_discount || 0);
+
+      // Update order totals (preserve system-calculated charges)
+      const { error: orderError } = await supabase
+        .from('medicine_orders')
+        .update({
+          total_amount: medicineTotal,
+          final_amount: finalAmount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
 
       return { success: true };
     } catch (error) {

@@ -19,7 +19,8 @@ interface OrderDetails {
   pharmacyName: string;
   pharmacyAddress: string;
   orderStatus: string;
-  totalAmount: number;
+  deliveryFee: number;
+  tipAmount?: number;
 }
 
 interface ActiveOrderTrackingProps {
@@ -240,12 +241,18 @@ export function ActiveOrderTracking({
             </div>
           </div>
 
-          {/* Order Amount */}
+          {/* Your Earnings */}
           <div className="pt-4 border-t">
             <div className="flex justify-between items-center">
-              <span className="font-semibold">Order Amount</span>
-              <span className="text-lg font-bold">₹{order.totalAmount.toFixed(2)}</span>
+              <span className="font-semibold text-green-600">Your Earnings</span>
+              <span className="text-lg font-bold text-green-600">
+                ₹{(order.deliveryFee + (order.tipAmount || 0)).toFixed(2)}
+              </span>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Delivery Fee: ₹{order.deliveryFee.toFixed(2)}
+              {order.tipAmount && order.tipAmount > 0 && ` + Tip: ₹${order.tipAmount.toFixed(2)}`}
+            </p>
           </div>
 
           {/* Location Error */}

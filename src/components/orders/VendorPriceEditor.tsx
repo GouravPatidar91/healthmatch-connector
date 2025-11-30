@@ -34,8 +34,6 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
   onPricesUpdated
 }) => {
   const [prices, setPrices] = useState<{ [key: string]: string }>({});
-  const [handlingCharges, setHandlingCharges] = useState(currentHandlingCharges.toString());
-  const [deliveryFee, setDeliveryFee] = useState(currentDeliveryFee.toString());
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -49,14 +47,11 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
 
   const canEditPrices = orderStatus === 'confirmed';
 
-  const calculateTotal = () => {
-    const itemsTotal = items.reduce((sum, item) => {
+  const calculateMedicineTotal = () => {
+    return items.reduce((sum, item) => {
       const price = parseFloat(prices[item.medicine_id] || '0');
       return sum + (price * item.quantity);
     }, 0);
-    const handling = parseFloat(handlingCharges || '0');
-    const delivery = parseFloat(deliveryFee || '0');
-    return itemsTotal + handling + delivery;
   };
 
   const handleUpdatePrices = async () => {
@@ -65,10 +60,8 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
       const priceUpdate: PriceUpdate = {
         items: items.map(item => ({
           medicine_id: item.medicine_id,
-          unit_price: parseFloat(prices[item.medicine_id] || '0') * item.quantity
-        })),
-        handling_charges: parseFloat(handlingCharges || '0'),
-        delivery_fee: parseFloat(deliveryFee || '0')
+          unit_price: parseFloat(prices[item.medicine_id] || '0')
+        }))
       };
 
       const result = await orderManagementService.updateOrderPrices(orderId, priceUpdate);
@@ -76,7 +69,7 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
       if (result.success) {
         toast({
           title: 'Success',
-          description: 'Prices updated successfully',
+          description: 'Medicine prices updated and customer notified',
         });
         onPricesUpdated();
       } else {
@@ -136,48 +129,15 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
 
         <Separator />
 
-        {/* Additional Charges */}
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="handlingCharges">Handling Charges</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">₹</span>
-              <Input
-                id="handlingCharges"
-                type="number"
-                value={handlingCharges}
-                onChange={(e) => setHandlingCharges(e.target.value)}
-                disabled={!canEditPrices || loading}
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="deliveryFee">Delivery Fee</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">₹</span>
-              <Input
-                id="deliveryFee"
-                type="number"
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(e.target.value)}
-                disabled={!canEditPrices || loading}
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Total */}
+        {/* Medicine Total */}
         <div className="flex justify-between items-center font-bold text-lg">
-          <span>Total Amount</span>
-          <span className="text-primary">₹{calculateTotal().toFixed(2)}</span>
+          <span>Medicine Total</span>
+          <span className="text-primary">₹{calculateMedicineTotal().toFixed(2)}</span>
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          * Handling charges and delivery fees are automatically calculated based on distance
+        </p>
 
         {canEditPrices && (
           <Button

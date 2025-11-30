@@ -12,6 +12,9 @@ interface OrderCardProps {
     order_status: string;
     total_amount: number;
     final_amount: number;
+    handling_charges?: number;
+    delivery_fee?: number;
+    discount_amount?: number;
     created_at: string;
     vendor: {
       pharmacy_name: string;
@@ -45,14 +48,38 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onTrackOrder }) => 
         </div>
       </div>
 
-      <div className="flex justify-between items-center pt-3 border-t">
-        <div>
-          <p className="text-sm text-muted-foreground">Total Amount</p>
-          <p className="text-lg font-bold">₹{order.final_amount}</p>
+      <div className="space-y-1 pt-3 border-t">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Medicines</span>
+          <span>₹{order.total_amount.toFixed(2)}</span>
         </div>
-        <Button onClick={() => onTrackOrder(order.id)}>
-          Track Order
-        </Button>
+        {order.handling_charges && (
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Handling Charges</span>
+            <span>₹{order.handling_charges.toFixed(2)}</span>
+          </div>
+        )}
+        {order.delivery_fee && (
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Delivery Fee</span>
+            <span>₹{order.delivery_fee.toFixed(2)}</span>
+          </div>
+        )}
+        {order.discount_amount && order.discount_amount > 0 && (
+          <div className="flex justify-between text-xs text-green-600">
+            <span>Discount</span>
+            <span>-₹{order.discount_amount.toFixed(2)}</span>
+          </div>
+        )}
+        <div className="flex justify-between items-center pt-2 border-t">
+          <div>
+            <p className="text-sm text-muted-foreground">Total Amount</p>
+            <p className="text-lg font-bold">₹{order.final_amount.toFixed(2)}</p>
+          </div>
+          <Button onClick={() => onTrackOrder(order.id)}>
+            Track Order
+          </Button>
+        </div>
       </div>
     </Card>
   );
