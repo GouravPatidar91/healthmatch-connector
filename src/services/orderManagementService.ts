@@ -22,10 +22,10 @@ export interface PriceUpdate {
 class OrderManagementService {
   async updateOrderPrices(orderId: string, priceUpdate: PriceUpdate): Promise<{ success: boolean; error?: string }> {
     try {
-      // Get existing order to preserve system-calculated charges
+      // Get existing order to preserve system-calculated charges and get user_id
       const { data: existingOrder, error: fetchError } = await supabase
         .from('medicine_orders')
-        .select('handling_charges, delivery_fee, discount_amount, coupon_discount, tip_amount')
+        .select('handling_charges, delivery_fee, discount_amount, coupon_discount, tip_amount, user_id, order_number')
         .eq('id', orderId)
         .single();
 
@@ -78,6 +78,27 @@ class OrderManagementService {
         .eq('id', orderId);
 
       if (orderError) throw orderError;
+
+      // Create notification for customer
+      const { error: notificationError } = await supabase
+        .from('customer_notifications')
+        .insert({
+          user_id: existingOrder.user_id,
+          order_id: orderId,
+          type: 'price_update',
+          title: 'Order Prices Updated',
+          message: `The pharmacy has updated the prices for your order #${existingOrder.order_number}. New total: ₹${finalAmount.toFixed(2)}`,
+          metadata: {
+            old_total: existingOrder.handling_charges + existingOrder.delivery_fee + (existingOrder.tip_amount || 0),
+            new_total: finalAmount,
+            medicine_total: medicineTotal
+          }
+        });
+
+      if (notificationError) {
+        console.error('Error creating notification:', notificationError);
+        // Don't fail the entire operation if notification fails
+      }
 
       return { success: true };
     } catch (error) {
