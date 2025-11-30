@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   Bell, Package, ShoppingCart, Eye, CheckCircle, XCircle, Clock, Plus, Edit, Trash2, Search,
-  LayoutDashboard, Store, LogOut, FileText, AlertCircle, CheckCircle2, X, User
+  LayoutDashboard, Store, LogOut, FileText, AlertCircle, CheckCircle2, X, User, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { medicineService, Medicine, VendorMedicine, CustomMedicine } from '@/services/medicineService';
@@ -59,6 +60,7 @@ interface MedicineOrder {
 export default function VendorDashboard() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<VendorNotification[]>([]);
   const [orders, setOrders] = useState<MedicineOrder[]>([]);
   const [vendorMedicines, setVendorMedicines] = useState<VendorMedicine[]>([]);
@@ -72,6 +74,7 @@ export default function VendorDashboard() {
   const [isCustomMedicine, setIsCustomMedicine] = useState(false);
   const [activeNotification, setActiveNotification] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('orders');
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   
   // Form state for adding medicines
   const [newMedicine, setNewMedicine] = useState({
@@ -109,6 +112,32 @@ export default function VendorDashboard() {
       loadVendorData();
     }
   }, [user]);
+
+  // Real-time subscription for orders
+  useEffect(() => {
+    if (!vendorInfo) return;
+
+    const channel = supabase
+      .channel('vendor-orders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'medicine_orders',
+          filter: `vendor_id=eq.${vendorInfo.id}`
+        },
+        (payload) => {
+          console.log('Order update:', payload);
+          loadVendorData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [vendorInfo]);
 
   // Auto-refresh notifications every 10 seconds
   useEffect(() => {
@@ -751,63 +780,120 @@ export default function VendorDashboard() {
                         <p className="text-muted-foreground">Orders will appear here once customers place them.</p>
                       </div>
                     ) : (
-                      orders.map((order, i) => (
-                        <motion.div
-                          key={order.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                          className="bg-card border border-border rounded-2xl p-6 hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <div className="flex items-center gap-3">
-                                <h3 className="text-lg font-bold">{order.order_number}</h3>
-                                {order.prescription_required && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Rx Required
-                                  </Badge>
+                      orders.map((order, i) => {
+                        const isExpanded = expandedOrders.has(order.id);
+                        return (
+                          <motion.div
+                            key={order.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-all cursor-pointer"
+                            onClick={() => navigate(`/vendor/order/${order.id}`)}
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <div className="flex items-center gap-3">
+                                  <h3 className="text-lg font-bold">{order.order_number}</h3>
+                                  {order.prescription_required && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Rx Required
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {new Date(order.created_at).toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-muted-foreground">Total Amount</p>
+                                <p className="text-xl font-bold">₹{order.final_amount}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-end justify-between">
+                              <div className="flex-1">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Customer</p>
+                                <p className="text-sm font-medium">{order.customer_phone}</p>
+                                {order.prescription_url && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(order.prescription_url, '_blank');
+                                    }}
+                                    className="mt-3 text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                                  >
+                                    <FileText size={12} /> View Prescription
+                                  </button>
                                 )}
                               </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(order.created_at).toLocaleString()}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs text-muted-foreground">Total Amount</p>
-                              <p className="text-xl font-bold">₹{order.final_amount}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-end justify-between">
-                            <div>
-                              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Customer</p>
-                              <p className="text-sm font-medium">{order.customer_phone}</p>
-                              {order.prescription_url && (
-                                <button
-                                  onClick={() => window.open(order.prescription_url, '_blank')}
-                                  className="mt-3 text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                              <div>
+                                <Badge 
+                                  variant={
+                                    order.order_status === 'delivered' ? 'default' :
+                                    order.order_status === 'pending' ? 'secondary' : 
+                                    'outline'
+                                  }
+                                  className="flex items-center gap-1.5"
                                 >
-                                  <FileText size={12} /> View Prescription
-                                </button>
-                              )}
+                                  {order.order_status === 'delivered' && <CheckCircle2 size={14} />}
+                                  {order.order_status === 'pending' && <Clock size={14} />}
+                                  {order.order_status}
+                                </Badge>
+                              </div>
                             </div>
-                            <div>
-                              <Badge 
-                                variant={
-                                  order.order_status === 'delivered' ? 'default' :
-                                  order.order_status === 'pending' ? 'secondary' : 
-                                  'outline'
-                                }
-                                className="flex items-center gap-1.5"
+
+                            {order.items && order.items.length > 0 && (
+                              <div 
+                                className="mt-4 pt-4 border-t border-border/50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedOrders(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(order.id)) {
+                                      newSet.delete(order.id);
+                                    } else {
+                                      newSet.add(order.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
                               >
-                                {order.order_status === 'delivered' && <CheckCircle2 size={14} />}
-                                {order.order_status === 'pending' && <Clock size={14} />}
-                                {order.order_status}
-                              </Badge>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))
+                                <div className="flex items-center justify-between cursor-pointer hover:text-primary transition-colors">
+                                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                    Order Items ({order.items.length})
+                                  </p>
+                                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </div>
+                                
+                                <AnimatePresence>
+                                  {isExpanded && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                      className="space-y-2 mt-3 overflow-hidden"
+                                    >
+                                      {order.items.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-sm bg-muted/30 p-2 rounded-lg">
+                                          <div>
+                                            <p className="font-medium">{item.medicine_name}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                              ₹{item.unit_price} × {item.quantity}
+                                            </p>
+                                          </div>
+                                          <p className="font-bold">₹{item.total_price}</p>
+                                        </div>
+                                      ))}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })
                     )}
                   </div>
                 )}
