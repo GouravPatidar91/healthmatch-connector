@@ -1638,6 +1638,93 @@ export type Database = {
           },
         ]
       }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string | null
+          transaction_type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          transaction_type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          transaction_type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          owner_id: string
+          owner_type: string
+          total_earned: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          owner_id: string
+          owner_type: string
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          owner_id?: string
+          owner_type?: string
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1646,6 +1733,16 @@ export type Database = {
       can_delivery_partner_accept_order: {
         Args: { _order_id: string; _user_id: string }
         Returns: boolean
+      }
+      credit_wallet: {
+        Args: {
+          _amount: number
+          _category: string
+          _description: string
+          _order_id: string
+          _wallet_id: string
+        }
+        Returns: undefined
       }
       find_nearby_medicine_vendors: {
         Args: { radius_km?: number; user_lat: number; user_lng: number }
@@ -1671,6 +1768,10 @@ export type Database = {
         }[]
       }
       generate_order_number: { Args: never; Returns: string }
+      get_or_create_wallet: {
+        Args: { _owner_id: string; _owner_type: string; _user_id: string }
+        Returns: string
+      }
       get_patient_display_name: { Args: { user_uuid: string }; Returns: string }
       get_user_roles: {
         Args: { _user_id: string }

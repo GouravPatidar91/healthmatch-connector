@@ -20,11 +20,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   Bell, Package, ShoppingCart, Eye, CheckCircle, XCircle, Clock, Plus, Edit, Trash2, Search,
-  LayoutDashboard, Store, LogOut, FileText, AlertCircle, CheckCircle2, X, User, ChevronDown, ChevronUp
+  LayoutDashboard, Store, LogOut, FileText, AlertCircle, CheckCircle2, X, User, ChevronDown, ChevronUp, Wallet as WalletIcon
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { medicineService, Medicine, VendorMedicine, CustomMedicine } from '@/services/medicineService';
 import { PrescriptionNotificationModal } from '@/components/pharmacy/PrescriptionNotificationModal';
+import { walletService, type Wallet, type WalletTransaction, type EarningsSummary, type DailyEarnings } from '@/services/walletService';
+import { WalletCard } from '@/components/wallet/WalletCard';
+import { EarningsOverview } from '@/components/wallet/EarningsOverview';
+import { EarningsChart } from '@/components/wallet/EarningsChart';
+import { TransactionHistory } from '@/components/wallet/TransactionHistory';
 
 interface VendorNotification {
   id: string;
@@ -75,6 +80,11 @@ export default function VendorDashboard() {
   const [activeNotification, setActiveNotification] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('orders');
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [earnings, setEarnings] = useState<EarningsSummary>({ today: 0, thisWeek: 0, thisMonth: 0, allTime: 0 });
+  const [dailyEarnings, setDailyEarnings] = useState<DailyEarnings[]>([]);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [walletLoading, setWalletLoading] = useState(true);
   
   // Form state for adding medicines
   const [newMedicine, setNewMedicine] = useState({
@@ -208,6 +218,58 @@ export default function VendorDashboard() {
       supabase.removeChannel(channel);
     };
   }, [vendorInfo]);
+
+  // Load wallet data
+  useEffect(() => {
+    const loadWalletData = async () => {
+      if (!user?.id || !vendorInfo) return;
+
+      setWalletLoading(true);
+      const walletData = await walletService.getWallet(user.id, 'vendor');
+      
+      if (walletData) {
+        setWallet(walletData);
+        
+        // Load earnings summary
+        const earningsData = await walletService.getEarningsSummary(walletData.id);
+        setEarnings(earningsData);
+        
+        // Load daily earnings
+        const dailyData = await walletService.getDailyEarnings(walletData.id, 7);
+        setDailyEarnings(dailyData);
+        
+        // Load transactions
+        const transactionsData = await walletService.getTransactions(walletData.id, { limit: 20 });
+        setTransactions(transactionsData);
+
+        // Subscribe to wallet updates
+        const unsubscribeWallet = walletService.subscribeToWalletUpdates(walletData.id, (updatedWallet) => {
+          setWallet(updatedWallet);
+        });
+
+        // Subscribe to transaction updates
+        const unsubscribeTransactions = walletService.subscribeToTransactionUpdates(walletData.id, async () => {
+          const earningsData = await walletService.getEarningsSummary(walletData.id);
+          setEarnings(earningsData);
+          
+          const dailyData = await walletService.getDailyEarnings(walletData.id, 7);
+          setDailyEarnings(dailyData);
+          
+          const transactionsData = await walletService.getTransactions(walletData.id, { limit: 20 });
+          setTransactions(transactionsData);
+        });
+
+        return () => {
+          unsubscribeWallet();
+          unsubscribeTransactions();
+        };
+      }
+      
+      setWalletLoading(false);
+    };
+
+    loadWalletData();
+  }, [user, vendorInfo]);
 
   const loadVendorData = async () => {
     try {
@@ -644,6 +706,17 @@ export default function VendorDashboard() {
               </span>
             )}
           </button>
+          <button 
+            onClick={() => setActiveTab('earnings')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+              activeTab === 'earnings' 
+                ? 'bg-primary/10 text-primary' 
+                : 'text-muted-foreground hover:bg-muted/50'
+            }`}
+          >
+            <WalletIcon size={20} />
+            <span className="text-sm">Earnings</span>
+          </button>
         </div>
         
         <div className="p-4 border-t border-border">
@@ -1035,6 +1108,31 @@ export default function VendorDashboard() {
                         </motion.div>
                       ))
                     )}
+                  </div>
+                )}
+
+                {activeTab === 'earnings' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="md:col-span-1">
+                        <WalletCard
+                          balance={wallet?.balance || 0}
+                          totalEarned={wallet?.total_earned || 0}
+                          loading={walletLoading}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <EarningsOverview earnings={earnings} loading={walletLoading} />
+                      </div>
+                    </div>
+
+                    <EarningsChart
+                      data={dailyEarnings}
+                      ownerType="vendor"
+                      loading={walletLoading}
+                    />
+
+                    <TransactionHistory transactions={transactions} loading={walletLoading} />
                   </div>
                 )}
               </motion.div>

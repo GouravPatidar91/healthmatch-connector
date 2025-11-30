@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,8 +12,13 @@ import { ActiveOrderTracking } from '@/components/delivery/ActiveOrderTracking';
 import { DeliveryRequestNotificationEnhanced } from '@/components/delivery/DeliveryRequestNotificationEnhanced';
 import { LiveLocationTracker } from '@/components/delivery/LiveLocationTracker';
 import { deliveryRequestService } from '@/services/deliveryRequestService';
-import { Bike, Package, CheckCircle, Clock, AlertCircle, Bell, XCircle } from 'lucide-react';
+import { Bike, Package, CheckCircle, Clock, AlertCircle, Bell, XCircle, Wallet as WalletIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { walletService, type Wallet, type WalletTransaction, type EarningsSummary, type DailyEarnings } from '@/services/walletService';
+import { WalletCard } from '@/components/wallet/WalletCard';
+import { EarningsOverview } from '@/components/wallet/EarningsOverview';
+import { EarningsChart } from '@/components/wallet/EarningsChart';
+import { TransactionHistory } from '@/components/wallet/TransactionHistory';
 
 interface DeliveryPartner {
   id: string;
@@ -40,6 +46,7 @@ interface Order {
 
 export default function DeliveryPartnerDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [partner, setPartner] = useState<DeliveryPartner | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
@@ -48,11 +55,68 @@ export default function DeliveryPartnerDashboard() {
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [earnings, setEarnings] = useState<EarningsSummary>({ today: 0, thisWeek: 0, thisMonth: 0, allTime: 0 });
+  const [dailyEarnings, setDailyEarnings] = useState<DailyEarnings[]>([]);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [walletLoading, setWalletLoading] = useState(true);
 
   useEffect(() => {
     loadPartnerData();
     loadOrders();
   }, []);
+
+  // Load wallet data
+  useEffect(() => {
+    const loadWalletData = async () => {
+      if (!user?.id) return;
+
+      setWalletLoading(true);
+      const walletData = await walletService.getWallet(user.id, 'delivery_partner');
+      
+      if (walletData) {
+        setWallet(walletData);
+        
+        // Load earnings summary
+        const earningsData = await walletService.getEarningsSummary(walletData.id);
+        setEarnings(earningsData);
+        
+        // Load daily earnings
+        const dailyData = await walletService.getDailyEarnings(walletData.id, 7);
+        setDailyEarnings(dailyData);
+        
+        // Load transactions
+        const transactionsData = await walletService.getTransactions(walletData.id, { limit: 20 });
+        setTransactions(transactionsData);
+
+        // Subscribe to wallet updates
+        const unsubscribeWallet = walletService.subscribeToWalletUpdates(walletData.id, (updatedWallet) => {
+          setWallet(updatedWallet);
+        });
+
+        // Subscribe to transaction updates
+        const unsubscribeTransactions = walletService.subscribeToTransactionUpdates(walletData.id, async () => {
+          const earningsData = await walletService.getEarningsSummary(walletData.id);
+          setEarnings(earningsData);
+          
+          const dailyData = await walletService.getDailyEarnings(walletData.id, 7);
+          setDailyEarnings(dailyData);
+          
+          const transactionsData = await walletService.getTransactions(walletData.id, { limit: 20 });
+          setTransactions(transactionsData);
+        });
+
+        return () => {
+          unsubscribeWallet();
+          unsubscribeTransactions();
+        };
+      }
+      
+      setWalletLoading(false);
+    };
+
+    loadWalletData();
+  }, [user]);
 
   // Real-time subscription for delivery requests
   useEffect(() => {
@@ -564,6 +628,10 @@ export default function DeliveryPartnerDashboard() {
               <CheckCircle className="w-4 h-4 mr-2" />
               Completed ({completedOrders.length})
             </TabsTrigger>
+            <TabsTrigger value="earnings">
+              <WalletIcon className="w-4 h-4 mr-2" />
+              Earnings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="active" className="space-y-4">
@@ -639,6 +707,29 @@ export default function DeliveryPartnerDashboard() {
                 </Card>
               ))
             )}
+          </TabsContent>
+
+          <TabsContent value="earnings" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-1">
+                <WalletCard
+                  balance={wallet?.balance || 0}
+                  totalEarned={wallet?.total_earned || 0}
+                  loading={walletLoading}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <EarningsOverview earnings={earnings} loading={walletLoading} />
+              </div>
+            </div>
+
+            <EarningsChart
+              data={dailyEarnings}
+              ownerType="delivery_partner"
+              loading={walletLoading}
+            />
+
+            <TransactionHistory transactions={transactions} loading={walletLoading} />
           </TabsContent>
         </Tabs>
     </div>
