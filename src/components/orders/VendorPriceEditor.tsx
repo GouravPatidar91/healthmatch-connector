@@ -38,6 +38,7 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('VendorPriceEditor - Items:', items);
     const initialPrices: { [key: string]: string } = {};
     items.forEach(item => {
       initialPrices[item.medicine_id] = item.unit_price.toString();
@@ -102,29 +103,36 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
         {/* Medicine Items */}
         <div className="space-y-3">
           <Label>Medicine Prices</Label>
-          {items.map((item) => (
-            <div key={item.medicine_id} className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">{item.medicine_name}</span>
-                <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm">₹</span>
-                <Input
-                  type="number"
-                  value={prices[item.medicine_id] || ''}
-                  onChange={(e) => setPrices({ ...prices, [item.medicine_id]: e.target.value })}
-                  disabled={!canEditPrices || loading}
-                  min="0"
-                  step="0.01"
-                  className="flex-1"
-                />
-                <span className="text-sm text-muted-foreground min-w-[80px]">
-                  Total: ₹{(parseFloat(prices[item.medicine_id] || '0') * item.quantity).toFixed(2)}
-                </span>
-              </div>
+          {items.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              No medicine items found in this order
             </div>
-          ))}
+          ) : (
+            items.map((item) => (
+              <div key={item.medicine_id} className="space-y-2 p-3 bg-secondary/30 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">{item.medicine_name}</span>
+                  <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">₹</span>
+                  <Input
+                    type="number"
+                    value={prices[item.medicine_id] || ''}
+                    onChange={(e) => setPrices({ ...prices, [item.medicine_id]: e.target.value })}
+                    disabled={!canEditPrices || loading}
+                    min="0"
+                    step="0.01"
+                    placeholder="Enter price"
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-medium text-primary min-w-[100px] text-right">
+                    = ₹{(parseFloat(prices[item.medicine_id] || '0') * item.quantity).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         <Separator />

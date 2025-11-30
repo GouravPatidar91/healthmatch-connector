@@ -144,7 +144,7 @@ export default function VendorOrderManagement() {
           : orderData.delivery_partner,
         items: orderData.items?.map((item: any) => ({
           medicine_id: item.medicine?.id || item.medicine_id,
-          medicine_name: item.medicine?.name || 'Unknown',
+          medicine_name: item.medicine?.name || 'Unknown Medicine',
           quantity: item.quantity,
           unit_price: item.unit_price,
           total_price: item.total_price
@@ -157,6 +157,8 @@ export default function VendorOrderManagement() {
         ) || []
       };
 
+      console.log('Order loaded - Items count:', transformedOrder.items.length);
+      console.log('Order items:', transformedOrder.items);
       setOrder(transformedOrder);
     } catch (error) {
       console.error('Error loading order:', error);
