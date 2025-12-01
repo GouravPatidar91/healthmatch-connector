@@ -37,9 +37,9 @@ export function AdminCommissionWallet() {
   const past7DaysEarnings = PAST_7_DAYS_EARNINGS;
   const past7DaysTotal = 7690; // Fixed total
 
-  // This month calculation (sum of past days + today)
+  // This month calculation (sum of past days + today with live bonus)
   const daysInMonth = today.getDate();
-  const thisMonthTotal = past7DaysTotal + todayBaseEarning + (daysInMonth > 7 ? (daysInMonth - 7) * 1100 : 0);
+  const thisMonthTotal = past7DaysTotal + todayBaseEarning + todayBonus + (daysInMonth > 7 ? (daysInMonth - 7) * 1100 : 0);
 
   // Today's total with bonus
   const todayTotal = todayBaseEarning + todayBonus;
