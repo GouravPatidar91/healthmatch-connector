@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { deliveryPartnerLocationService } from '@/services/deliveryPartnerLocationService';
+import { routingService } from '@/services/routingService';
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -61,23 +62,31 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
   customerPhone,
 }) => {
   const [partnerLocation, setPartnerLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [actualRouteToPickup, setActualRouteToPickup] = useState<[number, number][]>([]);
+  const [actualRouteToDelivery, setActualRouteToDelivery] = useState<[number, number][]>([]);
+  const mapRef = useRef<L.Map | null>(null);
+  const [userInteracting, setUserInteracting] = useState(false);
+  const lastAutoFitTime = useRef<number>(0);
 
   useEffect(() => {
-    // Get partner's current location
+    // Get partner's current location and subscribe to updates
     const loadPartnerLocation = async () => {
       try {
         const location = await deliveryPartnerLocationService.getCurrentLocation(partnerId);
         if (location) {
           setPartnerLocation(location);
+          updateRoutes(location.latitude, location.longitude);
         } else {
           // Fallback to browser geolocation
           if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
               (position) => {
-                setPartnerLocation({
+                const loc = {
                   latitude: position.coords.latitude,
                   longitude: position.coords.longitude,
-                });
+                };
+                setPartnerLocation(loc);
+                updateRoutes(loc.latitude, loc.longitude);
               },
               (error) => {
                 console.error('Error getting location:', error);
@@ -91,7 +100,93 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
     };
 
     loadPartnerLocation();
+
+    // Subscribe to real-time location updates
+    const channel = deliveryPartnerLocationService.subscribeToLocationUpdates(
+      partnerId,
+      (location) => {
+        setPartnerLocation(location);
+        updateRoutes(location.latitude, location.longitude);
+      }
+    );
+
+    return () => {
+      if (channel) {
+        channel.unsubscribe();
+      }
+    };
   }, [partnerId]);
+
+  // Update routes dynamically based on partner location
+  const updateRoutes = async (partnerLat: number, partnerLng: number) => {
+    try {
+      // Fetch route to pickup
+      const routeToPickup = await routingService.getRoute(
+        { lat: partnerLat, lng: partnerLng },
+        { lat: vendorLocation.latitude, lng: vendorLocation.longitude }
+      );
+      if (routeToPickup.length > 0) {
+        setActualRouteToPickup(routeToPickup);
+      }
+
+      // Fetch route to delivery
+      const routeToDelivery = await routingService.getRoute(
+        { lat: partnerLat, lng: partnerLng },
+        { lat: deliveryLocation.latitude, lng: deliveryLocation.longitude }
+      );
+      if (routeToDelivery.length > 0) {
+        setActualRouteToDelivery(routeToDelivery);
+      }
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+    }
+  };
+
+  // Auto-fit bounds only if user hasn't interacted in last 30 seconds
+  useEffect(() => {
+    if (mapRef.current && partnerLocation) {
+      const now = Date.now();
+      const timeSinceLastFit = now - lastAutoFitTime.current;
+      
+      if (!userInteracting && timeSinceLastFit > 30000) {
+        const bounds = L.latLngBounds([
+          [partnerLocation.latitude, partnerLocation.longitude],
+          [vendorLocation.latitude, vendorLocation.longitude],
+          [deliveryLocation.latitude, deliveryLocation.longitude],
+        ]);
+        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+        lastAutoFitTime.current = now;
+      }
+    }
+  }, [partnerLocation, vendorLocation, deliveryLocation, userInteracting]);
+
+  // Track user interaction with map
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = mapRef.current;
+    let interactionTimeout: NodeJS.Timeout;
+
+    const handleInteraction = () => {
+      setUserInteracting(true);
+      clearTimeout(interactionTimeout);
+      // Reset after 30 seconds of no interaction
+      interactionTimeout = setTimeout(() => {
+        setUserInteracting(false);
+      }, 30000);
+    };
+
+    map.on('dragstart', handleInteraction);
+    map.on('zoomstart', handleInteraction);
+    map.on('movestart', handleInteraction);
+
+    return () => {
+      map.off('dragstart', handleInteraction);
+      map.off('zoomstart', handleInteraction);
+      map.off('movestart', handleInteraction);
+      clearTimeout(interactionTimeout);
+    };
+  }, [mapRef.current]);
 
   // Calculate center and bounds
   const locations = [
@@ -154,6 +249,7 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
           zoomControl={true}
           doubleClickZoom={true}
           touchZoom={true}
+          ref={mapRef}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -206,16 +302,30 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
                 </Popup>
               </Marker>
 
-              {/* Route line from partner to pickup to delivery */}
+              {/* Route to pickup (actual road route or fallback) */}
+              <Polyline
+                positions={
+                  actualRouteToPickup.length > 0
+                    ? actualRouteToPickup
+                    : [
+                        [partnerLocation.latitude, partnerLocation.longitude],
+                        [vendorLocation.latitude, vendorLocation.longitude],
+                      ]
+                }
+                color="#3b82f6"
+                weight={4}
+                opacity={0.8}
+              />
+              
+              {/* Route from pickup to delivery */}
               <Polyline
                 positions={[
-                  [partnerLocation.latitude, partnerLocation.longitude],
                   [vendorLocation.latitude, vendorLocation.longitude],
                   [deliveryLocation.latitude, deliveryLocation.longitude],
                 ]}
-                color="#8b5cf6"
-                weight={3}
-                opacity={0.7}
+                color="#ef4444"
+                weight={4}
+                opacity={0.6}
                 dashArray="10, 10"
               />
             </>
