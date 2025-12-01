@@ -29,8 +29,6 @@ export interface OrderUpdateWithItems {
     quantity: number;
     unit_price: number;
   }>;
-  handlingCharges: number;
-  deliveryFee: number;
 }
 
 class OrderManagementService {
@@ -166,14 +164,38 @@ class OrderManagementService {
     update: OrderUpdateWithItems
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // Get existing order info
+      // Get existing order info with vendor and delivery location
       const { data: existingOrder, error: fetchError } = await supabase
         .from('medicine_orders')
-        .select('user_id, order_number, vendor_id, discount_amount, coupon_discount, tip_amount')
+        .select(`
+          user_id, 
+          order_number, 
+          vendor_id, 
+          discount_amount, 
+          coupon_discount, 
+          tip_amount,
+          delivery_latitude,
+          delivery_longitude,
+          vendor:medicine_vendors!vendor_id(latitude, longitude)
+        `)
         .eq('id', orderId)
         .single();
 
       if (fetchError) throw fetchError;
+
+      // Calculate handling charges and delivery fee based on distance
+      const { calculateOrderCharges } = await import('./chargeCalculatorService');
+      
+      const vendor = Array.isArray(existingOrder.vendor) ? existingOrder.vendor[0] : existingOrder.vendor;
+      
+      const charges = calculateOrderCharges(
+        vendor?.latitude || 0,
+        vendor?.longitude || 0,
+        existingOrder.delivery_latitude || 0,
+        existingOrder.delivery_longitude || 0
+      );
+
+      console.log('Calculated charges based on distance:', charges);
 
       let medicineTotal = 0;
 
@@ -286,21 +308,23 @@ class OrderManagementService {
         if (insertError) throw insertError;
       }
 
-      // Calculate final amount
+      // Calculate final amount with distance-based charges
       const finalAmount = medicineTotal + 
-        update.handlingCharges + 
-        update.deliveryFee + 
+        charges.handlingCharges + 
+        charges.deliveryFee + 
         (existingOrder.tip_amount || 0) -
         (existingOrder.discount_amount || 0) -
         (existingOrder.coupon_discount || 0);
 
-      // Update order totals with new charges
+      console.log('Final amounts:', { medicineTotal, handlingCharges: charges.handlingCharges, deliveryFee: charges.deliveryFee, finalAmount });
+
+      // Update order totals with calculated charges
       const { error: orderError } = await supabase
         .from('medicine_orders')
         .update({
           total_amount: medicineTotal,
-          handling_charges: update.handlingCharges,
-          delivery_fee: update.deliveryFee,
+          handling_charges: charges.handlingCharges,
+          delivery_fee: charges.deliveryFee,
           final_amount: finalAmount,
           updated_at: new Date().toISOString()
         })
@@ -316,12 +340,13 @@ class OrderManagementService {
           order_id: orderId,
           type: 'price_update',
           title: 'Order Details Updated',
-          message: `Your order #${existingOrder.order_number} has been updated. Total amount: ₹${finalAmount.toFixed(2)}`,
+          message: `Your order #${existingOrder.order_number} has been updated. Total amount: ₹${finalAmount.toFixed(2)}. Distance-based charges: Handling ₹${charges.handlingCharges}, Delivery ₹${charges.deliveryFee}`,
           metadata: {
             medicine_total: medicineTotal,
-            handling_charges: update.handlingCharges,
-            delivery_fee: update.deliveryFee,
-            final_amount: finalAmount
+            handling_charges: charges.handlingCharges,
+            delivery_fee: charges.deliveryFee,
+            final_amount: finalAmount,
+            distance_km: charges.distance
           }
         });
 
