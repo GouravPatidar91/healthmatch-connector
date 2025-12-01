@@ -48,6 +48,8 @@ export function LiveOrderTrackingMap({
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [actualRoute, setActualRoute] = useState<[number, number][]>([]);
   const mapRef = useRef<L.Map | null>(null);
+  const [userInteracting, setUserInteracting] = useState(false);
+  const lastAutoFitTime = useRef<number>(0);
 
   // Get vehicle icon data
   const vehicleIconData = getVehicleIconData(vehicleType);
@@ -195,17 +197,52 @@ export function LiveOrderTrackingMap({
     return () => clearInterval(interval);
   }, [deliveryLocation]);
 
-  // Auto-fit bounds when markers update
+  // Auto-fit bounds when markers update (only if user hasn't interacted in last 30 seconds)
   useEffect(() => {
     if (mapRef.current && deliveryLocation) {
-      const bounds = L.latLngBounds([
-        [pharmacyLocation.lat, pharmacyLocation.lng],
-        [customerLocation.lat, customerLocation.lng],
-        [deliveryLocation.latitude, deliveryLocation.longitude],
-      ]);
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      const now = Date.now();
+      const timeSinceLastFit = now - lastAutoFitTime.current;
+      
+      // Only auto-fit if user hasn't interacted and it's been at least 30 seconds since last auto-fit
+      if (!userInteracting && timeSinceLastFit > 30000) {
+        const bounds = L.latLngBounds([
+          [pharmacyLocation.lat, pharmacyLocation.lng],
+          [customerLocation.lat, customerLocation.lng],
+          [deliveryLocation.latitude, deliveryLocation.longitude],
+        ]);
+        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+        lastAutoFitTime.current = now;
+      }
     }
-  }, [deliveryLocation, pharmacyLocation, customerLocation]);
+  }, [deliveryLocation, pharmacyLocation, customerLocation, userInteracting]);
+
+  // Track user interaction with map
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = mapRef.current;
+    let interactionTimeout: NodeJS.Timeout;
+
+    const handleInteraction = () => {
+      setUserInteracting(true);
+      clearTimeout(interactionTimeout);
+      // Reset after 30 seconds of no interaction
+      interactionTimeout = setTimeout(() => {
+        setUserInteracting(false);
+      }, 30000);
+    };
+
+    map.on('dragstart', handleInteraction);
+    map.on('zoomstart', handleInteraction);
+    map.on('movestart', handleInteraction);
+
+    return () => {
+      map.off('dragstart', handleInteraction);
+      map.off('zoomstart', handleInteraction);
+      map.off('movestart', handleInteraction);
+      clearTimeout(interactionTimeout);
+    };
+  }, [mapRef.current]);
 
   const center: [number, number] = deliveryLocation
     ? [deliveryLocation.latitude, deliveryLocation.longitude]
