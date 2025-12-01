@@ -4,13 +4,14 @@ import { Wallet, TrendingUp, Calendar, DollarSign } from 'lucide-react';
 import { CommissionEarningsChart } from './CommissionEarningsChart';
 import { RecentCommissions } from './RecentCommissions';
 
-// Base date for calculations
-const BASE_DATE = new Date('2024-11-01');
+// Fixed past 7 days earnings that total exactly ₹7,690
+const PAST_7_DAYS_EARNINGS = [1120, 1080, 1150, 1090, 1100, 1070, 1080]; // Total: ₹7,690
 
-// Generate deterministic daily earning based on date
-function getDailyEarning(date: Date): number {
-  const dayOfMonth = date.getDate();
-  const month = date.getMonth();
+// Generate daily earning for today (100-200 rupees per day)
+function getTodayBaseEarning(): number {
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  const month = today.getMonth();
   // Deterministic "random" based on date (100-199 rupees)
   const seed = (dayOfMonth * 13 + month * 7) % 100;
   return 100 + seed;
@@ -30,22 +31,15 @@ export function AdminCommissionWallet() {
 
   // Calculate base earnings
   const today = new Date();
-  const todayBaseEarning = getDailyEarning(today);
+  const todayBaseEarning = getTodayBaseEarning();
 
-  // Past 7 days calculation (should total ~₹7,690)
-  const past7DaysEarnings = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - i));
-    return getDailyEarning(date);
-  });
-  const past7DaysTotal = past7DaysEarnings.reduce((sum, val) => sum + val, 0);
+  // Past 7 days - using fixed values that sum to ₹7,690
+  const past7DaysEarnings = PAST_7_DAYS_EARNINGS;
+  const past7DaysTotal = 7690; // Fixed total
 
-  // This month calculation
-  const thisMonthEarnings = Array.from({ length: today.getDate() }, (_, i) => {
-    const date = new Date(today.getFullYear(), today.getMonth(), i + 1);
-    return getDailyEarning(date);
-  });
-  const thisMonthTotal = thisMonthEarnings.reduce((sum, val) => sum + val, 0);
+  // This month calculation (sum of past days + today)
+  const daysInMonth = today.getDate();
+  const thisMonthTotal = past7DaysTotal + todayBaseEarning + (daysInMonth > 7 ? (daysInMonth - 7) * 1100 : 0);
 
   // Today's total with bonus
   const todayTotal = todayBaseEarning + todayBonus;
