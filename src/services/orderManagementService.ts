@@ -19,6 +19,20 @@ export interface PriceUpdate {
   }>;
 }
 
+export interface OrderUpdateWithItems {
+  existingItems: Array<{
+    medicine_id: string;
+    unit_price: number;
+  }>;
+  newItems: Array<{
+    name: string;
+    quantity: number;
+    unit_price: number;
+  }>;
+  handlingCharges: number;
+  deliveryFee: number;
+}
+
 class OrderManagementService {
   async updateOrderPrices(orderId: string, priceUpdate: PriceUpdate): Promise<{ success: boolean; error?: string }> {
     try {
@@ -143,6 +157,181 @@ class OrderManagementService {
       return { success: true };
     } catch (error) {
       console.error('Error updating order status:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  async updateOrderPricesWithItems(
+    orderId: string, 
+    update: OrderUpdateWithItems
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Get existing order info
+      const { data: existingOrder, error: fetchError } = await supabase
+        .from('medicine_orders')
+        .select('user_id, order_number, vendor_id, discount_amount, coupon_discount, tip_amount')
+        .eq('id', orderId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      let medicineTotal = 0;
+
+      // Update existing items
+      for (const item of update.existingItems) {
+        const { data: orderItem, error: itemFetchError } = await supabase
+          .from('medicine_order_items')
+          .select('quantity')
+          .eq('order_id', orderId)
+          .eq('medicine_id', item.medicine_id)
+          .single();
+
+        if (itemFetchError) throw itemFetchError;
+
+        const totalPrice = item.unit_price * orderItem.quantity;
+        medicineTotal += totalPrice;
+
+        const { error: itemError } = await supabase
+          .from('medicine_order_items')
+          .update({
+            unit_price: item.unit_price,
+            total_price: totalPrice
+          })
+          .eq('order_id', orderId)
+          .eq('medicine_id', item.medicine_id);
+
+        if (itemError) throw itemError;
+      }
+
+      // Insert new medicine items
+      for (const newItem of update.newItems) {
+        // First, get or create a medicine record with a placeholder ID
+        // For prescription orders, we'll create custom medicine entries
+        const { data: medicine, error: medicineError } = await supabase
+          .from('medicines')
+          .select('id')
+          .eq('name', newItem.name)
+          .maybeSingle();
+
+        let medicineId: string;
+
+        if (medicine) {
+          medicineId = medicine.id;
+        } else {
+          // Create a basic medicine entry
+          const { data: newMedicine, error: createError } = await supabase
+            .from('medicines')
+            .insert({
+              name: newItem.name,
+              brand: 'Generic',
+              category: 'Other',
+              form: 'Tablet',
+              dosage: 'As prescribed',
+              pack_size: '1',
+              manufacturer: 'Various',
+              mrp: newItem.unit_price,
+              prescription_required: true
+            })
+            .select('id')
+            .single();
+
+          if (createError) throw createError;
+          medicineId = newMedicine.id;
+        }
+
+        // Get vendor_medicine or create one
+        const { data: vendorMedicine, error: vendorMedError } = await supabase
+          .from('vendor_medicines')
+          .select('id')
+          .eq('vendor_id', existingOrder.vendor_id)
+          .eq('medicine_id', medicineId)
+          .maybeSingle();
+
+        let vendorMedicineId: string;
+
+        if (vendorMedicine) {
+          vendorMedicineId = vendorMedicine.id;
+        } else {
+          const { data: newVendorMed, error: createVendorMedError } = await supabase
+            .from('vendor_medicines')
+            .insert({
+              vendor_id: existingOrder.vendor_id,
+              medicine_id: medicineId,
+              selling_price: newItem.unit_price,
+              stock_quantity: 100,
+              is_available: true
+            })
+            .select('id')
+            .single();
+
+          if (createVendorMedError) throw createVendorMedError;
+          vendorMedicineId = newVendorMed.id;
+        }
+
+        // Insert order item
+        const totalPrice = newItem.unit_price * newItem.quantity;
+        medicineTotal += totalPrice;
+
+        const { error: insertError } = await supabase
+          .from('medicine_order_items')
+          .insert({
+            order_id: orderId,
+            medicine_id: medicineId,
+            vendor_medicine_id: vendorMedicineId,
+            quantity: newItem.quantity,
+            unit_price: newItem.unit_price,
+            total_price: totalPrice
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      // Calculate final amount
+      const finalAmount = medicineTotal + 
+        update.handlingCharges + 
+        update.deliveryFee + 
+        (existingOrder.tip_amount || 0) -
+        (existingOrder.discount_amount || 0) -
+        (existingOrder.coupon_discount || 0);
+
+      // Update order totals with new charges
+      const { error: orderError } = await supabase
+        .from('medicine_orders')
+        .update({
+          total_amount: medicineTotal,
+          handling_charges: update.handlingCharges,
+          delivery_fee: update.deliveryFee,
+          final_amount: finalAmount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+
+      // Create notification
+      const { error: notificationError } = await supabase
+        .from('customer_notifications')
+        .insert({
+          user_id: existingOrder.user_id,
+          order_id: orderId,
+          type: 'price_update',
+          title: 'Order Details Updated',
+          message: `Your order #${existingOrder.order_number} has been updated. Total amount: ₹${finalAmount.toFixed(2)}`,
+          metadata: {
+            medicine_total: medicineTotal,
+            handling_charges: update.handlingCharges,
+            delivery_fee: update.deliveryFee,
+            final_amount: finalAmount
+          }
+        });
+
+      if (notificationError) {
+        console.error('Error creating notification:', notificationError);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating order with items:', error);
       return { success: false, error: (error as Error).message };
     }
   }
