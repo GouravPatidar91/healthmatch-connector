@@ -41,8 +41,6 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
 }) => {
   const [prices, setPrices] = useState<{ [key: string]: string }>({});
   const [newMedicines, setNewMedicines] = useState<NewMedicineItem[]>([]);
-  const [handlingCharges, setHandlingCharges] = useState(currentHandlingCharges);
-  const [deliveryFee, setDeliveryFee] = useState(currentDeliveryFee);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -55,10 +53,6 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
     setPrices(initialPrices);
   }, [items]);
 
-  useEffect(() => {
-    setHandlingCharges(currentHandlingCharges);
-    setDeliveryFee(currentDeliveryFee);
-  }, [currentHandlingCharges, currentDeliveryFee]);
 
   const canEditPrices = orderStatus === 'confirmed';
 
@@ -90,7 +84,7 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
   };
 
   const calculateGrandTotal = () => {
-    return calculateMedicineTotal() + handlingCharges + deliveryFee;
+    return calculateMedicineTotal() + currentHandlingCharges + currentDeliveryFee;
   };
 
   const handleUpdatePrices = async () => {
@@ -123,9 +117,7 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
             medicine_id: item.medicine_id,
             unit_price: parseFloat(prices[item.medicine_id] || '0')
           })),
-          newItems: newMedicines,
-          handlingCharges,
-          deliveryFee
+          newItems: newMedicines
         }
       );
 
@@ -271,7 +263,7 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
 
         <Separator />
 
-        {/* Charges */}
+        {/* Charges Summary */}
         <div className="space-y-3">
           <div>
             <Label>Medicine Total</Label>
@@ -280,35 +272,19 @@ export const VendorPriceEditor: React.FC<VendorPriceEditorProps> = ({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Handling Charges</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">₹</span>
-              <Input
-                type="number"
-                value={handlingCharges}
-                onChange={(e) => setHandlingCharges(parseFloat(e.target.value) || 0)}
-                disabled={!canEditPrices || loading}
-                min="0"
-                step="1"
-              />
-            </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Handling Charges</span>
+            <span className="font-medium">₹{currentHandlingCharges.toFixed(2)}</span>
           </div>
 
-          <div className="space-y-2">
-            <Label>Delivery Fee</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">₹</span>
-              <Input
-                type="number"
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
-                disabled={!canEditPrices || loading}
-                min="0"
-                step="1"
-              />
-            </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Delivery Fee</span>
+            <span className="font-medium">₹{currentDeliveryFee.toFixed(2)}</span>
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            * Charges are calculated based on distance
+          </p>
         </div>
 
         <Separator />
