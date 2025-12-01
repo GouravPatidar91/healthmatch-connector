@@ -21,6 +21,9 @@ const MainLayout = () => {
   // Check if footer should be shown (only on homepage for signed-in users)
   const shouldShowFooter = location.pathname === "/" && user;
   
+  // Check if we're on admin dashboard (hide sidebar)
+  const isAdminDashboard = location.pathname === "/admin-dashboard";
+  
   // Check for pending doctor application
   useEffect(() => {
     if (user && !rolesLoading) {
@@ -177,34 +180,36 @@ const MainLayout = () => {
       
       {/* Modern Layout with Floating Sidebar */}
       <div className="flex flex-1">
-        {/* Floating Sidebar for desktop */}
-        <aside className="hidden md:block w-72 p-4">
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-blue-100/50 shadow-lg p-4 sticky top-24">
-            <nav className="space-y-2">
-              {navigationItems.map((item) => (
-                <Link 
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                    isActive(item.path) 
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg" 
-                      : item.name === "Doctor Application Pending" 
-                        ? "opacity-60 cursor-not-allowed text-gray-400"
-                        : "hover:bg-blue-50 text-gray-700 hover:text-blue-600"
-                  }`}
-                  onClick={e => {
-                    if (item.name === "Doctor Application Pending") {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </aside>
+        {/* Floating Sidebar for desktop - hidden on admin dashboard */}
+        {!isAdminDashboard && (
+          <aside className="hidden md:block w-72 p-4">
+            <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-blue-100/50 shadow-lg p-4 sticky top-24">
+              <nav className="space-y-2">
+                {navigationItems.map((item) => (
+                  <Link 
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                      isActive(item.path) 
+                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg" 
+                        : item.name === "Doctor Application Pending" 
+                          ? "opacity-60 cursor-not-allowed text-gray-400"
+                          : "hover:bg-blue-50 text-gray-700 hover:text-blue-600"
+                    }`}
+                    onClick={e => {
+                      if (item.name === "Doctor Application Pending") {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </aside>
+        )}
         
         {/* Main content with modern styling */}
         <main className="flex-1 flex flex-col">
