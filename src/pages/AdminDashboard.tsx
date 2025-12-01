@@ -16,6 +16,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { AdminWalletStats } from "@/components/admin/AdminWalletStats";
 import { AdminWithdrawalRequests } from "@/components/admin/AdminWithdrawalRequests";
 import { TransactionHistory } from "@/components/wallet/TransactionHistory";
+import { AdminCommissionWallet } from "@/components/admin/AdminCommissionWallet";
 import { adminWalletService } from "@/services/adminWalletService";
 import type { AdminWalletStats as StatsType } from "@/services/adminWalletService";
 import type { WalletTransaction } from "@/services/walletService";
@@ -277,7 +278,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-4xl grid-cols-3">
+          <TabsList className="grid w-full max-w-5xl grid-cols-4">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="doctors">Doctor Applications</TabsTrigger>
             <TabsTrigger value="wallets">
@@ -288,6 +289,7 @@ const AdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="earnings">💰 Platform Earnings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="users">
@@ -450,6 +452,10 @@ const AdminDashboard = () => {
                 />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          <TabsContent value="earnings" className="space-y-4">
+            <AdminCommissionWallet />
           </TabsContent>
         </Tabs>
       </div>
