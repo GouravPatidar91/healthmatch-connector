@@ -862,7 +862,7 @@ export default function VendorDashboard() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
                             className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-all cursor-pointer"
-                            onClick={() => navigate(`/vendor/order/${order.id}`)}
+                            onClick={() => navigate(`/vendor-dashboard/order/${order.id}`)}
                           >
                             <div className="flex justify-between items-start mb-4">
                               <div>
