@@ -13,7 +13,7 @@ function getTodayBaseEarning(): number {
   const dayOfMonth = today.getDate();
   const month = today.getMonth();
   // Deterministic "random" based on date (100-199 rupees)
-  const seed = (dayOfMonth * 13 + month * 7) % 50;
+  const seed = (dayOfMonth * 13 + month * 7) % 100;
   return 200 + seed;
 }
 
@@ -35,7 +35,7 @@ export function AdminCommissionWallet() {
 
   // Past 7 days - using fixed values that sum to ₹7,690
   const past7DaysEarnings = PAST_7_DAYS_EARNINGS;
-  const past7DaysTotal = 7690; // Fixed total
+  const past7DaysTotal = 9824; // Fixed total
 
   // This month calculation (sum of past days + today with live bonus)
   const daysInMonth = today.getDate();
