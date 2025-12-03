@@ -5,7 +5,7 @@ import { CommissionEarningsChart } from "./CommissionEarningsChart";
 import { RecentCommissions } from "./RecentCommissions";
 
 // Fixed past 7 days earnings that total exactly ₹7,690
-const PAST_7_DAYS_EARNINGS = [1120, 1080, 1150, 1090, 1100, 1070, 1080]; // Total: ₹7,690
+const PAST_7_DAYS_EARNINGS = [1120, 1080, 1150, 2090, 1100, 1070, 1080]; // Total: ₹7,690
 
 // Generate daily earning for today (100-200 rupees per day)
 function getTodayBaseEarning(): number {
@@ -13,7 +13,7 @@ function getTodayBaseEarning(): number {
   const dayOfMonth = today.getDate();
   const month = today.getMonth();
   // Deterministic "random" based on date (100-199 rupees)
-  const seed = (dayOfMonth * 13 + month * 7) % 100;
+  const seed = (dayOfMonth * 13 + month * 7) % 50;
   return 200 + seed;
 }
 
