@@ -50,6 +50,7 @@ interface DeliveryRequestMapProps {
   deliveryLocation: { latitude: number; longitude: number };
   deliveryAddress: string;
   customerPhone?: string;
+  orderStatus?: string;
 }
 
 export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
@@ -60,13 +61,18 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
   deliveryLocation,
   deliveryAddress,
   customerPhone,
+  orderStatus = 'ready_for_pickup',
 }) => {
   const [partnerLocation, setPartnerLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [actualRouteToPickup, setActualRouteToPickup] = useState<[number, number][]>([]);
-  const [actualRouteToDelivery, setActualRouteToDelivery] = useState<[number, number][]>([]);
+  const [routeToPickup, setRouteToPickup] = useState<[number, number][]>([]);
+  const [routeToDelivery, setRouteToDelivery] = useState<[number, number][]>([]);
   const mapRef = useRef<L.Map | null>(null);
   const [userInteracting, setUserInteracting] = useState(false);
   const lastAutoFitTime = useRef<number>(0);
+
+  // Determine phase based on order status
+  const isGoingToPickup = ['placed', 'confirmed', 'preparing', 'ready_for_pickup'].includes(orderStatus);
+  const isOutForDelivery = orderStatus === 'out_for_delivery';
 
   useEffect(() => {
     // Get partner's current location and subscribe to updates
@@ -115,27 +121,29 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
         channel.unsubscribe();
       }
     };
-  }, [partnerId]);
+  }, [partnerId, orderStatus]);
 
-  // Update routes dynamically based on partner location
+  // Update routes dynamically based on partner location and order status
   const updateRoutes = async (partnerLat: number, partnerLng: number) => {
     try {
-      // Fetch route to pickup
-      const routeToPickup = await routingService.getRoute(
-        { lat: partnerLat, lng: partnerLng },
-        { lat: vendorLocation.latitude, lng: vendorLocation.longitude }
-      );
-      if (routeToPickup.length > 0) {
-        setActualRouteToPickup(routeToPickup);
-      }
-
-      // Fetch route to delivery
-      const routeToDelivery = await routingService.getRoute(
-        { lat: partnerLat, lng: partnerLng },
-        { lat: deliveryLocation.latitude, lng: deliveryLocation.longitude }
-      );
-      if (routeToDelivery.length > 0) {
-        setActualRouteToDelivery(routeToDelivery);
+      if (isGoingToPickup) {
+        // Fetch route to pickup (pharmacy)
+        const route = await routingService.getRoute(
+          { lat: partnerLat, lng: partnerLng },
+          { lat: vendorLocation.latitude, lng: vendorLocation.longitude }
+        );
+        if (route.length > 0) {
+          setRouteToPickup(route);
+        }
+      } else if (isOutForDelivery) {
+        // Fetch route to delivery (customer)
+        const route = await routingService.getRoute(
+          { lat: partnerLat, lng: partnerLng },
+          { lat: deliveryLocation.latitude, lng: deliveryLocation.longitude }
+        );
+        if (route.length > 0) {
+          setRouteToDelivery(route);
+        }
       }
     } catch (error) {
       console.error('Error fetching routes:', error);
@@ -188,13 +196,6 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
     };
   }, [mapRef.current]);
 
-  // Calculate center and bounds
-  const locations = [
-    vendorLocation,
-    deliveryLocation,
-    ...(partnerLocation ? [partnerLocation] : []),
-  ];
-
   const center: [number, number] = partnerLocation
     ? [partnerLocation.latitude, partnerLocation.longitude]
     : [vendorLocation.latitude, vendorLocation.longitude];
@@ -218,21 +219,37 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
       )
     : null;
 
+  // Determine active route and color based on order status
+  const activeRoute = isGoingToPickup ? routeToPickup : routeToDelivery;
+  const activeRouteColor = isGoingToPickup ? '#3b82f6' : '#10b981'; // Blue for pickup, Green for delivery
+
+  // Fallback straight line
+  const fallbackRoute: [number, number][] = partnerLocation
+    ? [
+        [partnerLocation.latitude, partnerLocation.longitude],
+        isGoingToPickup
+          ? [vendorLocation.latitude, vendorLocation.longitude]
+          : [deliveryLocation.latitude, deliveryLocation.longitude],
+      ]
+    : [];
+
   return (
     <div className="space-y-2">
       {/* Distance Info */}
       {partnerLocation && (
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded">
+          <div className={`p-2 rounded ${isGoingToPickup ? 'bg-blue-100 dark:bg-blue-950 ring-2 ring-blue-500' : 'bg-blue-50 dark:bg-blue-950/50'}`}>
             <p className="text-muted-foreground">To Pickup</p>
-            <p className="font-semibold text-blue-600 dark:text-blue-400">
+            <p className={`font-semibold ${isGoingToPickup ? 'text-blue-700 dark:text-blue-300' : 'text-blue-600 dark:text-blue-400'}`}>
               {distanceToPickup?.toFixed(1)} km
+              {isGoingToPickup && <span className="ml-1 text-xs">← Current</span>}
             </p>
           </div>
-          <div className="bg-red-50 dark:bg-red-950 p-2 rounded">
+          <div className={`p-2 rounded ${isOutForDelivery ? 'bg-green-100 dark:bg-green-950 ring-2 ring-green-500' : 'bg-red-50 dark:bg-red-950/50'}`}>
             <p className="text-muted-foreground">To Delivery</p>
-            <p className="font-semibold text-red-600 dark:text-red-400">
+            <p className={`font-semibold ${isOutForDelivery ? 'text-green-700 dark:text-green-300' : 'text-red-600 dark:text-red-400'}`}>
               {distanceToDelivery?.toFixed(1)} km
+              {isOutForDelivery && <span className="ml-1 text-xs">← Current</span>}
             </p>
           </div>
         </div>
@@ -265,6 +282,7 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
               <div className="text-sm">
                 <p className="font-semibold">{vendorName}</p>
                 <p className="text-muted-foreground">{vendorAddress}</p>
+                {isGoingToPickup && <p className="text-xs text-blue-600 font-medium mt-1">Current Destination</p>}
               </div>
             </Popup>
           </Marker>
@@ -281,6 +299,7 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
                 {customerPhone && (
                   <p className="text-muted-foreground mt-1">📞 {customerPhone}</p>
                 )}
+                {isOutForDelivery && <p className="text-xs text-green-600 font-medium mt-1">Current Destination</p>}
               </div>
             </Popup>
           </Marker>
@@ -296,38 +315,36 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
                   <div className="text-sm">
                     <p className="font-semibold">Your Current Location</p>
                     <p className="text-muted-foreground">
-                      {distanceToPickup?.toFixed(1)} km from pickup
+                      {isGoingToPickup 
+                        ? `${distanceToPickup?.toFixed(1)} km from pickup`
+                        : `${distanceToDelivery?.toFixed(1)} km from delivery`
+                      }
                     </p>
                   </div>
                 </Popup>
               </Marker>
 
-              {/* Route to pickup (actual road route or fallback) */}
+              {/* Active Route - solid line to current destination */}
               <Polyline
-                positions={
-                  actualRouteToPickup.length > 0
-                    ? actualRouteToPickup
-                    : [
-                        [partnerLocation.latitude, partnerLocation.longitude],
-                        [vendorLocation.latitude, vendorLocation.longitude],
-                      ]
-                }
-                color="#3b82f6"
-                weight={4}
-                opacity={0.8}
+                positions={activeRoute.length > 0 ? activeRoute : fallbackRoute}
+                color={activeRouteColor}
+                weight={5}
+                opacity={0.9}
               />
               
-              {/* Route from pickup to delivery */}
-              <Polyline
-                positions={[
-                  [vendorLocation.latitude, vendorLocation.longitude],
-                  [deliveryLocation.latitude, deliveryLocation.longitude],
-                ]}
-                color="#ef4444"
-                weight={4}
-                opacity={0.6}
-                dashArray="10, 10"
-              />
+              {/* Preview Route - dashed line for next leg (only when going to pickup) */}
+              {isGoingToPickup && (
+                <Polyline
+                  positions={[
+                    [vendorLocation.latitude, vendorLocation.longitude],
+                    [deliveryLocation.latitude, deliveryLocation.longitude],
+                  ]}
+                  color="#ef4444"
+                  weight={3}
+                  opacity={0.5}
+                  dashArray="10, 10"
+                />
+              )}
             </>
           )}
         </MapContainer>
@@ -340,12 +357,12 @@ export const DeliveryRequestMap: React.FC<DeliveryRequestMapProps> = ({
           <span>You</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-          <span>Pickup</span>
+          <div className={`w-3 h-3 rounded-full ${isGoingToPickup ? 'bg-blue-500 ring-2 ring-blue-300' : 'bg-blue-500'}`}></div>
+          <span>Pickup {isGoingToPickup && '(Active)'}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <span>Delivery</span>
+          <div className={`w-3 h-3 rounded-full ${isOutForDelivery ? 'bg-green-500 ring-2 ring-green-300' : 'bg-red-500'}`}></div>
+          <span>Delivery {isOutForDelivery && '(Active)'}</span>
         </div>
       </div>
     </div>

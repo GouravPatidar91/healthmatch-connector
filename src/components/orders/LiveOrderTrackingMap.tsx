@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bike, Store, Home, MapPin, Clock } from 'lucide-react';
+import { Bike, Store, Home, MapPin, Clock, Package } from 'lucide-react';
 import { deliveryPartnerLocationService, DeliveryPartnerLocation } from '@/services/deliveryPartnerLocationService';
 import { cn } from '@/lib/utils';
 import { MapIconSVGs, MapIconColors, getVehicleIconData } from '@/components/maps/MapIcons';
@@ -46,10 +46,15 @@ export function LiveOrderTrackingMap({
   const [distance, setDistance] = useState<number | null>(null);
   const [eta, setETA] = useState<number | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('');
-  const [actualRoute, setActualRoute] = useState<[number, number][]>([]);
+  const [routeToPharmacy, setRouteToPharmacy] = useState<[number, number][]>([]);
+  const [routeToCustomer, setRouteToCustomer] = useState<[number, number][]>([]);
   const mapRef = useRef<L.Map | null>(null);
   const [userInteracting, setUserInteracting] = useState(false);
   const lastAutoFitTime = useRef<number>(0);
+
+  // Determine which phase we're in
+  const isGoingToPickup = ['placed', 'confirmed', 'preparing', 'ready_for_pickup'].includes(orderStatus);
+  const isOutForDelivery = orderStatus === 'out_for_delivery';
 
   // Get vehicle icon data
   const vehicleIconData = getVehicleIconData(vehicleType);
@@ -124,6 +129,7 @@ export function LiveOrderTrackingMap({
           setDeliveryLocation(location);
           updateDistanceAndETA(location.latitude, location.longitude);
           updateLastUpdateTime(location.timestamp);
+          updateRoutes(location.latitude, location.longitude);
         }
       } catch (err) {
         console.error('Failed to load delivery partner location:', err);
@@ -140,6 +146,7 @@ export function LiveOrderTrackingMap({
           setDeliveryLocation(location);
           updateDistanceAndETA(location.latitude, location.longitude);
           setLastUpdate(new Date().toLocaleTimeString());
+          updateRoutes(location.latitude, location.longitude);
         }
       }
     );
@@ -150,27 +157,47 @@ export function LiveOrderTrackingMap({
         channel.unsubscribe();
       }
     };
-  }, [deliveryPartnerId, customerLocation]);
+  }, [deliveryPartnerId, customerLocation, pharmacyLocation, orderStatus]);
+
+  // Update routes based on order status
+  const updateRoutes = async (lat: number, lng: number) => {
+    try {
+      if (isGoingToPickup) {
+        // Route: Delivery Partner → Pharmacy
+        const route = await routingService.getRoute(
+          { lat, lng },
+          { lat: pharmacyLocation.lat, lng: pharmacyLocation.lng }
+        );
+        if (route.length > 0) {
+          setRouteToPharmacy(route);
+        }
+      } else if (isOutForDelivery) {
+        // Route: Delivery Partner → Customer
+        const route = await routingService.getRoute(
+          { lat, lng },
+          { lat: customerLocation.lat, lng: customerLocation.lng }
+        );
+        if (route.length > 0) {
+          setRouteToCustomer(route);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching route:', error);
+    }
+  };
 
   const updateDistanceAndETA = (lat: number, lng: number) => {
+    // Calculate distance to appropriate destination based on order status
+    const destination = isGoingToPickup ? pharmacyLocation : customerLocation;
+    
     const dist = deliveryPartnerLocationService.calculateDistance(
       lat,
       lng,
-      customerLocation.lat,
-      customerLocation.lng
+      destination.lat,
+      destination.lng
     );
     setDistance(dist);
     setETA(deliveryPartnerLocationService.estimateETA(dist));
-    
-    // Fetch actual road route
-    routingService.getRoute(
-      { lat, lng },
-      { lat: customerLocation.lat, lng: customerLocation.lng }
-    ).then(route => {
-      if (route.length > 0) {
-        setActualRoute(route);
-      }
-    });
   };
 
   const updateLastUpdateTime = (timestamp: string) => {
@@ -248,14 +275,22 @@ export function LiveOrderTrackingMap({
     ? [deliveryLocation.latitude, deliveryLocation.longitude]
     : [customerLocation.lat, customerLocation.lng];
 
-  const routeCoordinates: [number, number][] = deliveryLocation
+  const isStale = deliveryLocation && deliveryPartnerLocationService.isLocationStale(deliveryLocation.timestamp);
+
+  // Get current destination label and route color
+  const destinationLabel = isGoingToPickup ? 'Pharmacy' : 'Customer';
+  const routeColor = isGoingToPickup ? '#3b82f6' : '#10b981'; // Blue for pickup, Green for delivery
+  const activeRoute = isGoingToPickup ? routeToPharmacy : routeToCustomer;
+
+  // Fallback route coordinates
+  const fallbackRoute: [number, number][] = deliveryLocation
     ? [
         [deliveryLocation.latitude, deliveryLocation.longitude],
-        [customerLocation.lat, customerLocation.lng],
+        isGoingToPickup 
+          ? [pharmacyLocation.lat, pharmacyLocation.lng]
+          : [customerLocation.lat, customerLocation.lng],
       ]
     : [];
-
-  const isStale = deliveryLocation && deliveryPartnerLocationService.isLocationStale(deliveryLocation.timestamp);
 
   return (
     <Card className="overflow-hidden shadow-lg">
@@ -284,12 +319,25 @@ export function LiveOrderTrackingMap({
               </p>
             </div>
           </div>
-          <Badge 
-            variant={isStale ? "secondary" : "default"} 
-            className={`text-sm font-semibold px-3 py-1.5 ${!isStale ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : ''}`}
-          >
-            {isStale ? "📍 Location Unavailable" : "🔴 Live Tracking"}
-          </Badge>
+          <div className="flex flex-col items-end gap-2">
+            <Badge 
+              variant={isStale ? "secondary" : "default"} 
+              className={`text-sm font-semibold px-3 py-1.5 ${!isStale ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : ''}`}
+            >
+              {isStale ? "📍 Location Unavailable" : "🔴 Live Tracking"}
+            </Badge>
+            {/* Order Phase Indicator */}
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${isGoingToPickup ? 'border-blue-500 text-blue-600' : 'border-green-500 text-green-600'}`}
+            >
+              {isGoingToPickup ? (
+                <><Package className="w-3 h-3 mr-1" /> Going to Pickup</>
+              ) : (
+                <><Home className="w-3 h-3 mr-1" /> Delivering to You</>
+              )}
+            </Badge>
+          </div>
         </div>
         
         {distance !== null && eta !== null && !isStale && (
@@ -297,7 +345,7 @@ export function LiveOrderTrackingMap({
             <div className="flex items-center gap-2 px-3 py-2 bg-background/80 backdrop-blur-sm rounded-lg border shadow-sm">
               <MapPin className="w-4 h-4 text-primary" />
               <span className="font-semibold">{distance.toFixed(1)} km</span>
-              <span className="text-muted-foreground">away</span>
+              <span className="text-muted-foreground">to {destinationLabel}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-background/80 backdrop-blur-sm rounded-lg border shadow-sm">
               <Clock className="w-4 h-4 text-primary" />
@@ -345,6 +393,7 @@ export function LiveOrderTrackingMap({
                 <Store className="w-5 h-5 mx-auto mb-1" />
                 <strong>{pharmacyName}</strong>
                 <p className="text-sm text-muted-foreground">Pharmacy</p>
+                {isGoingToPickup && <p className="text-xs text-blue-600 font-medium mt-1">Current Destination</p>}
               </div>
             </Popup>
           </Marker>
@@ -356,6 +405,7 @@ export function LiveOrderTrackingMap({
                 <Home className="w-5 h-5 mx-auto mb-1" />
                 <strong>Delivery Address</strong>
                 <p className="text-sm text-muted-foreground">{customerAddress}</p>
+                {isOutForDelivery && <p className="text-xs text-green-600 font-medium mt-1">Current Destination</p>}
               </div>
             </Popup>
           </Marker>
@@ -372,27 +422,41 @@ export function LiveOrderTrackingMap({
                     <Bike className="w-5 h-5 mx-auto mb-1" />
                     <strong>{deliveryPartnerName}</strong>
                     <p className="text-sm text-muted-foreground">
-                      {distance?.toFixed(1)} km away • ETA {eta} min
+                      {distance?.toFixed(1)} km to {destinationLabel} • ETA {eta} min
                     </p>
                   </div>
                 </Popup>
               </Marker>
 
-              {/* Route Line */}
+              {/* Active Route Line - solid line to current destination */}
               <Polyline
-                positions={actualRoute.length > 0 ? actualRoute : routeCoordinates}
-                color={vehicleIconData.color}
+                positions={activeRoute.length > 0 ? activeRoute : fallbackRoute}
+                color={routeColor}
                 weight={5}
                 opacity={0.9}
               />
-              </>
-            )}
-          </MapContainer>
-          
-          {/* Map Legend */}
-          <MapLegend />
-        </div>
-        </div>
-      </Card>
-    );
-  }
+
+              {/* Preview Route Line - dashed line showing next leg (when going to pickup) */}
+              {isGoingToPickup && (
+                <Polyline
+                  positions={[
+                    [pharmacyLocation.lat, pharmacyLocation.lng],
+                    [customerLocation.lat, customerLocation.lng],
+                  ]}
+                  color="#ef4444"
+                  weight={3}
+                  opacity={0.5}
+                  dashArray="10, 10"
+                />
+              )}
+            </>
+          )}
+        </MapContainer>
+        
+        {/* Map Legend */}
+        <MapLegend />
+      </div>
+      </div>
+    </Card>
+  );
+}

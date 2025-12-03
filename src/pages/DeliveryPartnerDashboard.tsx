@@ -43,6 +43,8 @@ interface Order {
   vendor: {
     pharmacy_name: string;
     address: string;
+    latitude?: number;
+    longitude?: number;
   };
 }
 
@@ -337,7 +339,7 @@ export default function DeliveryPartnerDashboard() {
         .from('medicine_orders')
         .select(`
           *,
-          vendor:medicine_vendors!vendor_id(pharmacy_name, address)
+          vendor:medicine_vendors!vendor_id(pharmacy_name, address, latitude, longitude)
         `)
         .eq('delivery_partner_id', partnerData.id)
         .in('order_status', ['placed', 'confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery'])
@@ -663,6 +665,8 @@ export default function DeliveryPartnerDashboard() {
                     deliveryLongitude: order.delivery_longitude,
                     pharmacyName: order.vendor.pharmacy_name,
                     pharmacyAddress: order.vendor.address,
+                    pharmacyLatitude: order.vendor.latitude,
+                    pharmacyLongitude: order.vendor.longitude,
                     orderStatus: order.order_status,
                     deliveryFee: order.delivery_fee || 0,
                     tipAmount: order.tip_amount || 0,
