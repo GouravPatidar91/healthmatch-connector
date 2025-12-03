@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet, TrendingUp, Calendar, DollarSign } from 'lucide-react';
-import { CommissionEarningsChart } from './CommissionEarningsChart';
-import { RecentCommissions } from './RecentCommissions';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wallet, TrendingUp, Calendar, DollarSign } from "lucide-react";
+import { CommissionEarningsChart } from "./CommissionEarningsChart";
+import { RecentCommissions } from "./RecentCommissions";
 
 // Fixed past 7 days earnings that total exactly ₹7,690
 const PAST_7_DAYS_EARNINGS = [1120, 1080, 1150, 1090, 1100, 1070, 1080]; // Total: ₹7,690
@@ -14,14 +14,14 @@ function getTodayBaseEarning(): number {
   const month = today.getMonth();
   // Deterministic "random" based on date (100-199 rupees)
   const seed = (dayOfMonth * 13 + month * 7) % 100;
-  return 100 + seed;
+  return 200 + seed;
 }
 
 // Split earning into order handling (65%) and doctor consultation (35%)
 function splitEarning(total: number) {
   return {
     orderHandling: Math.round(total * 0.65),
-    doctorConsultation: Math.round(total * 0.35)
+    doctorConsultation: Math.round(total * 0.35),
   };
 }
 
@@ -39,7 +39,8 @@ export function AdminCommissionWallet() {
 
   // This month calculation (sum of past days + today with live bonus)
   const daysInMonth = today.getDate();
-  const thisMonthTotal = past7DaysTotal + todayBaseEarning + todayBonus + (daysInMonth > 7 ? (daysInMonth - 7) * 1100 : 0);
+  const thisMonthTotal =
+    past7DaysTotal + todayBaseEarning + todayBonus + (daysInMonth > 7 ? (daysInMonth - 7) * 1100 : 0);
 
   // Today's total with bonus
   const todayTotal = todayBaseEarning + todayBonus;
@@ -48,11 +49,14 @@ export function AdminCommissionWallet() {
 
   // Auto-increment simulation (₹5-20 every 30-60 seconds)
   useEffect(() => {
-    const interval = setInterval(() => {
-      const increment = Math.floor(Math.random() * 16) + 5; // 5-20 rupees
-      setTodayBonus(prev => prev + increment);
-      setLastUpdate(new Date());
-    }, (Math.random() * 30000) + 30000); // 30-60 seconds
+    const interval = setInterval(
+      () => {
+        const increment = Math.floor(Math.random() * 16) + 5; // 5-20 rupees
+        setTodayBonus((prev) => prev + increment);
+        setLastUpdate(new Date());
+      },
+      Math.random() * 30000 + 30000,
+    ); // 30-60 seconds
 
     return () => clearInterval(interval);
   }, []);
@@ -140,9 +144,7 @@ export function AdminCommissionWallet() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">₹{past7DaysTotal.toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground mt-2">
-              Avg: ₹{Math.round(past7DaysTotal / 7)} per day
-            </div>
+            <div className="text-xs text-muted-foreground mt-2">Avg: ₹{Math.round(past7DaysTotal / 7)} per day</div>
           </CardContent>
         </Card>
 
@@ -169,9 +171,7 @@ export function AdminCommissionWallet() {
       <RecentCommissions todayEarning={todayTotal} />
 
       {/* Live Update Indicator */}
-      <div className="text-xs text-muted-foreground text-center">
-        Last updated: {lastUpdate.toLocaleTimeString()}
-      </div>
+      <div className="text-xs text-muted-foreground text-center">Last updated: {lastUpdate.toLocaleTimeString()}</div>
     </div>
   );
 }
