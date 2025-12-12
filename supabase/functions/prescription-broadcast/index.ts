@@ -88,10 +88,9 @@ serve(async (req) => {
 
     const prescription_url = prescriptionData?.file_url || '';
 
-    // Step 4: Notify first batch of pharmacies (closest ones)
-    const firstBatch = nearbyPharmacies.slice(0, pharmacies_per_round);
-    
-    const notificationPromises = firstBatch.map(async (pharmacy) => {
+    // Step 4: Notify ALL nearby pharmacies simultaneously
+    // All vendors receive the notification at the same time - first to accept gets the order
+    const notificationPromises = nearbyPharmacies.map(async (pharmacy) => {
       // Insert into notification queue
       await supabase.from('pharmacy_notification_queue').insert({
         broadcast_id: broadcast.id,
@@ -121,13 +120,13 @@ serve(async (req) => {
 
     await Promise.all(notificationPromises);
 
-    console.log(`Notified ${firstBatch.length} pharmacies for broadcast ${broadcast.id}`);
+    console.log(`Notified ALL ${nearbyPharmacies.length} nearby pharmacies for broadcast ${broadcast.id}`);
 
     return new Response(
       JSON.stringify({ 
         success: true,
         broadcast_id: broadcast.id,
-        pharmacies_notified: firstBatch.length,
+        pharmacies_notified: nearbyPharmacies.length,
         total_pharmacies_available: nearbyPharmacies.length,
         timeout_at: broadcast.timeout_at
       }),
