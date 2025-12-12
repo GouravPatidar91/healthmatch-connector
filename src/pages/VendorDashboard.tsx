@@ -315,6 +315,32 @@ export default function VendorDashboard() {
       if (notifError) throw notifError;
       setNotifications(notificationData || []);
 
+      // Check for pending cart order notifications and show modal automatically
+      const pendingCartNotification = notificationData?.find((n: any) => {
+        if (n.type === 'cart_order_request' && !n.is_read && n.metadata?.timeout_at) {
+          const timeoutAt = new Date(n.metadata.timeout_at);
+          return timeoutAt > new Date(); // Not expired
+        }
+        return false;
+      });
+
+      if (pendingCartNotification) {
+        const metadata = (pendingCartNotification as any).metadata;
+        setActiveCartNotification({
+          id: pendingCartNotification.id,
+          broadcast_id: metadata.broadcast_id,
+          items: metadata.items || [],
+          patient_latitude: metadata.patient_latitude,
+          patient_longitude: metadata.patient_longitude,
+          distance_km: metadata.distance_km,
+          timeout_at: metadata.timeout_at,
+          total_amount: metadata.total_amount,
+          final_amount: metadata.final_amount,
+          delivery_address: metadata.delivery_address,
+          customer_phone: metadata.customer_phone
+        });
+      }
+
       // Get orders
       const { data: orderData, error: orderError } = await supabase
         .from('medicine_orders')
@@ -1085,20 +1111,48 @@ export default function VendorDashboard() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           onClick={() => {
-                            if (notification.type === 'prescription_upload' && (notification as any).metadata) {
-                              const metadata = (notification as any).metadata;
+                            const metadata = (notification as any).metadata;
+                            
+                            if (notification.type === 'cart_order_request' && metadata) {
+                              // Check if broadcast is still valid (not expired/accepted)
+                              const timeoutAt = metadata.timeout_at ? new Date(metadata.timeout_at) : null;
+                              const isExpired = timeoutAt && timeoutAt < new Date();
+                              
+                              if (!isExpired) {
+                                setActiveCartNotification({
+                                  id: notification.id,
+                                  broadcast_id: metadata.broadcast_id,
+                                  items: metadata.items || [],
+                                  patient_latitude: metadata.patient_latitude,
+                                  patient_longitude: metadata.patient_longitude,
+                                  distance_km: metadata.distance_km,
+                                  timeout_at: metadata.timeout_at,
+                                  total_amount: metadata.total_amount,
+                                  final_amount: metadata.final_amount,
+                                  delivery_address: metadata.delivery_address,
+                                  customer_phone: metadata.customer_phone
+                                });
+                              } else {
+                                toast({
+                                  title: "Order Expired",
+                                  description: "This order request has expired.",
+                                  variant: "destructive",
+                                });
+                              }
+                            } else if (notification.type === 'prescription_upload' && metadata) {
                               setActiveNotification({
                                 id: notification.id,
-                                broadcast_id: metadata?.broadcast_id,
-                                prescription_id: metadata?.prescription_id,
+                                broadcast_id: metadata.broadcast_id,
+                                prescription_id: metadata.prescription_id,
                                 order_id: notification.order_id,
-                                patient_latitude: metadata?.patient_latitude,
-                                patient_longitude: metadata?.patient_longitude,
-                                distance_km: metadata?.distance_km,
-                                timeout_at: metadata?.timeout_at,
-                                prescription_url: metadata?.prescription_url
+                                patient_latitude: metadata.patient_latitude,
+                                patient_longitude: metadata.patient_longitude,
+                                distance_km: metadata.distance_km,
+                                timeout_at: metadata.timeout_at,
+                                prescription_url: metadata.prescription_url
                               });
                             }
+                            
                             if (!notification.is_read) {
                               markNotificationAsRead(notification.id);
                             }
