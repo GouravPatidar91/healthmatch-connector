@@ -137,6 +137,72 @@ export type Database = {
           },
         ]
       }
+      cart_order_broadcasts: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_vendor_id: string | null
+          broadcast_round: number | null
+          created_at: string | null
+          customer_phone: string
+          delivery_address: string
+          id: string
+          order_data: Json
+          order_id: string | null
+          patient_id: string
+          patient_latitude: number
+          patient_longitude: number
+          status: string | null
+          timeout_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_vendor_id?: string | null
+          broadcast_round?: number | null
+          created_at?: string | null
+          customer_phone: string
+          delivery_address: string
+          id?: string
+          order_data: Json
+          order_id?: string | null
+          patient_id: string
+          patient_latitude: number
+          patient_longitude: number
+          status?: string | null
+          timeout_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_vendor_id?: string | null
+          broadcast_round?: number | null
+          created_at?: string | null
+          customer_phone?: string
+          delivery_address?: string
+          id?: string
+          order_data?: Json
+          order_id?: string | null
+          patient_id?: string
+          patient_latitude?: number
+          patient_longitude?: number
+          status?: string | null
+          timeout_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_order_broadcasts_accepted_by_vendor_id_fkey"
+            columns: ["accepted_by_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_order_broadcasts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           code: string

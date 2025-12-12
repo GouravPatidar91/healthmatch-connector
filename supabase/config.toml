@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.broadcast-delivery-request]
 verify_jwt = false
+
+[functions.cart-order-broadcast]
+verify_jwt = false
+
+[functions.cart-order-response]
+verify_jwt = false

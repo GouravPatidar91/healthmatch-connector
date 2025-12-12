@@ -17,6 +17,7 @@ import { VendorMedicine, type Medicine } from '@/services/medicineService';
 import { medicineService } from '@/services/medicineService';
 import PrescriptionProcessingModal from '@/components/prescription/PrescriptionProcessingModal';
 import { CheckoutDialog } from '@/components/medicine/CheckoutDialog';
+import { SearchingPharmaciesForCartModal } from '@/components/medicine/SearchingPharmaciesForCartModal';
 import { supabase } from '@/integrations/supabase/client';
 import { MapboxLocationPicker } from '@/components/maps/MapboxLocationPicker';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,6 +82,10 @@ export default function Medicine() {
   const [customLocation, setCustomLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [handlingCharges, setHandlingCharges] = useState(30);
   const [deliveryFee, setDeliveryFee] = useState(50);
+  
+  // Cart broadcast state
+  const [cartBroadcastId, setCartBroadcastId] = useState<string | null>(null);
+  const [isSearchingPharmacies, setIsSearchingPharmacies] = useState(false);
 
   // Use custom location if set, otherwise use detected location
   const activeLocation = customLocation || userLocation;
@@ -279,6 +284,17 @@ export default function Medicine() {
     try {
       setIsProcessingOrder(true);
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to place an order",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (!deliveryLatitude || !deliveryLongitude) {
         toast({
           title: "Location Required",
@@ -307,88 +323,65 @@ export default function Medicine() {
         return;
       }
 
-      const vendors = new Set(cartItems.map(item => item.vendor_id));
-      if (vendors.size > 1) {
-        toast({
-          title: "Multiple Vendors",
-          description: "You can only order from one pharmacy at a time.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const vendorId = cartItems[0].vendor_id;
-      
-      // Get vendor location
-      const { data: vendor, error: vendorError } = await supabase
-        .from('medicine_vendors')
-        .select('latitude, longitude')
-        .eq('id', vendorId)
-        .single();
-
-      if (vendorError || !vendor?.latitude || !vendor?.longitude) {
-        toast({
-          title: "Vendor Location Error",
-          description: "Unable to calculate delivery charges. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Calculate distance-based charges
-      const charges = calculateOrderCharges(
-        vendor.latitude,
-        vendor.longitude,
-        deliveryLatitude,
-        deliveryLongitude
-      );
-
+      // Calculate charges using a generic distance estimation
       const subtotal = getSubtotal();
       const totalDiscount = getTotalDiscount();
-      const finalAmount = subtotal - totalDiscount + charges.handlingCharges + charges.deliveryFee;
+      const estimatedDeliveryFee = 50; // Base delivery fee
+      const estimatedHandlingCharges = 30;
+      const finalAmount = subtotal - totalDiscount + estimatedHandlingCharges + estimatedDeliveryFee;
       const prescriptionRequired = cartItems.some(item => item.prescription_required);
 
-      const orderData = {
-        vendor_id: vendorId,
-        total_amount: subtotal,
-        delivery_fee: charges.deliveryFee,
-        handling_charges: charges.handlingCharges,
-        discount_amount: totalDiscount,
-        final_amount: finalAmount,
-        payment_method: 'cod',
-        delivery_address: deliveryAddress,
-        customer_phone: customerPhone,
-        delivery_latitude: deliveryLatitude,
-        delivery_longitude: deliveryLongitude,
-        prescription_required: prescriptionRequired,
-        items: cartItems.map(item => ({
-          medicine_id: item.id,
-          vendor_medicine_id: item.vendor_medicine_id,
-          quantity: item.quantity,
-          unit_price: item.selling_price,
-          discount_amount: (item.selling_price * item.discount_percentage / 100) * item.quantity,
-          total_price: item.selling_price * (1 - item.discount_percentage / 100) * item.quantity
-        }))
-      };
+      // Prepare cart items for broadcast
+      const broadcastItems = cartItems.map(item => ({
+        medicine_id: item.id,
+        medicine_name: item.name,
+        brand: item.brand,
+        vendor_medicine_id: item.vendor_medicine_id,
+        quantity: item.quantity,
+        unit_price: item.selling_price,
+        discount_percentage: item.discount_percentage,
+        discount_amount: (item.selling_price * item.discount_percentage / 100) * item.quantity,
+        total_price: item.selling_price * (1 - item.discount_percentage / 100) * item.quantity
+      }));
 
-      const result = await medicineService.createOrder(orderData);
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create order');
-      }
-
-      cartItems.forEach(item => removeFromCart(item.vendor_medicine_id));
-
-      toast({
-        title: "Order Placed Successfully! 🎉",
-        description: `Order total: ₹${finalAmount.toFixed(2)} (Distance: ${charges.distance}km)`,
+      // Broadcast to nearby pharmacies
+      const { data, error } = await supabase.functions.invoke('cart-order-broadcast', {
+        body: {
+          user_id: user.id,
+          items: broadcastItems,
+          delivery_address: deliveryAddress,
+          delivery_latitude: deliveryLatitude,
+          delivery_longitude: deliveryLongitude,
+          customer_phone: customerPhone,
+          total_amount: subtotal,
+          final_amount: finalAmount,
+          handling_charges: estimatedHandlingCharges,
+          delivery_fee: estimatedDeliveryFee,
+          discount_amount: totalDiscount,
+          prescription_required: prescriptionRequired
+        }
       });
 
-      setIsCheckoutDialogOpen(false);
-      navigate(`/order-success?orderId=${result.orderId}`);
+      if (error) {
+        throw new Error(error.message || 'Failed to broadcast order');
+      }
 
-    } catch (error) {
-      console.error('Order creation error:', error);
+      if (!data?.success) {
+        throw new Error(data?.error || 'No pharmacies available in your area');
+      }
+
+      // Close checkout dialog and open searching modal
+      setIsCheckoutDialogOpen(false);
+      setCartBroadcastId(data.broadcast_id);
+      setIsSearchingPharmacies(true);
+
+      toast({
+        title: "Finding Pharmacies...",
+        description: `Order broadcasted to ${data.pharmacies_notified} nearby pharmacies`,
+      });
+
+    } catch (error: any) {
+      console.error('Order broadcast error:', error);
       toast({
         title: "Order Failed",
         description: error.message || "Failed to place order. Please try again.",
@@ -397,6 +390,25 @@ export default function Medicine() {
     } finally {
       setIsProcessingOrder(false);
     }
+  };
+
+  const handleCartOrderAccepted = (vendorId: string, orderId: string) => {
+    // Clear cart after order is accepted
+    cartItems.forEach(item => removeFromCart(item.vendor_medicine_id));
+    toast({
+      title: "Order Confirmed! 🎉",
+      description: "A pharmacy has accepted your order. Redirecting to tracking...",
+    });
+  };
+
+  const handleCartOrderFailed = () => {
+    toast({
+      title: "No Pharmacy Available",
+      description: "Unfortunately, no pharmacy could accept your order. Please try again later.",
+      variant: "destructive",
+    });
+    setIsSearchingPharmacies(false);
+    setCartBroadcastId(null);
   };
 
   // Medicine Card Component
@@ -913,6 +925,18 @@ export default function Medicine() {
         deliveryLatitude={deliveryLatitude}
         deliveryLongitude={deliveryLongitude}
         onOpenLocationPicker={() => setIsLocationPickerOpen(true)}
+      />
+
+      {/* Searching Pharmacies Modal */}
+      <SearchingPharmaciesForCartModal
+        broadcastId={cartBroadcastId}
+        open={isSearchingPharmacies}
+        onAccepted={handleCartOrderAccepted}
+        onFailed={handleCartOrderFailed}
+        onClose={() => {
+          setIsSearchingPharmacies(false);
+          setCartBroadcastId(null);
+        }}
       />
     </div>
   );
