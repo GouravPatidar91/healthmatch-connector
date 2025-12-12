@@ -1329,6 +1329,18 @@ export default function VendorDashboard() {
           }}
         />
       )}
+
+      {/* Real-time Cart Order Notification Modal */}
+      {activeCartNotification && vendorInfo && (
+        <CartOrderNotificationModal
+          notification={activeCartNotification}
+          vendorId={vendorInfo.id}
+          onClose={() => {
+            setActiveCartNotification(null);
+            loadVendorData();
+          }}
+        />
+      )}
     </div>
   );
 }
