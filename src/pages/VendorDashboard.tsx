@@ -25,6 +25,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { medicineService, Medicine, VendorMedicine, CustomMedicine } from '@/services/medicineService';
 import { PrescriptionNotificationModal } from '@/components/pharmacy/PrescriptionNotificationModal';
+import { CartOrderNotificationModal } from '@/components/pharmacy/CartOrderNotificationModal';
 import { walletService, type Wallet, type WalletTransaction, type EarningsSummary, type DailyEarnings } from '@/services/walletService';
 import { WalletCard } from '@/components/wallet/WalletCard';
 import { EarningsOverview } from '@/components/wallet/EarningsOverview';
@@ -78,6 +79,7 @@ export default function VendorDashboard() {
   const [medicineSearch, setMedicineSearch] = useState('');
   const [isCustomMedicine, setIsCustomMedicine] = useState(false);
   const [activeNotification, setActiveNotification] = useState<any>(null);
+  const [activeCartNotification, setActiveCartNotification] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('orders');
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -189,11 +191,31 @@ export default function VendorDashboard() {
         (payload) => {
           const newNotif = payload.new as any;
           
-          // If it's a prescription notification, show modal immediately
-          if (newNotif.type === 'prescription_upload' && newNotif.priority === 'high') {
+          // If it's a cart order notification, show cart modal
+          if (newNotif.type === 'cart_order_request' && newNotif.priority === 'high') {
             // Play notification sound
             const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKR5/g8r5sIQUxh9Hz04IzBh5uwO/jmVUUCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRC=');
-            audio.play().catch(() => {}); // Ignore if autoplay blocked
+            audio.play().catch(() => {});
+            
+            setActiveCartNotification({
+              id: newNotif.id,
+              broadcast_id: newNotif.metadata?.broadcast_id,
+              items: newNotif.metadata?.items || [],
+              patient_latitude: newNotif.metadata?.patient_latitude,
+              patient_longitude: newNotif.metadata?.patient_longitude,
+              distance_km: newNotif.metadata?.distance_km,
+              timeout_at: newNotif.metadata?.timeout_at,
+              total_amount: newNotif.metadata?.total_amount,
+              final_amount: newNotif.metadata?.final_amount,
+              delivery_address: newNotif.metadata?.delivery_address,
+              customer_phone: newNotif.metadata?.customer_phone
+            });
+          }
+          // If it's a prescription notification, show prescription modal
+          else if (newNotif.type === 'prescription_upload' && newNotif.priority === 'high') {
+            // Play notification sound
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKR5/g8r5sIQUxh9Hz04IzBh5uwO/jmVUUCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRQKCkef4PK+bCEFMYfR89OCMwYebsDv45lVFApHn+DyvmwhBTGH0fPTgjMGHm7A7+OZVRC=');
+            audio.play().catch(() => {});
             
             setActiveNotification({
               id: newNotif.id,
