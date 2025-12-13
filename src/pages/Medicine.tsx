@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useMedicines } from '@/hooks/useMedicines';
 import { useCart, CartItem } from '@/hooks/useCart';
-import { VendorMedicine, type Medicine } from '@/services/medicineService';
+import { type Medicine } from '@/services/medicineService';
 import { medicineService } from '@/services/medicineService';
 import PrescriptionProcessingModal from '@/components/prescription/PrescriptionProcessingModal';
 import { CheckoutDialog } from '@/components/medicine/CheckoutDialog';
@@ -336,7 +336,6 @@ export default function Medicine() {
         medicine_id: item.id,
         medicine_name: item.name,
         brand: item.brand,
-        vendor_medicine_id: item.vendor_medicine_id,
         quantity: item.quantity,
         unit_price: item.selling_price,
         discount_percentage: item.discount_percentage,
@@ -394,7 +393,7 @@ export default function Medicine() {
 
   const handleCartOrderAccepted = (vendorId: string, orderId: string) => {
     // Clear cart after order is accepted
-    cartItems.forEach(item => removeFromCart(item.vendor_medicine_id));
+    cartItems.forEach(item => removeFromCart(item.id));
     toast({
       title: "Order Confirmed! 🎉",
       description: "A pharmacy has accepted your order. Redirecting to tracking...",
@@ -411,20 +410,10 @@ export default function Medicine() {
     setCartBroadcastId(null);
   };
 
-  // Medicine Card Component
-  const MedicineCard = ({ medicine }: { medicine: Medicine | VendorMedicine }) => {
-    const isVendorMedicine = 'vendor_medicine_id' in medicine;
-    const cartItem = cartItems.find(item => 
-      isVendorMedicine 
-        ? item.vendor_medicine_id === (medicine as VendorMedicine).vendor_medicine_id
-        : item.id === (medicine as Medicine).id
-    );
-    
-    const price = isVendorMedicine ? (medicine as VendorMedicine).selling_price : (medicine as any).price || medicine.mrp;
-    const discountedPrice = isVendorMedicine 
-      ? price * (1 - (medicine as VendorMedicine).discount_percentage / 100)
-      : price;
-    const savings = medicine.mrp - discountedPrice;
+  // Medicine Card Component - Now works with catalog medicines only
+  const MedicineCard = ({ medicine }: { medicine: Medicine }) => {
+    const cartItem = cartItems.find(item => item.id === medicine.id);
+    const price = medicine.mrp;
 
     return (
       <motion.div
@@ -456,16 +445,9 @@ export default function Medicine() {
                   <p className="text-xs text-muted-foreground">{medicine.brand}</p>
                 </div>
                 <div className="text-right">
-                  <span className="block font-bold text-primary">₹{discountedPrice.toFixed(2)}</span>
-                  {savings > 0 && (
-                    <span className="text-xs text-muted-foreground line-through">₹{medicine.mrp.toFixed(2)}</span>
-                  )}
+                  <span className="block font-bold text-primary">₹{price.toFixed(2)}</span>
                 </div>
               </div>
-              
-              {savings > 0 && (
-                <p className="text-xs text-green-600 mb-2">Save ₹{savings.toFixed(2)}</p>
-              )}
               
               <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted p-2 rounded-lg mb-3">
                 <span className="font-medium">{medicine.pack_size}</span>
@@ -475,25 +457,11 @@ export default function Medicine() {
             </div>
 
             <div className="flex items-center justify-between mb-3">
-              {isVendorMedicine && (medicine as VendorMedicine).distance_km && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    {(medicine as VendorMedicine).distance_km.toFixed(1)} km
-                  </span>
-                </div>
-              )}
-              <UIBadge 
-                variant={isVendorMedicine 
-                  ? ((medicine as VendorMedicine).stock_quantity > 0 ? "default" : "destructive")
-                  : "secondary"
-                } 
-                className="text-xs"
-              >
-                {isVendorMedicine 
-                  ? ((medicine as VendorMedicine).stock_quantity > 0 ? "In Stock" : "Out of Stock")
-                  : "Catalog"
-                }
+              <UIBadge variant="secondary" className="text-xs">
+                {medicine.prescription_required ? 'Rx Required' : 'OTC'}
+              </UIBadge>
+              <UIBadge variant="outline" className="text-xs">
+                {medicine.category}
               </UIBadge>
             </div>
 
@@ -502,10 +470,7 @@ export default function Medicine() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => updateQuantity(
-                    isVendorMedicine ? (medicine as VendorMedicine).vendor_medicine_id : (medicine as Medicine).id, 
-                    -1
-                  )}
+                  onClick={() => updateQuantity(medicine.id, -1)}
                   className="h-8 w-8 p-0"
                 >
                   <Minus className="h-4 w-4" />
@@ -514,36 +479,20 @@ export default function Medicine() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => updateQuantity(
-                    isVendorMedicine ? (medicine as VendorMedicine).vendor_medicine_id : (medicine as Medicine).id, 
-                    1
-                  )}
+                  onClick={() => updateQuantity(medicine.id, 1)}
                   className="h-8 w-8 p-0"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
-              <>
-                {!isVendorMedicine ? (
-                  <Button
-                    variant="outline"
-                    className="w-full border-2"
-                    disabled
-                  >
-                    Not Available Nearby
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => addToCart(medicine as VendorMedicine)}
-                    className="w-full rounded-xl font-semibold border-2 border-primary shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all group-hover:scale-105"
-                    disabled={(medicine as VendorMedicine).stock_quantity === 0}
-                  >
-                    Add to Cart
-                    <Plus className="h-4 w-4 ml-2" />
-                  </Button>
-                )}
-              </>
+              <Button
+                onClick={() => addToCart(medicine)}
+                className="w-full rounded-xl font-semibold border-2 border-primary shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all group-hover:scale-105"
+              >
+                Add to Cart
+                <Plus className="h-4 w-4 ml-2" />
+              </Button>
             )}
           </CardContent>
         </Card>

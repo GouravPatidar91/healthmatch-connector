@@ -86,7 +86,7 @@ export function CheckoutDialog({
     }
   };
 
-  const vendorName = cartItems[0]?.pharmacy_name || 'Pharmacy';
+  const vendorName = 'Nearby Pharmacy';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,7 +109,7 @@ export function CheckoutDialog({
               {cartItems.map((item) => {
                 const price = item.selling_price * (1 - item.discount_percentage / 100);
                 return (
-                  <div key={item.vendor_medicine_id} className="flex justify-between items-start p-2 bg-secondary/30 rounded">
+                  <div key={item.id} className="flex justify-between items-start p-2 bg-secondary/30 rounded">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
                       <p className="text-xs text-muted-foreground">{item.brand} • {item.pack_size}</p>

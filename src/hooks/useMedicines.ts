@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { medicineService, Medicine, VendorMedicine } from '@/services/medicineService';
+import { medicineService, Medicine } from '@/services/medicineService';
 import { useToast } from '@/hooks/use-toast';
 import { useLocationPermission } from './useLocationPermission';
 
-export type SearchStrategy = 'nearby' | 'city' | 'catalog';
+export type SearchStrategy = 'catalog';
 
 export function useMedicines() {
-  const [medicines, setMedicines] = useState<(Medicine | VendorMedicine)[]>([]);
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchStrategy, setSearchStrategy] = useState<SearchStrategy>('catalog');
   const { toast } = useToast();
@@ -21,26 +21,10 @@ export function useMedicines() {
   const searchMedicines = async (searchTerm: string, category?: string, customLocation?: { lat: number; lng: number }) => {
     setLoading(true);
     try {
-      const locationToUse = customLocation || customSearchLocation || userLocation;
-      
-      if (locationToUse) {
-        // Use fallback strategy
-        const results = await medicineService.searchMedicinesWithFallback(
-          searchTerm,
-          category,
-          locationToUse
-        );
-        setMedicines(results.medicines);
-        setSearchStrategy(results.searchStrategy);
-      } else {
-        // No location - show catalog only
-        const results = await medicineService.searchMedicines(
-          searchTerm,
-          category
-        );
-        setMedicines(results);
-        setSearchStrategy('catalog');
-      }
+      // Always search catalog medicines only
+      const results = await medicineService.searchMedicines(searchTerm, category);
+      setMedicines(results);
+      setSearchStrategy('catalog');
     } catch (error) {
       toast({
         title: "Error",

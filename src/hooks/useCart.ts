@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { VendorMedicine } from '@/services/medicineService';
+import { Medicine } from '@/services/medicineService';
 import { useToast } from '@/hooks/use-toast';
 
-export interface CartItem extends VendorMedicine {
+export interface CartItem extends Medicine {
   quantity: number;
+  selling_price: number;
+  discount_percentage: number;
 }
 
 export function useCart() {
@@ -27,16 +29,7 @@ export function useCart() {
     localStorage.setItem('medicine-cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (medicine: VendorMedicine, quantity: number = 1) => {
-    if (!medicine.vendor_medicine_id) {
-      toast({
-        title: "Error",
-        description: "This medicine is not available from any nearby vendor.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const addToCart = (medicine: Medicine, quantity: number = 1) => {
     if (medicine.prescription_required) {
       toast({
         title: "Prescription Required",
@@ -45,37 +38,26 @@ export function useCart() {
       });
     }
 
-    const existingItem = cartItems.find(item => item.vendor_medicine_id === medicine.vendor_medicine_id);
+    const existingItem = cartItems.find(item => item.id === medicine.id);
 
     if (existingItem) {
       const newQuantity = existingItem.quantity + quantity;
-      if (newQuantity > medicine.stock_quantity) {
-        toast({
-          title: "Stock Limit Exceeded",
-          description: `Only ${medicine.stock_quantity} units available in stock.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
       setCartItems(items =>
         items.map(item =>
-          item.vendor_medicine_id === medicine.vendor_medicine_id
+          item.id === medicine.id
             ? { ...item, quantity: newQuantity }
             : item
         )
       );
     } else {
-      if (quantity > medicine.stock_quantity) {
-        toast({
-          title: "Stock Limit Exceeded",
-          description: `Only ${medicine.stock_quantity} units available in stock.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setCartItems(items => [...items, { ...medicine, quantity }]);
+      // Add with MRP as selling price (0% discount for catalog medicines)
+      const cartItem: CartItem = {
+        ...medicine,
+        quantity,
+        selling_price: medicine.mrp,
+        discount_percentage: 0
+      };
+      setCartItems(items => [...items, cartItem]);
     }
 
     toast({
@@ -84,23 +66,14 @@ export function useCart() {
     });
   };
 
-  const updateQuantity = (vendorMedicineId: string, change: number) => {
+  const updateQuantity = (medicineId: string, change: number) => {
     setCartItems(items =>
       items.map(item => {
-        if (item.vendor_medicine_id === vendorMedicineId) {
+        if (item.id === medicineId) {
           const newQuantity = item.quantity + change;
           
           if (newQuantity <= 0) {
             return null; // Will be filtered out
-          }
-          
-          if (newQuantity > item.stock_quantity) {
-            toast({
-              title: "Stock Limit Exceeded",
-              description: `Only ${item.stock_quantity} units available in stock.`,
-              variant: "destructive",
-            });
-            return item;
           }
           
           return { ...item, quantity: newQuantity };
@@ -110,8 +83,8 @@ export function useCart() {
     );
   };
 
-  const removeFromCart = (vendorMedicineId: string) => {
-    setCartItems(items => items.filter(item => item.vendor_medicine_id !== vendorMedicineId));
+  const removeFromCart = (medicineId: string) => {
+    setCartItems(items => items.filter(item => item.id !== medicineId));
   };
 
   const clearCart = () => {
@@ -140,25 +113,6 @@ export function useCart() {
     }, 0);
   };
 
-  // Group cart items by vendor for checkout
-  const getCartByVendor = () => {
-    const vendorGroups: { [vendorId: string]: CartItem[] } = {};
-    
-    cartItems.forEach(item => {
-      if (!vendorGroups[item.vendor_id]) {
-        vendorGroups[item.vendor_id] = [];
-      }
-      vendorGroups[item.vendor_id].push(item);
-    });
-
-    return vendorGroups;
-  };
-
-  const hasMultipleVendors = () => {
-    const vendors = new Set(cartItems.map(item => item.vendor_id));
-    return vendors.size > 1;
-  };
-
   return {
     cartItems,
     addToCart,
@@ -168,8 +122,6 @@ export function useCart() {
     getTotalItems,
     getTotalPrice,
     getSubtotal,
-    getTotalDiscount,
-    getCartByVendor,
-    hasMultipleVendors
+    getTotalDiscount
   };
 }

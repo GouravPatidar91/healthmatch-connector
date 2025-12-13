@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { grantDoctorAccess, revokeDoctorAccess } from "@/services/doctorService";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Eye } from "lucide-react";
+import { ExternalLink, Eye, Pill } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -278,9 +278,13 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-5xl grid-cols-4">
+          <TabsList className="grid w-full max-w-6xl grid-cols-5">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="doctors">Doctor Applications</TabsTrigger>
+            <TabsTrigger value="medicines" className="flex items-center gap-2">
+              <Pill className="h-4 w-4" />
+              Medicine Catalog
+            </TabsTrigger>
             <TabsTrigger value="wallets">
               💰 Wallets
               {walletStats.pendingWithdrawals > 0 && (
@@ -413,6 +417,33 @@ const AdminDashboard = () => {
                     )}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="medicines">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Pill className="h-5 w-5" />
+                  Medicine Catalog Management
+                </CardTitle>
+                <CardDescription>
+                  Manage the medicines available for customers to order. All nearby pharmacies will be notified when orders are placed.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Pill className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Medicine Catalog</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    Add and manage medicines in the central catalog. When customers order, nearby pharmacies receive notifications and can accept orders.
+                  </p>
+                  <Button onClick={() => navigate('/admin-dashboard/medicines')} size="lg">
+                    <Pill className="h-4 w-4 mr-2" />
+                    Manage Medicine Catalog
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
