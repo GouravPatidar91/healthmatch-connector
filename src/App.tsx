@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import DoctorRegistration from "./pages/DoctorRegistration";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminMedicineCatalog from "./pages/AdminMedicineCatalog";
 import OrderSuccess from "./pages/OrderSuccess";
 import MyOrders from "./pages/MyOrders";
 import DeliveryPartnerDashboard from "./pages/DeliveryPartnerDashboard";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/doctor-registration" element={<DoctorRegistration />} />
               <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/admin-dashboard/medicines" element={<AdminMedicineCatalog />} />
               <Route path="/order-success" element={<OrderSuccess />} />
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/delivery-partner-dashboard" element={<DeliveryPartnerDashboard />} />
