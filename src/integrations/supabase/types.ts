@@ -757,6 +757,7 @@ export type Database = {
       medicine_order_items: {
         Row: {
           created_at: string
+          custom_medicine_name: string | null
           discount_amount: number | null
           id: string
           medicine_id: string
@@ -768,6 +769,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_medicine_name?: string | null
           discount_amount?: number | null
           id?: string
           medicine_id: string
@@ -779,6 +781,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_medicine_name?: string | null
           discount_amount?: number | null
           id?: string
           medicine_id?: string

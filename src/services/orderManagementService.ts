@@ -225,72 +225,70 @@ class OrderManagementService {
         if (itemError) throw itemError;
       }
 
-      // Insert new medicine items
+      // Insert new medicine items for prescription orders
+      // Store directly in order_items with custom_medicine_name - DO NOT add to global catalog
       for (const newItem of update.newItems) {
-        // First, get or create a medicine record with a placeholder ID
-        // For prescription orders, we'll create custom medicine entries
-        const { data: medicine, error: medicineError } = await supabase
+        // Check if this medicine exists in the catalog (optional - for linking if available)
+        const { data: existingMedicine } = await supabase
           .from('medicines')
           .select('id')
-          .eq('name', newItem.name)
+          .ilike('name', newItem.name)
           .maybeSingle();
 
-        let medicineId: string;
-
-        if (medicine) {
-          medicineId = medicine.id;
-        } else {
-          // Create a basic medicine entry
-          const { data: newMedicine, error: createError } = await supabase
-            .from('medicines')
-            .insert({
-              name: newItem.name,
-              brand: 'Generic',
-              category: 'Other',
-              form: 'Tablet',
-              dosage: 'As prescribed',
-              pack_size: '1',
-              manufacturer: 'Various',
-              mrp: newItem.unit_price,
-              prescription_required: true
-            })
-            .select('id')
-            .single();
-
-          if (createError) throw createError;
-          medicineId = newMedicine.id;
-        }
-
-        // Get vendor_medicine or create one
-        const { data: vendorMedicine, error: vendorMedError } = await supabase
-          .from('vendor_medicines')
-          .select('id')
-          .eq('vendor_id', existingOrder.vendor_id)
-          .eq('medicine_id', medicineId)
-          .maybeSingle();
-
+        // Get or create a placeholder vendor_medicine for the order item FK
         let vendorMedicineId: string;
+        
+        if (existingMedicine) {
+          // Medicine exists in catalog, try to use existing vendor_medicine
+          const { data: vendorMedicine } = await supabase
+            .from('vendor_medicines')
+            .select('id')
+            .eq('vendor_id', existingOrder.vendor_id)
+            .eq('medicine_id', existingMedicine.id)
+            .maybeSingle();
 
-        if (vendorMedicine) {
-          vendorMedicineId = vendorMedicine.id;
+          if (vendorMedicine) {
+            vendorMedicineId = vendorMedicine.id;
+          } else {
+            // Create vendor_medicine for existing catalog medicine
+            const { data: newVendorMed, error: createVendorMedError } = await supabase
+              .from('vendor_medicines')
+              .insert({
+                vendor_id: existingOrder.vendor_id,
+                medicine_id: existingMedicine.id,
+                selling_price: newItem.unit_price,
+                stock_quantity: 100,
+                is_available: true,
+                is_custom_medicine: false
+              })
+              .select('id')
+              .single();
+
+            if (createVendorMedError) throw createVendorMedError;
+            vendorMedicineId = newVendorMed.id;
+          }
         } else {
-          const { data: newVendorMed, error: createVendorMedError } = await supabase
+          // Medicine NOT in catalog - create a custom vendor_medicine entry
+          // This does NOT add to the global medicines catalog
+          const { data: customVendorMed, error: customError } = await supabase
             .from('vendor_medicines')
             .insert({
               vendor_id: existingOrder.vendor_id,
-              medicine_id: medicineId,
+              medicine_id: '00000000-0000-0000-0000-000000000000', // Placeholder UUID
               selling_price: newItem.unit_price,
               stock_quantity: 100,
-              is_available: true
+              is_available: false, // Not available for public orders
+              is_custom_medicine: true,
+              custom_medicine_name: newItem.name
             })
             .select('id')
             .single();
 
-          if (createVendorMedError) throw createVendorMedError;
-          vendorMedicineId = newVendorMed.id;
+          if (customError) throw customError;
+          vendorMedicineId = customVendorMed.id;
         }
 
-        // Insert order item
+        // Insert order item with custom_medicine_name for display
         const totalPrice = newItem.unit_price * newItem.quantity;
         medicineTotal += totalPrice;
 
@@ -298,11 +296,12 @@ class OrderManagementService {
           .from('medicine_order_items')
           .insert({
             order_id: orderId,
-            medicine_id: medicineId,
+            medicine_id: existingMedicine?.id || '00000000-0000-0000-0000-000000000000',
             vendor_medicine_id: vendorMedicineId,
             quantity: newItem.quantity,
             unit_price: newItem.unit_price,
-            total_price: totalPrice
+            total_price: totalPrice,
+            custom_medicine_name: newItem.name // Store name directly in order item
           });
 
         if (insertError) throw insertError;

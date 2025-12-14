@@ -68,6 +68,7 @@ class OrderTrackingService {
             quantity,
             unit_price,
             total_price,
+            custom_medicine_name,
             medicine:medicines(name)
           ),
           status_history:medicine_order_status_history(*)
@@ -94,7 +95,7 @@ class OrderTrackingService {
             ...order,
             delivery_partner,
             items: order.items?.map((item: any) => ({
-              medicine_name: item.medicine?.name || 'Unknown',
+              medicine_name: item.custom_medicine_name || item.medicine?.name || 'Unknown Medicine',
               quantity: item.quantity,
               unit_price: item.unit_price,
               total_price: item.total_price
@@ -124,6 +125,7 @@ class OrderTrackingService {
             quantity,
             unit_price,
             total_price,
+            custom_medicine_name,
             medicine:medicines(name, brand)
           ),
           status_history:medicine_order_status_history(*)
@@ -149,7 +151,7 @@ class OrderTrackingService {
         ...order,
         delivery_partner,
         items: order.items?.map((item: any) => ({
-          medicine_name: item.medicine?.name || 'Unknown',
+          medicine_name: item.custom_medicine_name || item.medicine?.name || 'Unknown Medicine',
           quantity: item.quantity,
           unit_price: item.unit_price,
           total_price: item.total_price
