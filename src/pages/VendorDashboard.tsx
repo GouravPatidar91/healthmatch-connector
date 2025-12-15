@@ -41,6 +41,7 @@ interface VendorNotification {
   priority: string;
   created_at: string;
   order_id: string;
+  metadata?: any;
 }
 
 interface MedicineOrder {
@@ -326,19 +327,21 @@ export default function VendorDashboard() {
 
       if (pendingCartNotification) {
         const metadata = (pendingCartNotification as any).metadata;
-        setActiveCartNotification({
-          id: pendingCartNotification.id,
-          broadcast_id: metadata.broadcast_id,
-          items: metadata.items || [],
-          patient_latitude: metadata.patient_latitude,
-          patient_longitude: metadata.patient_longitude,
-          distance_km: metadata.distance_km,
-          timeout_at: metadata.timeout_at,
-          total_amount: metadata.total_amount,
-          final_amount: metadata.final_amount,
-          delivery_address: metadata.delivery_address,
-          customer_phone: metadata.customer_phone
-        });
+        if (metadata) {
+          setActiveCartNotification({
+            id: pendingCartNotification.id,
+            broadcast_id: metadata.broadcast_id,
+            items: metadata.items || [],
+            patient_latitude: metadata.patient_latitude,
+            patient_longitude: metadata.patient_longitude,
+            distance_km: metadata.distance_km,
+            timeout_at: metadata.timeout_at,
+            total_amount: metadata.total_amount,
+            final_amount: metadata.final_amount,
+            delivery_address: metadata.delivery_address,
+            customer_phone: metadata.customer_phone
+          });
+        }
       }
 
       // Get orders
@@ -1111,32 +1114,33 @@ export default function VendorDashboard() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           onClick={() => {
-                            const metadata = (notification as any).metadata;
+                            const metadata = notification.metadata;
                             
                             if (notification.type === 'cart_order_request' && metadata) {
                               // Check if broadcast is still valid (not expired/accepted)
                               const timeoutAt = metadata.timeout_at ? new Date(metadata.timeout_at) : null;
                               const isExpired = timeoutAt && timeoutAt < new Date();
                               
-                              if (!isExpired) {
-                                setActiveCartNotification({
-                                  id: notification.id,
-                                  broadcast_id: metadata.broadcast_id,
-                                  items: metadata.items || [],
-                                  patient_latitude: metadata.patient_latitude,
-                                  patient_longitude: metadata.patient_longitude,
-                                  distance_km: metadata.distance_km,
-                                  timeout_at: metadata.timeout_at,
-                                  total_amount: metadata.total_amount,
-                                  final_amount: metadata.final_amount,
-                                  delivery_address: metadata.delivery_address,
-                                  customer_phone: metadata.customer_phone
-                                });
-                              } else {
+                              // Show modal even if expired, let user see details
+                              setActiveCartNotification({
+                                id: notification.id,
+                                broadcast_id: metadata.broadcast_id,
+                                items: metadata.items || [],
+                                patient_latitude: metadata.patient_latitude,
+                                patient_longitude: metadata.patient_longitude,
+                                distance_km: metadata.distance_km,
+                                timeout_at: metadata.timeout_at,
+                                total_amount: metadata.total_amount,
+                                final_amount: metadata.final_amount,
+                                delivery_address: metadata.delivery_address,
+                                customer_phone: metadata.customer_phone
+                              });
+                              
+                              if (isExpired) {
                                 toast({
-                                  title: "Order Expired",
-                                  description: "This order request has expired.",
-                                  variant: "destructive",
+                                  title: "Order May Have Expired",
+                                  description: "This order request may have expired. You can still try to accept it.",
+                                  variant: "default",
                                 });
                               }
                             } else if (notification.type === 'prescription_upload' && metadata) {
@@ -1150,6 +1154,12 @@ export default function VendorDashboard() {
                                 distance_km: metadata.distance_km,
                                 timeout_at: metadata.timeout_at,
                                 prescription_url: metadata.prescription_url
+                              });
+                            } else if (!metadata) {
+                              toast({
+                                title: "Notification Details Unavailable",
+                                description: "Unable to load notification details. Please refresh the page.",
+                                variant: "destructive",
                               });
                             }
                             
