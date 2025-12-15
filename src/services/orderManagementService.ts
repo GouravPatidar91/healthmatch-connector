@@ -250,7 +250,7 @@ class OrderManagementService {
           if (vendorMedicine) {
             vendorMedicineId = vendorMedicine.id;
           } else {
-            // Create vendor_medicine for existing catalog medicine
+            // Create vendor_medicine for existing catalog medicine, but keep it private to this prescription
             const { data: newVendorMed, error: createVendorMedError } = await supabase
               .from('vendor_medicines')
               .insert({
@@ -258,7 +258,8 @@ class OrderManagementService {
                 medicine_id: existingMedicine.id,
                 selling_price: newItem.unit_price,
                 stock_quantity: 100,
-                is_available: true,
+                // Mark as not available for public catalog searches
+                is_available: false,
                 is_custom_medicine: false
               })
               .select('id')
