@@ -268,44 +268,95 @@ class OrderManagementService {
             if (createVendorMedError) throw createVendorMedError;
             vendorMedicineId = newVendorMed.id;
           }
-        } else {
-          // Medicine NOT in catalog - create a custom vendor_medicine entry
-          // This does NOT add to the global medicines catalog
-          const { data: customVendorMed, error: customError } = await supabase
-            .from('vendor_medicines')
-            .insert({
-              vendor_id: existingOrder.vendor_id,
-              medicine_id: '00000000-0000-0000-0000-000000000000', // Placeholder UUID
-              selling_price: newItem.unit_price,
-              stock_quantity: 100,
-              is_available: false, // Not available for public orders
-              is_custom_medicine: true,
-              custom_medicine_name: newItem.name
-            })
-            .select('id')
-            .single();
-
-          if (customError) throw customError;
-          vendorMedicineId = customVendorMed.id;
         }
 
-        // Insert order item with custom_medicine_name for display
+        // Insert order item
         const totalPrice = newItem.unit_price * newItem.quantity;
         medicineTotal += totalPrice;
 
-        const { error: insertError } = await supabase
-          .from('medicine_order_items')
-          .insert({
-            order_id: orderId,
-            medicine_id: existingMedicine?.id || '00000000-0000-0000-0000-000000000000',
-            vendor_medicine_id: vendorMedicineId,
-            quantity: newItem.quantity,
-            unit_price: newItem.unit_price,
-            total_price: totalPrice,
-            custom_medicine_name: newItem.name // Store name directly in order item
-          });
+        if (existingMedicine && vendorMedicineId) {
+          // Existing catalog medicine - link to medicine and vendor_medicine
+          const { error: insertError } = await supabase
+            .from('medicine_order_items')
+            .insert({
+              order_id: orderId,
+              medicine_id: existingMedicine.id,
+              vendor_medicine_id: vendorMedicineId,
+              quantity: newItem.quantity,
+              unit_price: newItem.unit_price,
+              total_price: totalPrice,
+              custom_medicine_name: newItem.name
+            });
 
-        if (insertError) throw insertError;
+          if (insertError) throw insertError;
+        } else {
+          // Custom prescription medicine - store directly in order items without FK links
+          // Use a dummy vendor_medicine entry that exists or create one linked to a real medicine
+          // For now, we'll need to get any existing vendor_medicine from this vendor
+          const { data: anyVendorMed } = await supabase
+            .from('vendor_medicines')
+            .select('id, medicine_id')
+            .eq('vendor_id', existingOrder.vendor_id)
+            .limit(1)
+            .single();
+
+          if (anyVendorMed) {
+            // Use existing vendor_medicine as placeholder but store custom name
+            const { error: insertError } = await supabase
+              .from('medicine_order_items')
+              .insert({
+                order_id: orderId,
+                medicine_id: anyVendorMed.medicine_id,
+                vendor_medicine_id: anyVendorMed.id,
+                quantity: newItem.quantity,
+                unit_price: newItem.unit_price,
+                total_price: totalPrice,
+                custom_medicine_name: newItem.name // This overrides the display name
+              });
+
+            if (insertError) throw insertError;
+          } else {
+            // Vendor has no medicines - find any medicine to use as placeholder
+            const { data: anyMedicine } = await supabase
+              .from('medicines')
+              .select('id')
+              .limit(1)
+              .single();
+
+            if (anyMedicine) {
+              // Create a hidden vendor_medicine entry
+              const { data: newVendorMed, error: vmError } = await supabase
+                .from('vendor_medicines')
+                .insert({
+                  vendor_id: existingOrder.vendor_id,
+                  medicine_id: anyMedicine.id,
+                  selling_price: newItem.unit_price,
+                  stock_quantity: 0,
+                  is_available: false,
+                  is_custom_medicine: true,
+                  custom_medicine_name: newItem.name
+                })
+                .select('id')
+                .single();
+
+              if (vmError) throw vmError;
+
+              const { error: insertError } = await supabase
+                .from('medicine_order_items')
+                .insert({
+                  order_id: orderId,
+                  medicine_id: anyMedicine.id,
+                  vendor_medicine_id: newVendorMed.id,
+                  quantity: newItem.quantity,
+                  unit_price: newItem.unit_price,
+                  total_price: totalPrice,
+                  custom_medicine_name: newItem.name
+                });
+
+              if (insertError) throw insertError;
+            }
+          }
+        }
       }
 
       // Calculate final amount with distance-based charges
