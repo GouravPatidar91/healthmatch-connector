@@ -570,10 +570,22 @@ class MedicineService {
       };
 
       if (data.is_custom_medicine && data.custom_medicine) {
-        // Adding custom medicine
+        // Custom medicines cannot leave medicine_id null due to FK; use a placeholder catalog medicine
+        const { data: anyMedicine, error: baseMedError } = await supabase
+          .from('medicines')
+          .select('id')
+          .limit(1)
+          .single();
+
+        if (baseMedError || !anyMedicine) {
+          throw baseMedError || new Error('No base medicine found to link custom medicine');
+        }
+
         insertData = {
           ...insertData,
-          medicine_id: null,
+          medicine_id: anyMedicine.id,
+          // Custom medicines used for prescription notifications should not appear in public catalog
+          is_available: false,
           custom_medicine_name: data.custom_medicine.name,
           custom_medicine_brand: data.custom_medicine.brand,
           custom_medicine_generic_name: data.custom_medicine.generic_name,
