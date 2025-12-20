@@ -63,7 +63,19 @@ serve(async (req) => {
 
     if (response_type === 'reject') {
       console.log(`Vendor ${vendor_id} rejected broadcast ${broadcast_id}`);
-      // Just acknowledge the rejection, don't need to do anything special
+      
+      // Mark vendor notification as read
+      const { error: markReadError } = await supabaseClient
+        .from('vendor_notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('vendor_id', vendor_id)
+        .eq('type', 'cart_order_request')
+        .eq('is_read', false);
+
+      if (markReadError) {
+        console.warn('Error marking notification as read:', markReadError);
+      }
+
       return new Response(
         JSON.stringify({ success: true, message: 'Order rejected' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -169,6 +181,18 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('Error updating broadcast:', updateError);
+      }
+
+      // Mark vendor notification as read after accepting
+      const { error: markReadError } = await supabaseClient
+        .from('vendor_notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('vendor_id', vendor_id)
+        .eq('type', 'cart_order_request')
+        .eq('is_read', false);
+
+      if (markReadError) {
+        console.warn('Error marking notification as read:', markReadError);
       }
 
       // Create notification for customer

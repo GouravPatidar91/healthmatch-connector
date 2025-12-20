@@ -85,6 +85,12 @@ export const CartOrderNotificationModal: React.FC<CartOrderNotificationProps> = 
     try {
       console.log('Accepting cart order with broadcast_id:', notification.broadcast_id);
       
+      // Mark notification as read immediately
+      await supabase
+        .from('vendor_notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', notification.id);
+      
       const { data, error } = await supabase.functions.invoke('cart-order-response', {
         body: {
           broadcast_id: notification.broadcast_id,
@@ -102,14 +108,14 @@ export const CartOrderNotificationModal: React.FC<CartOrderNotificationProps> = 
       if (data?.success) {
         toast({
           title: "Order Accepted! 🎉",
-          description: `Order #${data.order_number} created successfully`,
+          description: `Order #${data.order_number} created successfully. Redirecting to order management...`,
         });
         onClose();
         
-        // Reload to show the new order
+        // Navigate to order management page instead of reloading
         setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+          window.location.href = `/vendor-orders`;
+        }, 500);
       } else if (data?.success === false) {
         toast({
           title: "Cannot Accept Order",
@@ -144,6 +150,12 @@ export const CartOrderNotificationModal: React.FC<CartOrderNotificationProps> = 
 
     setIsResponding(true);
     try {
+      // Mark notification as read immediately
+      await supabase
+        .from('vendor_notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', notification.id);
+
       const { data, error } = await supabase.functions.invoke('cart-order-response', {
         body: {
           broadcast_id: notification.broadcast_id,
