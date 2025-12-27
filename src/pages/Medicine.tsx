@@ -394,10 +394,18 @@ export default function Medicine() {
   const handleCartOrderAccepted = (vendorId: string, orderId: string) => {
     // Clear cart after order is accepted
     cartItems.forEach(item => removeFromCart(item.id));
+
     toast({
       title: "Order Confirmed! 🎉",
       description: "A pharmacy has accepted your order. Redirecting to tracking...",
     });
+
+    // Close the searching UI immediately so the user doesn't stay on "Finding pharmacies"
+    setIsSearchingPharmacies(false);
+    setCartBroadcastId(null);
+
+    // Navigate to tracking page
+    navigate(`/my-orders?track=${orderId}`);
   };
 
   const handleCartOrderFailed = () => {
@@ -408,6 +416,7 @@ export default function Medicine() {
     });
     setIsSearchingPharmacies(false);
     setCartBroadcastId(null);
+    setIsCheckoutDialogOpen(false);
   };
 
   // Medicine Card Component - Now works with catalog medicines only

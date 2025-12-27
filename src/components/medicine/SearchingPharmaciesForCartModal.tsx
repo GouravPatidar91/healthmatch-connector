@@ -42,20 +42,22 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
         (payload) => {
           console.log('Cart broadcast update:', payload);
           const newData = payload.new as any;
-          
+
           if (newData.status === 'accepted') {
             setStatus('accepted');
             setAcceptedPharmacy(newData.accepted_by_vendor_id);
             setOrderId(newData.order_id);
             onAccepted(newData.accepted_by_vendor_id, newData.order_id);
-            
-            // Redirect to order tracking after 2 seconds
+
+            // Redirect to order tracking after a short delay
             setTimeout(() => {
               navigate(`/my-orders?track=${newData.order_id}`);
-            }, 2000);
+              onClose();
+            }, 800);
           } else if (newData.status === 'failed') {
             setStatus('failed');
             onFailed();
+            onClose();
           }
         }
       )
@@ -80,7 +82,7 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
       supabase.removeChannel(channel);
       clearInterval(timer);
     };
-  }, [broadcastId, open, navigate, onAccepted, onFailed, status]);
+  }, [broadcastId, open, navigate, onAccepted, onFailed, onClose, status]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
