@@ -112,9 +112,9 @@ export const CartOrderNotificationModal: React.FC<CartOrderNotificationProps> = 
         });
         onClose();
         
-        // Navigate to order management page instead of reloading
+        // Navigate to the specific order management page with order ID
         setTimeout(() => {
-          window.location.href = `/vendor-orders`;
+          window.location.href = `/vendor-dashboard/order/${data.order_id}`;
         }, 500);
       } else if (data?.success === false) {
         toast({
