@@ -28,6 +28,21 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
   useEffect(() => {
     if (!broadcastId || !open) return;
 
+    let isHandled = false;
+
+    const handleAccepted = (vendorId: string, orderId: string) => {
+      if (isHandled) return;
+      isHandled = true;
+      setStatus('accepted');
+      setAcceptedPharmacy(vendorId);
+      setOrderId(orderId);
+      onAccepted(vendorId, orderId);
+      setTimeout(() => {
+        navigate(`/my-orders?track=${orderId}`);
+        onClose();
+      }, 800);
+    };
+
     // Set up realtime subscription
     const channel = supabase
       .channel(`cart-broadcast-${broadcastId}`)
@@ -44,16 +59,7 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
           const newData = payload.new as any;
 
           if (newData.status === 'accepted') {
-            setStatus('accepted');
-            setAcceptedPharmacy(newData.accepted_by_vendor_id);
-            setOrderId(newData.order_id);
-            onAccepted(newData.accepted_by_vendor_id, newData.order_id);
-
-            // Redirect to order tracking after a short delay
-            setTimeout(() => {
-              navigate(`/my-orders?track=${newData.order_id}`);
-              onClose();
-            }, 800);
+            handleAccepted(newData.accepted_by_vendor_id, newData.order_id);
           } else if (newData.status === 'failed') {
             setStatus('failed');
             onFailed();
@@ -62,6 +68,25 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
         }
       )
       .subscribe();
+
+    // Fallback polling every 5 seconds in case realtime fails
+    const pollInterval = setInterval(async () => {
+      if (isHandled) return;
+      
+      const { data } = await supabase
+        .from('cart_order_broadcasts')
+        .select('status, accepted_by_vendor_id, order_id')
+        .eq('id', broadcastId)
+        .single();
+
+      if (data?.status === 'accepted' && data.order_id) {
+        handleAccepted(data.accepted_by_vendor_id, data.order_id);
+      } else if (data?.status === 'failed') {
+        setStatus('failed');
+        onFailed();
+        onClose();
+      }
+    }, 5000);
 
     // Countdown timer
     const timer = setInterval(() => {
@@ -81,6 +106,7 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
     return () => {
       supabase.removeChannel(channel);
       clearInterval(timer);
+      clearInterval(pollInterval);
     };
   }, [broadcastId, open, navigate, onAccepted, onFailed, onClose, status]);
 
