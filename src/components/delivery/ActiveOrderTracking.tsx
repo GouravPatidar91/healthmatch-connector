@@ -409,11 +409,12 @@ export function ActiveOrderTracking({
             {isGoingToPickup && (
               <Button
                 onClick={handleOrderPicked}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6"
                 variant="default"
+                size="lg"
               >
-                <Package className="w-4 h-4 mr-2" />
-                Order Picked
+                <Package className="w-5 h-5 mr-2" />
+                Order Picked - Start Delivery
               </Button>
             )}
 
