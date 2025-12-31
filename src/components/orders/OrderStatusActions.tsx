@@ -161,18 +161,8 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
           </Button>
         );
       
-      case 'out_for_delivery':
-        return (
-          <Button
-            onClick={() => handleStatusUpdate('delivered', 'Order delivered successfully')}
-            disabled={loading}
-            className="w-full"
-            variant="default"
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Mark as Delivered
-          </Button>
-        );
+      // Note: Only delivery partners can mark orders as delivered
+      // Vendors cannot change status after ready_for_pickup
       
       default:
         return null;
