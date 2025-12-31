@@ -39,6 +39,8 @@ export interface OrderWithTracking {
     address: string;
     latitude?: number;
     longitude?: number;
+    average_rating?: number;
+    total_ratings?: number;
   };
   delivery_partner?: {
     id: string;
@@ -46,6 +48,7 @@ export interface OrderWithTracking {
     phone: string;
     vehicle_number: string;
     vehicle_type?: string;
+    rating?: number;
   };
   items: Array<{
     medicine_name: string;
@@ -63,7 +66,7 @@ class OrderTrackingService {
         .from('medicine_orders')
         .select(`
           *,
-          vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, phone, address, latitude, longitude),
+          vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, phone, address, latitude, longitude, average_rating, total_ratings),
           items:medicine_order_items(
             quantity,
             unit_price,
@@ -85,7 +88,7 @@ class OrderTrackingService {
           if (order.delivery_partner_id) {
             const { data: partner } = await supabase
               .from('delivery_partners')
-              .select('id, name, phone, vehicle_number, vehicle_type')
+              .select('id, name, phone, vehicle_number, vehicle_type, rating')
               .eq('id', order.delivery_partner_id)
               .maybeSingle();
             delivery_partner = partner || undefined;
@@ -120,7 +123,7 @@ class OrderTrackingService {
         .from('medicine_orders')
         .select(`
           *,
-          vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, phone, address, latitude, longitude),
+          vendor:medicine_vendors!medicine_orders_vendor_id_fkey(pharmacy_name, phone, address, latitude, longitude, average_rating, total_ratings),
           items:medicine_order_items(
             quantity,
             unit_price,
@@ -141,7 +144,7 @@ class OrderTrackingService {
       if (order.delivery_partner_id) {
         const { data: partner } = await supabase
           .from('delivery_partners')
-          .select('id, name, phone, vehicle_number, vehicle_type')
+          .select('id, name, phone, vehicle_number, vehicle_type, rating')
           .eq('id', order.delivery_partner_id)
           .maybeSingle();
         delivery_partner = partner || undefined;
