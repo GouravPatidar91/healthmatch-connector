@@ -14,8 +14,9 @@ import { TipSelector } from './TipSelector';
 import { OrderRatingDialog } from './OrderRatingDialog';
 import { FullScreenOrderTracking } from './FullScreenOrderTracking';
 import { orderTrackingService, OrderWithTracking } from '@/services/orderTrackingService';
+import { ratingService } from '@/services/ratingService';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MapPin, Phone, CreditCard, Download, Maximize2 } from 'lucide-react';
+import { Loader2, MapPin, Phone, CreditCard, Download, Maximize2, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +73,20 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
       };
     }
   }, [open, orderId]);
+
+  // Auto-prompt rating dialog for delivered orders
+  useEffect(() => {
+    const checkAndPromptRating = async () => {
+      if (order?.order_status === 'delivered' && order?.id) {
+        const existingRating = await ratingService.getOrderRating(order.id);
+        if (!existingRating) {
+          setTimeout(() => setShowRatingDialog(true), 1500);
+        }
+      }
+    };
+    
+    checkAndPromptRating();
+  }, [order?.order_status, order?.id]);
 
   const loadOrderDetails = async () => {
     try {
@@ -373,12 +388,20 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
             <Card className="p-4">
               <h3 className="font-semibold mb-3">Pharmacy Information</h3>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{order.vendor.pharmacy_name}</p>
-                    <p className="text-sm text-muted-foreground">{order.vendor.address}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{order.vendor.pharmacy_name}</p>
+                      <p className="text-sm text-muted-foreground">{order.vendor.address}</p>
+                    </div>
                   </div>
+                  {order.vendor.average_rating && order.vendor.average_rating > 0 && (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      {order.vendor.average_rating.toFixed(1)} ({order.vendor.total_ratings || 0})
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
@@ -392,7 +415,15 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
               <Card className="p-4">
                 <h3 className="font-semibold mb-3">Delivery Partner</h3>
                 <div className="space-y-2">
-                  <p className="font-medium">{order.delivery_partner.name}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">{order.delivery_partner.name}</p>
+                    {order.delivery_partner.rating && order.delivery_partner.rating > 0 && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        {order.delivery_partner.rating.toFixed(1)}
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <p>{order.delivery_partner.phone}</p>

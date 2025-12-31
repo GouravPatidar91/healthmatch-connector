@@ -139,6 +139,36 @@ class RatingService {
       return { averageRating: 0, totalRatings: 0 };
     }
   }
+
+  async getDeliveryPartnerRating(partnerId: string): Promise<{ averageRating: number; totalRatings: number }> {
+    try {
+      const { data, error } = await supabase
+        .from('order_ratings')
+        .select(`
+          delivery_rating,
+          medicine_orders!inner(delivery_partner_id)
+        `)
+        .eq('medicine_orders.delivery_partner_id', partnerId);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return { averageRating: 0, totalRatings: 0 };
+      }
+
+      const validRatings = data.filter(r => r.delivery_rating !== null);
+      const sum = validRatings.reduce((acc, r) => acc + (r.delivery_rating || 0), 0);
+      const average = validRatings.length > 0 ? sum / validRatings.length : 0;
+
+      return {
+        averageRating: Math.round(average * 10) / 10,
+        totalRatings: validRatings.length
+      };
+    } catch (error) {
+      console.error('Error fetching delivery partner ratings:', error);
+      return { averageRating: 0, totalRatings: 0 };
+    }
+  }
 }
 
 export const ratingService = new RatingService();

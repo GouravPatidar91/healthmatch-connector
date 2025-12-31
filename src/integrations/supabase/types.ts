@@ -989,6 +989,7 @@ export type Database = {
       medicine_vendors: {
         Row: {
           address: string
+          average_rating: number | null
           city: string
           created_at: string
           delivery_radius_km: number | null
@@ -1005,11 +1006,13 @@ export type Database = {
           pharmacy_name: string
           phone: string
           region: string
+          total_ratings: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           address: string
+          average_rating?: number | null
           city: string
           created_at?: string
           delivery_radius_km?: number | null
@@ -1026,11 +1029,13 @@ export type Database = {
           pharmacy_name: string
           phone: string
           region: string
+          total_ratings?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string
+          average_rating?: number | null
           city?: string
           created_at?: string
           delivery_radius_km?: number | null
@@ -1047,6 +1052,7 @@ export type Database = {
           pharmacy_name?: string
           phone?: string
           region?: string
+          total_ratings?: number | null
           updated_at?: string
           user_id?: string
         }
