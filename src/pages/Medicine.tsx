@@ -883,6 +883,8 @@ export default function Medicine() {
         deliveryLatitude={deliveryLatitude}
         deliveryLongitude={deliveryLongitude}
         onOpenLocationPicker={() => setIsLocationPickerOpen(true)}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeFromCart}
       />
 
       {/* Searching Pharmacies Modal */}

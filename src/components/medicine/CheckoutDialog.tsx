@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Truck, MapPin, Phone, ShoppingBag, AlertCircle } from 'lucide-react';
+import { Truck, MapPin, Phone, ShoppingBag, AlertCircle, Plus, Minus, Trash2 } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 
 interface CheckoutDialogProps {
@@ -27,6 +27,8 @@ interface CheckoutDialogProps {
   deliveryLatitude: number | null;
   deliveryLongitude: number | null;
   onOpenLocationPicker: () => void;
+  onUpdateQuantity: (medicineId: string, change: number) => void;
+  onRemoveItem: (medicineId: string) => void;
 }
 
 export function CheckoutDialog({
@@ -46,7 +48,9 @@ export function CheckoutDialog({
   isProcessing,
   deliveryLatitude,
   deliveryLongitude,
-  onOpenLocationPicker
+  onOpenLocationPicker,
+  onUpdateQuantity,
+  onRemoveItem
 }: CheckoutDialogProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [addressError, setAddressError] = useState('');
@@ -106,21 +110,68 @@ export function CheckoutDialog({
               <h3 className="font-semibold text-lg">Order Items</h3>
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-              {cartItems.map((item) => {
-                const price = item.selling_price * (1 - item.discount_percentage / 100);
-                return (
-                  <div key={item.id} className="flex justify-between items-start p-2 bg-secondary/30 rounded">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">{item.brand} • {item.pack_size}</p>
+              {cartItems.length === 0 ? (
+                <div className="text-center py-6">
+                  <ShoppingBag className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground text-sm">Your cart is empty</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => onOpenChange(false)}
+                    className="mt-3"
+                  >
+                    Continue Shopping
+                  </Button>
+                </div>
+              ) : (
+                cartItems.map((item) => {
+                  const price = item.selling_price * (1 - item.discount_percentage / 100);
+                  return (
+                    <div key={item.id} className="flex justify-between items-center p-2 bg-secondary/30 rounded gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.brand} • {item.pack_size}</p>
+                      </div>
+                      
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-1 border rounded-lg bg-background">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => onUpdateQuantity(item.id, -1)}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => onUpdateQuantity(item.id, 1)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      {/* Delete Button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => onRemoveItem(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      
+                      {/* Price */}
+                      <div className="text-right min-w-[65px]">
+                        <p className="font-semibold text-sm">₹{(price * item.quantity).toFixed(2)}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">₹{price.toFixed(2)} × {item.quantity}</p>
-                      <p className="text-sm text-primary">₹{(price * item.quantity).toFixed(2)}</p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
             
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
@@ -295,7 +346,7 @@ export function CheckoutDialog({
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={isProcessing || !agreedToTerms || !deliveryLatitude || !deliveryLongitude}
+              disabled={isProcessing || !agreedToTerms || !deliveryLatitude || !deliveryLongitude || cartItems.length === 0}
               className="flex-1"
             >
               {isProcessing ? 'Placing Order...' : 'Confirm Order'}
