@@ -409,29 +409,12 @@ export default function DeliveryPartnerDashboard() {
     }
   };
 
-  const handleOrderComplete = async (orderId: string) => {
-    try {
-      const { error } = await supabase
-        .from('medicine_orders')
-        .update({ order_status: 'delivered', delivered_at: new Date().toISOString() })
-        .eq('id', orderId);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Order Delivered',
-        description: 'Order marked as delivered successfully',
-      });
-
-      loadOrders();
-    } catch (error) {
-      console.error('Error marking order as delivered:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to mark order as delivered',
-        variant: 'destructive',
-      });
-    }
+  const handleOrderComplete = async () => {
+    toast({
+      title: 'Order Updated',
+      description: 'Refreshing your active orders…',
+    });
+    loadOrders();
   };
 
   if (loading || !partner) {
@@ -677,7 +660,7 @@ export default function DeliveryPartnerDashboard() {
                     tipAmount: order.tip_amount || 0,
                   }}
                   deliveryPartnerId={partner.id}
-                  onOrderComplete={() => handleOrderComplete(order.id)}
+                  onOrderComplete={() => handleOrderComplete()}
                 />
               ))
             )}

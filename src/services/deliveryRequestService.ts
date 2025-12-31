@@ -159,12 +159,13 @@ class DeliveryRequestService {
       // 2. Assign partner to order and update status WHILE request is still pending
       // This must happen before we mark the delivery_request as accepted so that
       // RLS policy can_delivery_partner_accept_order() still sees a pending request.
-      // Only assign partner - status stays as 'ready_for_pickup'
-      // Status changes to 'out_for_delivery' only when partner clicks "Order Picked"
+      // Assign partner and keep order in pickup phase.
+      // IMPORTANT: Do NOT move to 'out_for_delivery' here; that happens only after the partner clicks "Order Picked".
       const { data: updatedOrder, error: orderError } = await supabase
         .from('medicine_orders')
         .update({
           delivery_partner_id: partner.id,
+          order_status: 'ready_for_pickup',
         })
         .eq('id', request.order_id)
         .select('id, delivery_partner_id, order_status')
