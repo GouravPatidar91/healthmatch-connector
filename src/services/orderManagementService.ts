@@ -121,11 +121,12 @@ class OrderManagementService {
 
   async assignDeliveryPartner(orderId: string, partnerId: string) {
     try {
+      // Only assign the partner - do NOT change order_status here.
+      // Status should remain 'ready_for_pickup' until delivery partner clicks "Order Picked".
       const { error } = await supabase
         .from('medicine_orders')
         .update({
           delivery_partner_id: partnerId,
-          order_status: 'out_for_delivery',
           updated_at: new Date().toISOString()
         })
         .eq('id', orderId);
