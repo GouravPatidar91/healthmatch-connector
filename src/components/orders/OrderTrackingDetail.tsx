@@ -197,7 +197,7 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
               </div>
             )}
 
-            {/* Waiting for Delivery Partner */}
+            {/* Waiting for Delivery Partner - No partner assigned yet */}
             {order.order_status === 'ready_for_pickup' && !order.delivery_partner?.id && (
               <Card className="p-6 text-center border-2 border-dashed">
                 <div className="flex flex-col items-center gap-2">
@@ -206,6 +206,25 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
                   <p className="text-sm text-muted-foreground">
                     Your order is ready and we're finding a delivery partner nearby
                   </p>
+                </div>
+              </Card>
+            )}
+
+            {/* Delivery Partner assigned, waiting for pickup */}
+            {order.order_status === 'ready_for_pickup' && order.delivery_partner?.id && (
+              <Card className="p-6 text-center border-2 border-dashed border-blue-500 bg-blue-50 dark:bg-blue-950">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="animate-bounce text-4xl">🛵</div>
+                  <p className="font-medium text-lg text-blue-700 dark:text-blue-300">
+                    Waiting for Delivery Partner to Pick Up Order
+                  </p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400">
+                    {order.delivery_partner.name} is heading to the pharmacy
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Phone className="h-3 w-3" />
+                    <span>{order.delivery_partner.phone}</span>
+                  </div>
                 </div>
               </Card>
             )}
