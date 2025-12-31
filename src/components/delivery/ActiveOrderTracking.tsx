@@ -149,10 +149,6 @@ export function ActiveOrderTracking({
           title: 'Order Picked Up!',
           description: 'Now delivering to customer. Location tracking started.',
         });
-
-        if (onOrderComplete) {
-          onOrderComplete();
-        }
       } else {
         throw new Error(result.error);
       }
@@ -187,10 +183,6 @@ export function ActiveOrderTracking({
           title: 'Order Picked Up',
           description: 'You have confirmed pickup. Location tracking started.',
         });
-
-        if (onOrderComplete) {
-          onOrderComplete();
-        }
       } else {
         throw new Error(result.error);
       }
