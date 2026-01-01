@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, CheckCircle, XCircle, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,24 +24,69 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
   const [acceptedPharmacy, setAcceptedPharmacy] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
+  const isHandledRef = useRef(false);
+
+  // Stable callback to handle acceptance
+  const handleAccepted = useCallback((vendorId: string, newOrderId: string) => {
+    if (isHandledRef.current) {
+      console.log('[CartModal] Already handled, skipping duplicate acceptance');
+      return;
+    }
+    
+    console.log('[CartModal] Order accepted! vendorId:', vendorId, 'orderId:', newOrderId);
+    isHandledRef.current = true;
+    setStatus('accepted');
+    setAcceptedPharmacy(vendorId);
+    setOrderId(newOrderId);
+    onAccepted(vendorId, newOrderId);
+    
+    setTimeout(() => {
+      console.log('[CartModal] Redirecting to order tracking:', `/my-orders?track=${newOrderId}`);
+      navigate(`/my-orders?track=${newOrderId}`);
+      onClose();
+    }, 800);
+  }, [navigate, onAccepted, onClose]);
+
+  // Stable callback to check broadcast status (for polling and fallback)
+  const checkBroadcastStatus = useCallback(async () => {
+    if (!broadcastId || isHandledRef.current) return;
+    
+    console.log('[CartModal] Polling broadcast status for:', broadcastId);
+    
+    const { data, error } = await supabase
+      .from('cart_order_broadcasts')
+      .select('status, accepted_by_vendor_id, order_id')
+      .eq('id', broadcastId)
+      .single();
+
+    if (error) {
+      console.error('[CartModal] Error polling broadcast status:', error);
+      return;
+    }
+
+    console.log('[CartModal] Poll result:', data);
+
+    if (data?.status === 'accepted' && data.order_id) {
+      handleAccepted(data.accepted_by_vendor_id, data.order_id);
+    } else if (data?.status === 'accepted' && !data.order_id) {
+      console.warn('[CartModal] Status is accepted but order_id is missing, will retry...');
+    } else if (data?.status === 'failed') {
+      console.log('[CartModal] Broadcast failed');
+      setStatus('failed');
+      onFailed();
+      onClose();
+    }
+  }, [broadcastId, handleAccepted, onFailed, onClose]);
 
   useEffect(() => {
     if (!broadcastId || !open) return;
 
-    let isHandled = false;
+    // Reset state when modal opens with new broadcastId
+    isHandledRef.current = false;
+    setStatus('searching');
+    setTimeLeft(180);
 
-    const handleAccepted = (vendorId: string, orderId: string) => {
-      if (isHandled) return;
-      isHandled = true;
-      setStatus('accepted');
-      setAcceptedPharmacy(vendorId);
-      setOrderId(orderId);
-      onAccepted(vendorId, orderId);
-      setTimeout(() => {
-        navigate(`/my-orders?track=${orderId}`);
-        onClose();
-      }, 800);
-    };
+    console.log('[CartModal] Setting up real-time subscription for broadcast:', broadcastId);
 
     // Set up realtime subscription
     const channel = supabase
@@ -55,45 +100,42 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
           filter: `id=eq.${broadcastId}`
         },
         (payload) => {
-          console.log('Cart broadcast update:', payload);
+          console.log('[CartModal] Real-time update received:', JSON.stringify(payload));
           const newData = payload.new as any;
 
           if (newData.status === 'accepted') {
-            handleAccepted(newData.accepted_by_vendor_id, newData.order_id);
+            if (newData.order_id) {
+              handleAccepted(newData.accepted_by_vendor_id, newData.order_id);
+            } else {
+              console.warn('[CartModal] Accepted via real-time but no order_id, forcing poll...');
+              // Force immediate poll to get the order_id
+              setTimeout(checkBroadcastStatus, 500);
+            }
           } else if (newData.status === 'failed') {
+            console.log('[CartModal] Broadcast failed via real-time');
             setStatus('failed');
             onFailed();
             onClose();
           }
         }
       )
-      .subscribe();
+      .subscribe((subscribeStatus) => {
+        console.log('[CartModal] Subscription status:', subscribeStatus);
+      });
 
-    // Fallback polling every 5 seconds in case realtime fails
-    const pollInterval = setInterval(async () => {
-      if (isHandled) return;
-      
-      const { data } = await supabase
-        .from('cart_order_broadcasts')
-        .select('status, accepted_by_vendor_id, order_id')
-        .eq('id', broadcastId)
-        .single();
+    // Immediate check after 1 second (in case we missed the update)
+    const immediateCheck = setTimeout(checkBroadcastStatus, 1000);
 
-      if (data?.status === 'accepted' && data.order_id) {
-        handleAccepted(data.accepted_by_vendor_id, data.order_id);
-      } else if (data?.status === 'failed') {
-        setStatus('failed');
-        onFailed();
-        onClose();
-      }
-    }, 5000);
+    // Fallback polling every 3 seconds in case realtime fails
+    const pollInterval = setInterval(checkBroadcastStatus, 3000);
 
     // Countdown timer
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          if (status === 'searching') {
+          if (!isHandledRef.current) {
+            console.log('[CartModal] Timeout reached, marking as failed');
             setStatus('failed');
             onFailed();
           }
@@ -104,11 +146,13 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
     }, 1000);
 
     return () => {
+      console.log('[CartModal] Cleaning up subscriptions');
       supabase.removeChannel(channel);
       clearInterval(timer);
       clearInterval(pollInterval);
+      clearTimeout(immediateCheck);
     };
-  }, [broadcastId, open, navigate, onAccepted, onFailed, onClose, status]);
+  }, [broadcastId, open, checkBroadcastStatus, handleAccepted, onFailed, onClose]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
