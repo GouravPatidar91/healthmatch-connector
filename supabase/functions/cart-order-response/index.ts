@@ -245,25 +245,9 @@ serve(async (req) => {
           type: 'order_accepted'
         });
 
-      // Broadcast to nearby delivery partners
-      if (vendor.latitude && vendor.longitude) {
-        try {
-          await supabaseClient.functions.invoke('broadcast-delivery-request', {
-            body: {
-              orderId: order.id,
-              vendorId: vendor_id,
-              vendorLocation: {
-                latitude: vendor.latitude,
-                longitude: vendor.longitude
-              },
-              radiusKm: 10
-            }
-          });
-          console.log('[CartResponse] Broadcasted to delivery partners');
-        } catch (error) {
-          console.warn('[CartResponse] Failed to broadcast to delivery partners:', error);
-        }
-      }
+      // NOTE: Delivery partner broadcast is now triggered when vendor marks order as "Ready for Pickup"
+      // This prevents delivery partners from arriving before the order is packed
+      console.log('[CartResponse] Order created. Delivery broadcast will occur when vendor marks ready_for_pickup');
 
       console.log(`[CartResponse] Order ${order.id} created successfully for vendor ${vendor.pharmacy_name}`);
 

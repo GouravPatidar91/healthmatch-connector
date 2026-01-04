@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, TruckIcon, CheckCircle } from 'lucide-react';
+import { Package, CheckCircle } from 'lucide-react';
 import { orderManagementService } from '@/services/orderManagementService';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { SearchingDeliveryPartnersModal } from '@/components/delivery/SearchingDeliveryPartnersModal';
 
 interface OrderStatusActionsProps {
   orderId: string;
@@ -17,6 +19,8 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
   onStatusUpdated
 }) => {
   const [loading, setLoading] = useState(false);
+  const [showDeliverySearch, setShowDeliverySearch] = useState(false);
+  const [deliveryBroadcastId, setDeliveryBroadcastId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleStatusUpdate = async (newStatus: string, notes?: string) => {
@@ -31,7 +35,7 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
         });
         onStatusUpdated();
         
-        // If marking as ready for pickup, broadcast to delivery partners
+        // If marking as ready for pickup, trigger hybrid broadcast to delivery partners
         if (newStatus === 'ready_for_pickup') {
           await handleBroadcastToPartners();
         }
@@ -55,10 +59,6 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
 
   const handleBroadcastToPartners = async () => {
     try {
-      // Import the service dynamically to avoid circular dependencies
-      const { deliveryRequestService } = await import('@/services/deliveryRequestService');
-      const { supabase } = await import('@/integrations/supabase/client');
-      
       // Get order and vendor details
       const { data: order, error: orderError } = await supabase
         .from('medicine_orders')
@@ -90,26 +90,37 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
         return;
       }
 
-      toast({
-        title: 'Searching...',
-        description: 'Finding nearby delivery partners',
+      // Call the hybrid broadcast edge function
+      const { data, error } = await supabase.functions.invoke('delivery-hybrid-broadcast', {
+        body: {
+          orderId: order.id,
+          vendorId: vendor.id,
+          vendorLocation: { latitude: vendor.latitude, longitude: vendor.longitude },
+          radiusKm: 10
+        }
       });
 
-      const result = await deliveryRequestService.broadcastToNearbyPartners(
-        order.id,
-        vendor.id,
-        { latitude: vendor.latitude, longitude: vendor.longitude }
-      );
-
-      if (result.success) {
+      if (error) {
+        console.error('Error calling hybrid broadcast:', error);
         toast({
-          title: 'Partners Notified',
-          description: `Notified ${result.requestIds?.length || 0} delivery partners`,
+          title: 'Error',
+          description: 'Failed to notify delivery partners',
+          variant: 'destructive',
         });
-      } else {
+        return;
+      }
+
+      if (data?.success && data?.broadcastId) {
+        setDeliveryBroadcastId(data.broadcastId);
+        setShowDeliverySearch(true);
+        toast({
+          title: 'Priority Search Started',
+          description: `Top ${data.partnersNotified} nearby delivery partners notified`,
+        });
+      } else if (data?.error) {
         toast({
           title: 'No Partners Available',
-          description: result.error || 'No delivery partners found nearby',
+          description: data.error,
           variant: 'destructive',
         });
       }
@@ -121,6 +132,24 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
         variant: 'destructive',
       });
     }
+  };
+
+  const handleDeliveryPartnerAccepted = (partnerId: string) => {
+    toast({
+      title: 'Delivery Partner Assigned',
+      description: 'A delivery partner has accepted the order',
+    });
+    setShowDeliverySearch(false);
+    onStatusUpdated();
+  };
+
+  const handleDeliverySearchFailed = () => {
+    toast({
+      title: 'No Partners Found',
+      description: 'No delivery partners available. Try again later.',
+      variant: 'destructive',
+    });
+    setShowDeliverySearch(false);
   };
 
   const getAvailableActions = () => {
@@ -161,9 +190,6 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
           </Button>
         );
       
-      // Note: Only delivery partners can mark orders as delivered
-      // Vendors cannot change status after ready_for_pickup
-      
       default:
         return null;
     }
@@ -176,13 +202,24 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Order Actions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {action}
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Order Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {action}
+        </CardContent>
+      </Card>
+
+      <SearchingDeliveryPartnersModal
+        broadcastId={deliveryBroadcastId}
+        orderId={orderId}
+        open={showDeliverySearch}
+        onAccepted={handleDeliveryPartnerAccepted}
+        onFailed={handleDeliverySearchFailed}
+        onClose={() => setShowDeliverySearch(false)}
+      />
+    </>
   );
 };

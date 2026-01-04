@@ -310,6 +310,76 @@ export type Database = {
           },
         ]
       }
+      delivery_broadcasts: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_partner_id: string | null
+          all_partner_ids: string[] | null
+          created_at: string | null
+          current_phase: string
+          id: string
+          notified_partner_ids: string[] | null
+          order_id: string
+          phase_timeout_at: string
+          remaining_partners: Json | null
+          status: string
+          timeout_at: string
+          vendor_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_partner_id?: string | null
+          all_partner_ids?: string[] | null
+          created_at?: string | null
+          current_phase?: string
+          id?: string
+          notified_partner_ids?: string[] | null
+          order_id: string
+          phase_timeout_at: string
+          remaining_partners?: Json | null
+          status?: string
+          timeout_at: string
+          vendor_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_partner_id?: string | null
+          all_partner_ids?: string[] | null
+          created_at?: string | null
+          current_phase?: string
+          id?: string
+          notified_partner_ids?: string[] | null
+          order_id?: string
+          phase_timeout_at?: string
+          remaining_partners?: Json | null
+          status?: string
+          timeout_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_broadcasts_accepted_by_partner_id_fkey"
+            columns: ["accepted_by_partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_broadcasts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_broadcasts_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "medicine_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_partners: {
         Row: {
           created_at: string
