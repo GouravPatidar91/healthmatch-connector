@@ -65,10 +65,9 @@ serve(async (req) => {
       );
     }
 
-    // Check if request is expired (with 30s grace period)
+    // Check if request is expired (strict, no grace period)
     const expiresAt = new Date(request.expires_at);
-    const gracePeriod = new Date(expiresAt.getTime() + 30000);
-    if (new Date() > gracePeriod) {
+    if (new Date() > expiresAt) {
       console.log('[DeliveryPartnerResponse] Request expired');
       return new Response(
         JSON.stringify({ success: false, message: 'Request has expired' }),

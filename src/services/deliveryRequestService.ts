@@ -275,8 +275,8 @@ class DeliveryRequestService {
 
   async getPendingRequests(partnerId: string): Promise<any[]> {
     try {
-      // Add 30 second buffer to account for clock drift and grace period
-      const bufferTime = new Date(Date.now() - 30000).toISOString();
+      // Use current time - no buffer (strict expiry)
+      const bufferTime = new Date().toISOString();
       
       const { data, error } = await supabase
         .from('delivery_requests')

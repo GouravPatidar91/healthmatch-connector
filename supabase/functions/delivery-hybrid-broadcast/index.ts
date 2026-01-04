@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const PHASE1_PARTNER_COUNT = 3;
-const PHASE1_TIMEOUT_SECONDS = 15;
+const PHASE1_TIMEOUT_SECONDS = 20;
 const TOTAL_TIMEOUT_SECONDS = 180; // 3 minutes total
 
 serve(async (req) => {
