@@ -16,6 +16,7 @@ export default function VendorRegistration() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     pharmacy_name: '',
     license_number: '',
@@ -71,11 +72,41 @@ export default function VendorRegistration() {
 
     setLoading(true);
     try {
+      let licenseDocumentUrl = null;
+
+      // Upload license file if provided
+      if (licenseFile) {
+        const fileExt = licenseFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('prescriptions')
+          .upload(fileName, licenseFile);
+
+        if (uploadError) {
+          console.error('Error uploading license:', uploadError);
+          toast({
+            title: "Upload Error",
+            description: "Failed to upload license document. Please try again.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('prescriptions')
+          .getPublicUrl(fileName);
+        
+        licenseDocumentUrl = urlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from('medicine_vendors')
         .insert({
           user_id: user.id,
-          ...formData
+          ...formData,
+          license_document_url: licenseDocumentUrl
         });
 
       if (error) throw error;
@@ -321,7 +352,13 @@ export default function VendorRegistration() {
                   type="file"
                   accept="image/*,.pdf"
                   className="max-w-xs mx-auto"
+                  onChange={(e) => setLicenseFile(e.target.files?.[0] || null)}
                 />
+                {licenseFile && (
+                  <p className="text-sm text-green-600 mt-2">
+                    ✓ Selected: {licenseFile.name}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground mt-2">
                   Supported formats: JPG, PNG, PDF (Max 10MB)
                 </p>

@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { grantDoctorAccess, revokeDoctorAccess } from "@/services/doctorService";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Eye, Pill } from "lucide-react";
+import { ExternalLink, Eye, Pill, Store, CheckCircle, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -47,6 +47,22 @@ interface DoctorApplication {
   region?: string;
 }
 
+interface PharmacyApplication {
+  id: string;
+  pharmacy_name: string;
+  owner_name: string;
+  license_number: string;
+  license_document_url?: string;
+  phone: string;
+  email?: string;
+  address: string;
+  city: string;
+  region: string;
+  is_verified: boolean;
+  is_available: boolean;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -54,9 +70,12 @@ const AdminDashboard = () => {
   const { isAdmin, loading: rolesLoading } = useUserRole();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [doctorApplications, setDoctorApplications] = useState<DoctorApplication[]>([]);
+  const [pharmacyApplications, setPharmacyApplications] = useState<PharmacyApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorApplication | null>(null);
+  const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyApplication | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [pharmacyDialogOpen, setPharmacyDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("users");
   
   // Wallet management states
@@ -173,6 +192,28 @@ const AdminDashboard = () => {
         });
       }
     };
+
+    // Fetch pharmacy applications
+    const fetchPharmacyApplications = async () => {
+      if (!isAdmin) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('medicine_vendors')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error("Error fetching pharmacy applications:", error);
+          setPharmacyApplications([]);
+          return;
+        }
+        
+        setPharmacyApplications(data || []);
+      } catch (error) {
+        console.error("Error fetching pharmacy applications:", error);
+      }
+    };
     
     // Fetch wallet data
     const fetchWalletData = async () => {
@@ -199,6 +240,7 @@ const AdminDashboard = () => {
     if (isAdmin) {
       fetchUsers();
       fetchDoctorApplications();
+      fetchPharmacyApplications();
       fetchWalletData();
     }
   }, [isAdmin, toast]);
@@ -254,6 +296,40 @@ const AdminDashboard = () => {
     setViewDialogOpen(true);
   };
 
+  const handleViewPharmacy = (pharmacy: PharmacyApplication) => {
+    setSelectedPharmacy(pharmacy);
+    setPharmacyDialogOpen(true);
+  };
+
+  const togglePharmacyVerification = async (pharmacyId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('medicine_vendors')
+        .update({ is_verified: !currentStatus })
+        .eq('id', pharmacyId);
+
+      if (error) throw error;
+
+      setPharmacyApplications(prev =>
+        prev.map(p => p.id === pharmacyId ? { ...p, is_verified: !currentStatus } : p)
+      );
+
+      toast({
+        title: currentStatus ? "Verification Revoked" : "Pharmacy Verified",
+        description: currentStatus 
+          ? "Pharmacy will no longer receive order notifications." 
+          : "Pharmacy can now receive order notifications.",
+      });
+    } catch (error) {
+      console.error("Error updating pharmacy verification:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update pharmacy verification.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (rolesLoading || loading) {
     return (
       <div className="container mx-auto py-6 flex items-center justify-center min-h-[60vh]">
@@ -278,12 +354,21 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-6xl grid-cols-5">
+          <TabsList className="grid w-full max-w-6xl grid-cols-6">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="doctors">Doctor Applications</TabsTrigger>
+            <TabsTrigger value="pharmacies" className="flex items-center gap-2">
+              <Store className="h-4 w-4" />
+              Pharmacies
+              {pharmacyApplications.filter(p => !p.is_verified).length > 0 && (
+                <span className="ml-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {pharmacyApplications.filter(p => !p.is_verified).length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="medicines" className="flex items-center gap-2">
               <Pill className="h-4 w-4" />
-              Medicine Catalog
+              Medicines
             </TabsTrigger>
             <TabsTrigger value="wallets">
               💰 Wallets
@@ -293,7 +378,7 @@ const AdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="earnings">💰 Platform Earnings</TabsTrigger>
+            <TabsTrigger value="earnings">💰 Earnings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="users">
@@ -348,6 +433,81 @@ const AdminDashboard = () => {
                               onClick={() => handleToggleDoctorAccess(user.id, user.is_doctor)}
                             >
                               {user.is_doctor ? 'Revoke Access' : 'Grant Access'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pharmacies">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Store className="h-5 w-5" />
+                  Pharmacy Applications
+                </CardTitle>
+                <CardDescription>
+                  Review and verify pharmacy registrations. Only verified pharmacies receive order notifications.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Pharmacy Name</TableHead>
+                      <TableHead>Owner</TableHead>
+                      <TableHead>License #</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pharmacyApplications.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                          No pharmacy applications found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      pharmacyApplications.map(pharmacy => (
+                        <TableRow key={pharmacy.id}>
+                          <TableCell className="font-medium">{pharmacy.pharmacy_name}</TableCell>
+                          <TableCell>{pharmacy.owner_name}</TableCell>
+                          <TableCell className="font-mono text-sm">{pharmacy.license_number}</TableCell>
+                          <TableCell>{pharmacy.city}, {pharmacy.region}</TableCell>
+                          <TableCell>
+                            <Badge variant={pharmacy.is_verified ? "default" : "secondary"}>
+                              {pharmacy.is_verified ? (
+                                <><CheckCircle className="h-3 w-3 mr-1" /> Verified</>
+                              ) : (
+                                'Pending'
+                              )}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewPharmacy(pharmacy)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" /> View
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={pharmacy.is_verified ? "destructive" : "default"}
+                              onClick={() => togglePharmacyVerification(pharmacy.id, pharmacy.is_verified)}
+                            >
+                              {pharmacy.is_verified ? (
+                                <><XCircle className="h-4 w-4 mr-1" /> Revoke</>
+                              ) : (
+                                <><CheckCircle className="h-4 w-4 mr-1" /> Verify</>
+                              )}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -580,6 +740,108 @@ const AdminDashboard = () => {
                   }}
                 >
                   {selectedDoctor.verified ? 'Revoke Access' : 'Approve Application'}
+                </Button>
+              </div>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pharmacy Application Dialog */}
+      <Dialog open={pharmacyDialogOpen} onOpenChange={setPharmacyDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Pharmacy Details</DialogTitle>
+            <DialogDescription>
+              Review the pharmacy registration information below.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPharmacy && (
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Pharmacy Name</h3>
+                  <p className="text-sm">{selectedPharmacy.pharmacy_name}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Owner Name</h3>
+                  <p className="text-sm">{selectedPharmacy.owner_name}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-1">License Number</h3>
+                  <p className="text-sm font-mono">{selectedPharmacy.license_number}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Phone</h3>
+                  <p className="text-sm">{selectedPharmacy.phone}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Email</h3>
+                  <p className="text-sm">{selectedPharmacy.email || 'Not provided'}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Status</h3>
+                  <Badge variant={selectedPharmacy.is_verified ? "default" : "secondary"}>
+                    {selectedPharmacy.is_verified ? 'Verified' : 'Pending Verification'}
+                  </Badge>
+                </div>
+                <div className="col-span-2">
+                  <h3 className="text-sm font-medium mb-1">Address</h3>
+                  <p className="text-sm">{selectedPharmacy.address}</p>
+                  <p className="text-sm text-muted-foreground">{selectedPharmacy.city}, {selectedPharmacy.region}</p>
+                </div>
+              </div>
+              
+              {selectedPharmacy.license_document_url && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">License Document</h3>
+                  <div className="border rounded-md overflow-hidden">
+                    {selectedPharmacy.license_document_url.endsWith('.pdf') ? (
+                      <div className="p-4 flex flex-col items-center justify-center bg-secondary/30">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(selectedPharmacy.license_document_url, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" /> View PDF
+                        </Button>
+                      </div>
+                    ) : (
+                      <img 
+                        src={selectedPharmacy.license_document_url} 
+                        alt="License document" 
+                        className="w-full h-48 object-cover" 
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="text-xs text-muted-foreground">
+                Registered: {new Date(selectedPharmacy.created_at).toLocaleDateString()}
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            {selectedPharmacy && (
+              <div className="w-full flex justify-between">
+                <Button variant="outline" onClick={() => setPharmacyDialogOpen(false)}>
+                  Close
+                </Button>
+                <Button 
+                  variant={selectedPharmacy.is_verified ? "destructive" : "default"}
+                  onClick={() => {
+                    togglePharmacyVerification(selectedPharmacy.id, selectedPharmacy.is_verified);
+                    setSelectedPharmacy(prev => prev ? { ...prev, is_verified: !prev.is_verified } : null);
+                  }}
+                >
+                  {selectedPharmacy.is_verified ? (
+                    <><XCircle className="h-4 w-4 mr-1" /> Revoke Verification</>
+                  ) : (
+                    <><CheckCircle className="h-4 w-4 mr-1" /> Verify Pharmacy</>
+                  )}
                 </Button>
               </div>
             )}
