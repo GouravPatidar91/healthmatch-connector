@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.cart-order-response]
 verify_jwt = false
+
+[functions.cart-broadcast-escalation]
+verify_jwt = false

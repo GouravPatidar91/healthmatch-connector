@@ -143,14 +143,19 @@ export type Database = {
           accepted_by_vendor_id: string | null
           broadcast_round: number | null
           created_at: string | null
+          current_phase: string | null
+          current_vendor_index: number | null
           customer_phone: string
           delivery_address: string
           id: string
+          notified_vendor_ids: string[] | null
           order_data: Json
           order_id: string | null
           patient_id: string
           patient_latitude: number
           patient_longitude: number
+          phase_timeout_at: string | null
+          remaining_vendors: Json | null
           status: string | null
           timeout_at: string | null
         }
@@ -159,14 +164,19 @@ export type Database = {
           accepted_by_vendor_id?: string | null
           broadcast_round?: number | null
           created_at?: string | null
+          current_phase?: string | null
+          current_vendor_index?: number | null
           customer_phone: string
           delivery_address: string
           id?: string
+          notified_vendor_ids?: string[] | null
           order_data: Json
           order_id?: string | null
           patient_id: string
           patient_latitude: number
           patient_longitude: number
+          phase_timeout_at?: string | null
+          remaining_vendors?: Json | null
           status?: string | null
           timeout_at?: string | null
         }
@@ -175,14 +185,19 @@ export type Database = {
           accepted_by_vendor_id?: string | null
           broadcast_round?: number | null
           created_at?: string | null
+          current_phase?: string | null
+          current_vendor_index?: number | null
           customer_phone?: string
           delivery_address?: string
           id?: string
+          notified_vendor_ids?: string[] | null
           order_data?: Json
           order_id?: string | null
           patient_id?: string
           patient_latitude?: number
           patient_longitude?: number
+          phase_timeout_at?: string | null
+          remaining_vendors?: Json | null
           status?: string | null
           timeout_at?: string | null
         }
@@ -1937,6 +1952,19 @@ export type Database = {
           id: string
           name: string
           specialization: string
+        }[]
+      }
+      find_ranked_nearby_vendors: {
+        Args: { radius_km?: number; user_lat: number; user_lng: number }
+        Returns: {
+          address: string
+          average_rating: number
+          distance_km: number
+          id: string
+          pharmacy_name: string
+          phone: string
+          reliability_score: number
+          total_ratings: number
         }[]
       }
       generate_order_number: { Args: never; Returns: string }
