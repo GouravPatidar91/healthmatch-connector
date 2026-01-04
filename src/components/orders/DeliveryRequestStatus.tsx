@@ -33,12 +33,14 @@ export const DeliveryRequestStatus: React.FC<DeliveryRequestStatusProps> = ({
   const [searching, setSearching] = useState(false);
   const [broadcasting, setBroadcasting] = useState(false);
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
+  const [broadcastFailed, setBroadcastFailed] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15);
   const { toast } = useToast();
 
   useEffect(() => {
     loadRequests();
     loadActiveBroadcast();
+    checkFailedBroadcast();
 
     // Subscribe to request updates
     const requestChannel = supabase
@@ -113,11 +115,31 @@ export const DeliveryRequestStatus: React.FC<DeliveryRequestStatusProps> = ({
       if (!error && data) {
         setActiveBroadcast(data);
         setSearching(true);
+        setBroadcastFailed(false);
       } else {
         setActiveBroadcast(null);
       }
     } catch (error) {
       console.error('Error loading broadcast:', error);
+    }
+  };
+
+  const checkFailedBroadcast = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('delivery_broadcasts')
+        .select('status')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data?.status === 'failed') {
+        setBroadcastFailed(true);
+        setSearching(false);
+      }
+    } catch (error) {
+      console.error('Error checking failed broadcast:', error);
     }
   };
 
@@ -149,6 +171,39 @@ export const DeliveryRequestStatus: React.FC<DeliveryRequestStatusProps> = ({
       console.error('Error loading requests:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRestartSearch = async () => {
+    setBroadcasting(true);
+    try {
+      // Clear old failed broadcast records
+      await supabase
+        .from('delivery_broadcasts')
+        .delete()
+        .eq('order_id', orderId)
+        .eq('status', 'failed');
+
+      // Clear old expired/rejected delivery requests
+      await supabase
+        .from('delivery_requests')
+        .delete()
+        .eq('order_id', orderId)
+        .in('status', ['expired', 'rejected']);
+
+      setBroadcastFailed(false);
+      
+      // Start fresh broadcast
+      await handleBroadcastToPartners();
+    } catch (error) {
+      console.error('Error restarting search:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to restart delivery partner search',
+        variant: 'destructive',
+      });
+    } finally {
+      setBroadcasting(false);
     }
   };
 
@@ -335,35 +390,34 @@ export const DeliveryRequestStatus: React.FC<DeliveryRequestStatusProps> = ({
     );
   }
 
-  // All requests expired or rejected - show retry option
-  if (requests.length > 0 && requests.every((r: any) => r.status !== 'accepted' && r.status !== 'pending')) {
+  // Broadcast failed - show restart button prominently
+  if (broadcastFailed || (requests.length > 0 && requests.every((r: any) => r.status !== 'accepted' && r.status !== 'pending'))) {
     return (
-      <Card className="border-red-500 bg-red-50/50 dark:bg-red-950/20">
+      <Card className="border-destructive bg-destructive/5">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-600" />
-            No Partners Available
+            <XCircle className="h-5 w-5 text-destructive" />
+            No Delivery Partners Available
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            No delivery partners accepted the request. Try searching again.
+            No delivery partners accepted within the timeout period. You can restart the search to try again.
           </p>
           <Button
-            onClick={handleBroadcastToPartners}
+            onClick={handleRestartSearch}
             disabled={broadcasting}
-            variant="outline"
             className="w-full"
           >
             {broadcasting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Searching...
+                Restarting Search...
               </>
             ) : (
               <>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
+                Restart Search from Phase 1
               </>
             )}
           </Button>
