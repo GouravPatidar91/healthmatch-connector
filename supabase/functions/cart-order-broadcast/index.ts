@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Phase 1: Notify top 2-3 pharmacies for 15 seconds
+const PHASE1_VENDOR_COUNT = 3;
+const PHASE1_TIMEOUT_SECONDS = 15;
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -34,7 +38,12 @@ serve(async (req) => {
       prescription_required
     } = body;
 
-    console.log('Cart order broadcast request:', { user_id, items: items?.length, delivery_latitude, delivery_longitude });
+    console.log('[HybridBroadcast] Cart order broadcast request:', { 
+      user_id, 
+      items: items?.length, 
+      delivery_latitude, 
+      delivery_longitude 
+    });
 
     // Validate required fields
     if (!user_id || !items || !delivery_latitude || !delivery_longitude) {
@@ -44,33 +53,41 @@ serve(async (req) => {
       );
     }
 
-    // Find nearby pharmacies using the RPC function
-    const { data: nearbyVendors, error: vendorError } = await supabaseClient
-      .rpc('find_nearby_medicine_vendors', {
+    // Find and RANK nearby pharmacies using the new RPC function
+    const { data: rankedVendors, error: vendorError } = await supabaseClient
+      .rpc('find_ranked_nearby_vendors', {
         user_lat: delivery_latitude,
         user_lng: delivery_longitude,
-        radius_km: 50
+        radius_km: 15
       });
 
     if (vendorError) {
-      console.error('Error finding nearby vendors:', vendorError);
+      console.error('[HybridBroadcast] Error finding ranked vendors:', vendorError);
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to find nearby pharmacies' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
-    if (!nearbyVendors || nearbyVendors.length === 0) {
-      console.log('No nearby pharmacies found');
+    if (!rankedVendors || rankedVendors.length === 0) {
+      console.log('[HybridBroadcast] No nearby pharmacies found');
       return new Response(
         JSON.stringify({ success: false, error: 'No pharmacies available in your area' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
     }
 
-    console.log(`Found ${nearbyVendors.length} nearby pharmacies`);
+    console.log(`[HybridBroadcast] Found ${rankedVendors.length} ranked pharmacies`);
 
-    // Create cart order broadcast record
+    // Phase 1: Take top 2-3 vendors
+    const phase1Vendors = rankedVendors.slice(0, PHASE1_VENDOR_COUNT);
+    const remainingVendors = rankedVendors.slice(PHASE1_VENDOR_COUNT);
+    const phase1Timeout = new Date(Date.now() + PHASE1_TIMEOUT_SECONDS * 1000);
+    const overallTimeout = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes total
+
+    console.log(`[HybridBroadcast] Phase 1: Notifying ${phase1Vendors.length} vendors for ${PHASE1_TIMEOUT_SECONDS}s`);
+
+    // Create order data
     const orderData = {
       items,
       total_amount,
@@ -81,6 +98,7 @@ serve(async (req) => {
       prescription_required
     };
 
+    // Create cart order broadcast record with phase tracking
     const { data: broadcast, error: broadcastError } = await supabaseClient
       .from('cart_order_broadcasts')
       .insert({
@@ -92,32 +110,41 @@ serve(async (req) => {
         customer_phone,
         status: 'searching',
         broadcast_round: 1,
-        timeout_at: new Date(Date.now() + 3 * 60 * 1000).toISOString() // 3 minutes timeout
+        timeout_at: overallTimeout.toISOString(),
+        // New hybrid broadcast fields
+        current_phase: 'controlled_parallel',
+        phase_timeout_at: phase1Timeout.toISOString(),
+        notified_vendor_ids: phase1Vendors.map((v: any) => v.id),
+        current_vendor_index: 0,
+        remaining_vendors: remainingVendors.map((v: any) => ({
+          id: v.id,
+          pharmacy_name: v.pharmacy_name,
+          distance_km: v.distance_km,
+          reliability_score: v.reliability_score
+        }))
       })
       .select()
       .single();
 
     if (broadcastError) {
-      console.error('Error creating broadcast:', broadcastError);
+      console.error('[HybridBroadcast] Error creating broadcast:', broadcastError);
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to create broadcast' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
-    console.log('Created broadcast:', broadcast.id);
+    console.log('[HybridBroadcast] Created broadcast:', broadcast.id);
 
-    // Notify first batch of pharmacies (up to 5)
-    const pharmaciesToNotify = nearbyVendors.slice(0, 5);
-    const notificationPromises = pharmaciesToNotify.map(async (vendor: any) => {
+    // Notify Phase 1 vendors simultaneously
+    const notificationPromises = phase1Vendors.map(async (vendor: any) => {
       try {
-        // Create notification for vendor
         const { error: notifError } = await supabaseClient
           .from('vendor_notifications')
           .insert({
             vendor_id: vendor.id,
-            title: '🛒 New Cart Order Request',
-            message: `New order with ${items.length} item(s) worth ₹${final_amount?.toFixed(2) || total_amount?.toFixed(2)}. Review and accept within 3 minutes!`,
+            title: '🛒 New Cart Order - Quick Response!',
+            message: `Order with ${items.length} item(s) worth ₹${final_amount?.toFixed(2) || total_amount?.toFixed(2)}. Accept within ${PHASE1_TIMEOUT_SECONDS} seconds!`,
             type: 'cart_order_request',
             priority: 'high',
             metadata: {
@@ -130,18 +157,20 @@ serve(async (req) => {
               final_amount,
               delivery_address,
               customer_phone,
-              timeout_at: broadcast.timeout_at
+              phase: 'controlled_parallel',
+              phase_timeout_at: phase1Timeout.toISOString(),
+              timeout_at: overallTimeout.toISOString()
             }
           });
 
         if (notifError) {
-          console.error(`Error notifying vendor ${vendor.id}:`, notifError);
+          console.error(`[HybridBroadcast] Error notifying vendor ${vendor.id}:`, notifError);
           return false;
         }
-        console.log(`Notified vendor ${vendor.pharmacy_name} (${vendor.distance_km?.toFixed(1)}km away)`);
+        console.log(`[HybridBroadcast] Notified vendor ${vendor.pharmacy_name} (score: ${vendor.reliability_score?.toFixed(2)}, ${vendor.distance_km?.toFixed(1)}km)`);
         return true;
       } catch (error) {
-        console.error(`Error notifying vendor ${vendor.id}:`, error);
+        console.error(`[HybridBroadcast] Error notifying vendor ${vendor.id}:`, error);
         return false;
       }
     });
@@ -149,20 +178,24 @@ serve(async (req) => {
     const results = await Promise.all(notificationPromises);
     const successCount = results.filter(r => r).length;
 
-    console.log(`Successfully notified ${successCount}/${pharmaciesToNotify.length} pharmacies`);
+    console.log(`[HybridBroadcast] Phase 1: Successfully notified ${successCount}/${phase1Vendors.length} pharmacies`);
+    console.log(`[HybridBroadcast] Remaining for Phase 2 fallback: ${remainingVendors.length} vendors`);
 
     return new Response(
       JSON.stringify({
         success: true,
         broadcast_id: broadcast.id,
         pharmacies_notified: successCount,
-        message: `Order broadcasted to ${successCount} nearby pharmacies`
+        phase: 'controlled_parallel',
+        phase_timeout_seconds: PHASE1_TIMEOUT_SECONDS,
+        remaining_vendors: remainingVendors.length,
+        message: `Order broadcasted to ${successCount} top pharmacies. ${PHASE1_TIMEOUT_SECONDS}s to respond.`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Cart order broadcast error:', error);
+    console.error('[HybridBroadcast] Cart order broadcast error:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
