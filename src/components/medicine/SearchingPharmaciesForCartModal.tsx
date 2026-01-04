@@ -51,6 +51,18 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
     }, 800);
   }, [navigate, onAccepted, onClose]);
 
+  // Trigger escalation function to handle phase timeouts
+  const triggerEscalation = useCallback(async () => {
+    if (isHandledRef.current || status !== 'searching') return;
+    
+    try {
+      console.log('[CartModal] Triggering escalation check...');
+      await supabase.functions.invoke('cart-broadcast-escalation', { body: {} });
+    } catch (error) {
+      console.warn('[CartModal] Escalation trigger error (non-fatal):', error);
+    }
+  }, [status]);
+
   // Stable callback to check broadcast status (for polling and fallback)
   const checkBroadcastStatus = useCallback(async () => {
     if (!broadcastId || isHandledRef.current) return;
@@ -148,6 +160,18 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
     // Fallback polling every 3 seconds
     const pollInterval = setInterval(checkBroadcastStatus, 3000);
 
+    // Escalation trigger every 5 seconds (handles phase timeouts)
+    const escalationInterval = setInterval(async () => {
+      if (!isHandledRef.current) {
+        try {
+          console.log('[CartModal] Triggering escalation check...');
+          await supabase.functions.invoke('cart-broadcast-escalation', { body: {} });
+        } catch (error) {
+          console.warn('[CartModal] Escalation trigger error (non-fatal):', error);
+        }
+      }
+    }, 5000);
+
     // Countdown timer
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -169,6 +193,7 @@ export const SearchingPharmaciesForCartModal: React.FC<SearchingPharmaciesForCar
       supabase.removeChannel(channel);
       clearInterval(timer);
       clearInterval(pollInterval);
+      clearInterval(escalationInterval);
       clearTimeout(immediateCheck);
     };
   }, [broadcastId, open, checkBroadcastStatus, handleAccepted, onFailed]);
