@@ -24,11 +24,13 @@ export const DeliveryRequestNotification: React.FC<DeliveryRequestNotificationPr
 
   useEffect(() => {
     const calculateTimeRemaining = () => {
+      // Use expires_at for countdown (15 seconds per phase)
       const expiresAt = new Date(request.expires_at).getTime();
       const now = Date.now();
       const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeRemaining(diff);
 
+      // Only auto-close if truly expired (not just countdown at 0)
       if (diff === 0) {
         onClose();
       }
@@ -156,10 +158,10 @@ export const DeliveryRequestNotification: React.FC<DeliveryRequestNotificationPr
         <div className="flex gap-2 pt-2">
           <Button
             onClick={handleAccept}
-            disabled={loading || timeRemaining < 10}
+            disabled={loading || timeRemaining === 0}
             className="flex-1"
           >
-            {timeRemaining < 10 ? 'Expired' : 'Accept Delivery'}
+            {timeRemaining === 0 ? 'Expired' : 'Accept Delivery'}
           </Button>
           <Button
             onClick={handleDecline}

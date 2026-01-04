@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.cart-broadcast-escalation]
 verify_jwt = false
+
+[functions.delivery-hybrid-broadcast]
+verify_jwt = false
+
+[functions.delivery-broadcast-escalation]
+verify_jwt = false
+
+[functions.delivery-partner-response]
+verify_jwt = false
