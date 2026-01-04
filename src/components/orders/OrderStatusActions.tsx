@@ -148,6 +148,34 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
     }
   };
 
+  const handleRestartBroadcast = async () => {
+    try {
+      // Clear old failed broadcast records
+      await supabase
+        .from('delivery_broadcasts')
+        .delete()
+        .eq('order_id', orderId)
+        .eq('status', 'failed');
+
+      // Clear old expired/rejected delivery requests
+      await supabase
+        .from('delivery_requests')
+        .delete()
+        .eq('order_id', orderId)
+        .in('status', ['expired', 'rejected']);
+
+      // Start fresh broadcast
+      await handleBroadcastToPartners();
+    } catch (error) {
+      console.error('Error restarting broadcast:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to restart delivery partner search',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDeliveryPartnerAccepted = (partnerId: string) => {
     toast({
       title: 'Delivery Partner Assigned',
@@ -160,10 +188,9 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
   const handleDeliverySearchFailed = () => {
     toast({
       title: 'No Partners Found',
-      description: 'No delivery partners available. Try again later.',
+      description: 'No delivery partners available. You can restart the search.',
       variant: 'destructive',
     });
-    setShowDeliverySearch(false);
   };
 
   const getAvailableActions = () => {
@@ -233,6 +260,7 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
         onAccepted={handleDeliveryPartnerAccepted}
         onFailed={handleDeliverySearchFailed}
         onClose={() => setShowDeliverySearch(false)}
+        onRestart={handleRestartBroadcast}
       />
     </>
   );

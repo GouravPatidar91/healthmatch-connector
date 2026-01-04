@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, Bike } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, CheckCircle, XCircle, Bike, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SearchingDeliveryPartnersModalProps {
@@ -11,6 +12,7 @@ interface SearchingDeliveryPartnersModalProps {
   onAccepted: (partnerId: string) => void;
   onFailed: () => void;
   onClose: () => void;
+  onRestart?: () => void;
 }
 
 export const SearchingDeliveryPartnersModal: React.FC<SearchingDeliveryPartnersModalProps> = ({
@@ -20,13 +22,18 @@ export const SearchingDeliveryPartnersModal: React.FC<SearchingDeliveryPartnersM
   onAccepted,
   onFailed,
   onClose,
+  onRestart,
 }) => {
   const [status, setStatus] = useState<'searching' | 'accepted' | 'failed'>('searching');
   const [currentPhase, setCurrentPhase] = useState<string>('controlled_parallel');
   const [partnersNotified, setPartnersNotified] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number>(15);
+  const [totalTimeElapsed, setTotalTimeElapsed] = useState<number>(0);
   const [acceptedPartner, setAcceptedPartner] = useState<string | null>(null);
+  const [isRestarting, setIsRestarting] = useState(false);
   const isHandledRef = useRef(false);
+
+  const TOTAL_TIMEOUT = 180; // 3 minutes
 
   const handleAccepted = useCallback((partnerId: string) => {
     if (isHandledRef.current) return;
@@ -79,6 +86,7 @@ export const SearchingDeliveryPartnersModal: React.FC<SearchingDeliveryPartnersM
     isHandledRef.current = false;
     setStatus('searching');
     setTimeLeft(15);
+    setTotalTimeElapsed(0);
 
     // Set up real-time subscription
     const channel = supabase
@@ -125,9 +133,14 @@ export const SearchingDeliveryPartnersModal: React.FC<SearchingDeliveryPartnersM
       }
     }, 5000);
 
-    // Countdown timer
+    // Countdown timer for phase
     const countdownInterval = setInterval(() => {
       setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    // Total elapsed time counter
+    const elapsedInterval = setInterval(() => {
+      setTotalTimeElapsed((prev) => prev + 1);
     }, 1000);
 
     return () => {
@@ -135,6 +148,7 @@ export const SearchingDeliveryPartnersModal: React.FC<SearchingDeliveryPartnersM
       clearInterval(pollInterval);
       clearInterval(escalationInterval);
       clearInterval(countdownInterval);
+      clearInterval(elapsedInterval);
     };
   }, [broadcastId, open, handleAccepted, onFailed, checkBroadcastStatus]);
 
@@ -143,6 +157,23 @@ export const SearchingDeliveryPartnersModal: React.FC<SearchingDeliveryPartnersM
       return 'Priority Search (Top 3 Partners)';
     }
     return 'Extended Search';
+  };
+
+  const handleRestartClick = async () => {
+    if (!onRestart) return;
+    setIsRestarting(true);
+    try {
+      await onRestart();
+    } finally {
+      setIsRestarting(false);
+    }
+  };
+
+  const formatTimeRemaining = () => {
+    const remaining = Math.max(0, TOTAL_TIMEOUT - totalTimeElapsed);
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -185,6 +216,9 @@ export const SearchingDeliveryPartnersModal: React.FC<SearchingDeliveryPartnersM
                 <p className="text-xs text-muted-foreground">
                   First to accept gets the delivery
                 </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Total time remaining: {formatTimeRemaining()}
+                </p>
               </div>
 
               <div className="flex justify-center gap-2">
@@ -209,17 +243,39 @@ export const SearchingDeliveryPartnersModal: React.FC<SearchingDeliveryPartnersM
               <p className="text-xs text-muted-foreground">
                 The partner is on their way to pick up the order.
               </p>
+              <Button onClick={onClose} className="mt-4">
+                Close
+              </Button>
             </div>
           )}
 
           {status === 'failed' && (
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
-                No delivery partners are currently available in your area.
+                No delivery partners accepted within 3 minutes.
               </p>
               <p className="text-xs text-muted-foreground">
-                You can try broadcasting again later.
+                All nearby partners were notified but none were available.
               </p>
+              
+              {onRestart && (
+                <Button 
+                  onClick={handleRestartClick} 
+                  className="w-full"
+                  disabled={isRestarting}
+                >
+                  {isRestarting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Restart Search from Phase 1
+                </Button>
+              )}
+              
+              <Button variant="outline" onClick={onClose} className="w-full">
+                Close
+              </Button>
             </div>
           )}
         </div>
