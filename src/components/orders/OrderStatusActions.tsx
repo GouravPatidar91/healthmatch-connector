@@ -77,6 +77,11 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
 
       if (orderError || !order) {
         console.error('Error fetching order details:', orderError);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch order details',
+          variant: 'destructive',
+        });
         return;
       }
 
@@ -90,6 +95,13 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
         return;
       }
 
+      console.log('Calling delivery-hybrid-broadcast with:', {
+        orderId: order.id,
+        vendorId: vendor.id,
+        vendorLocation: { latitude: vendor.latitude, longitude: vendor.longitude },
+        radiusKm: 10
+      });
+
       // Call the hybrid broadcast edge function
       const { data, error } = await supabase.functions.invoke('delivery-hybrid-broadcast', {
         body: {
@@ -99,6 +111,8 @@ export const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
           radiusKm: 10
         }
       });
+
+      console.log('Broadcast response:', data, error);
 
       if (error) {
         console.error('Error calling hybrid broadcast:', error);

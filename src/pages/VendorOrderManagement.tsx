@@ -371,6 +371,12 @@ export default function VendorOrderManagement() {
               <DeliveryRequestStatus
                 orderId={order.id}
                 vendorId={vendorInfo.id}
+                orderStatus={order.order_status}
+                vendorLocation={
+                  vendorInfo?.latitude && vendorInfo?.longitude
+                    ? { latitude: vendorInfo.latitude, longitude: vendorInfo.longitude }
+                    : null
+                }
                 deliveryPartner={order.delivery_partner}
               />
             )}
