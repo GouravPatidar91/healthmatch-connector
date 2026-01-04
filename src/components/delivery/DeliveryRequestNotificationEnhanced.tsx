@@ -29,9 +29,9 @@ export function DeliveryRequestNotificationEnhanced({
       const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(diff);
 
-      // Only close if truly expired (with 1 second buffer)
-      if (diff <= 1) {
-        setTimeout(() => onClose(), 1000);
+      // Auto-close when timer reaches 0
+      if (diff === 0) {
+        onClose();
       }
     };
 
@@ -221,12 +221,12 @@ export function DeliveryRequestNotificationEnhanced({
         <div className="flex gap-2">
           <Button
             onClick={handleAccept}
-            disabled={accepting || declining || timeLeft < 10}
+            disabled={accepting || declining || timeLeft <= 0}
             className="flex-1"
             size="lg"
           >
             <CheckCircle className="mr-2 h-4 w-4" />
-            {timeLeft < 10 ? 'Expired' : (accepting ? 'Accepting...' : 'Accept')}
+            {timeLeft <= 0 ? 'Expired' : (accepting ? 'Accepting...' : 'Accept')}
           </Button>
           <Button
             onClick={handleDecline}

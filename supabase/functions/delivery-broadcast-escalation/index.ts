@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PHASE_TIMEOUT_SECONDS = 15;
+const PHASE_TIMEOUT_SECONDS = 20;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
