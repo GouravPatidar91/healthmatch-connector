@@ -23,6 +23,8 @@ interface CartOrderNotificationProps {
     patient_longitude: number;
     distance_km: number;
     timeout_at: string;
+    phase_timeout_at?: string; // 15-second phase timeout
+    phase?: string; // 'controlled_parallel' or 'sequential'
     total_amount: number;
     final_amount: number;
     delivery_address: string;
@@ -44,8 +46,9 @@ export const CartOrderNotificationModal: React.FC<CartOrderNotificationProps> = 
   const { toast } = useToast();
 
   useEffect(() => {
-    // Calculate initial time left
-    const timeoutDate = new Date(notification.timeout_at);
+    // Use phase_timeout_at for 15-second countdown, fallback to timeout_at
+    const timeoutString = notification.phase_timeout_at || notification.timeout_at;
+    const timeoutDate = new Date(timeoutString);
     const now = new Date();
     const secondsLeft = Math.max(0, Math.floor((timeoutDate.getTime() - now.getTime()) / 1000));
     setTimeLeft(secondsLeft);
@@ -72,9 +75,12 @@ export const CartOrderNotificationModal: React.FC<CartOrderNotificationProps> = 
   }, [notification]);
 
   const handleTimeout = () => {
+    const isPhase1 = notification.phase === 'controlled_parallel';
     toast({
       title: "Opportunity Expired",
-      description: "The 3-minute window to accept this order has expired.",
+      description: isPhase1 
+        ? "The 15-second priority window has expired." 
+        : "Time to accept this order has expired.",
       variant: "destructive",
     });
     onClose();
