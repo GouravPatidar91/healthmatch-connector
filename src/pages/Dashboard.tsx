@@ -4,10 +4,11 @@ import { Activity, Calendar, Users, AlertTriangle, ArrowRight, Phone as PhoneIco
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserStats, useUserAppointments, useUserHealthChecks } from "@/services/userDataService";
+import { useUserStats, useUserAppointments, useUserHealthChecks, useUserProfile } from "@/services/userDataService";
 import { orderTrackingService } from "@/services/orderTrackingService";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const Dashboard = () => {
   const { stats, loading: statsLoading } = useUserStats();
   const { appointments, loading: appointmentsLoading } = useUserAppointments();
   const { healthChecks, loading: healthChecksLoading } = useUserHealthChecks();
+  const { profile } = useUserProfile();
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
 
@@ -39,9 +41,14 @@ const Dashboard = () => {
     }
   };
   
-  const userName = user?.user_metadata?.name || 
+  const userName = profile?.first_name || 
+                   user?.user_metadata?.name || 
                    user?.email?.split('@')[0] || 
                    "User";
+
+  const userInitials = profile?.first_name && profile?.last_name 
+    ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
+    : userName[0]?.toUpperCase() || 'U';
   
   const now = new Date();
   
@@ -141,16 +148,24 @@ const Dashboard = () => {
         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full"></div>
         <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-32 h-32 bg-white/5 rounded-full"></div>
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-8 w-8 text-blue-200" />
-              <h1 className="text-3xl md:text-4xl font-bold">
-                Welcome back, {userName}
-              </h1>
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16 border-2 border-white/30 shadow-lg">
+              <AvatarImage src={profile?.avatar_url || ""} alt="Profile" />
+              <AvatarFallback className="bg-white/20 text-white text-xl font-bold">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-blue-200" />
+                <h1 className="text-2xl md:text-3xl font-bold">
+                  Welcome back, {userName}
+                </h1>
+              </div>
+              <p className="text-blue-100 text-base max-w-2xl">
+                Track your health journey with intelligent insights
+              </p>
             </div>
-            <p className="text-blue-100 text-lg max-w-2xl">
-              Track your health journey with intelligent insights and personalized care recommendations
-            </p>
           </div>
           
           <Button 
