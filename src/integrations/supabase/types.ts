@@ -788,6 +788,69 @@ export type Database = {
           },
         ]
       }
+      medical_records: {
+        Row: {
+          created_at: string | null
+          doctor_name: string | null
+          extracted_conditions: string[] | null
+          extracted_medications: string[] | null
+          extracted_summary: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          hospital_name: string | null
+          id: string
+          is_analyzed: boolean | null
+          notes: string | null
+          record_date: string | null
+          record_type: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          doctor_name?: string | null
+          extracted_conditions?: string[] | null
+          extracted_medications?: string[] | null
+          extracted_summary?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          hospital_name?: string | null
+          id?: string
+          is_analyzed?: boolean | null
+          notes?: string | null
+          record_date?: string | null
+          record_type: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          doctor_name?: string | null
+          extracted_conditions?: string[] | null
+          extracted_medications?: string[] | null
+          extracted_summary?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          hospital_name?: string | null
+          id?: string
+          is_analyzed?: boolean | null
+          notes?: string | null
+          record_date?: string | null
+          record_type?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       medicine_alternatives: {
         Row: {
           alternative_medicine_id: string | null
