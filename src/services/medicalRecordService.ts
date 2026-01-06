@@ -225,6 +225,55 @@ export async function getAggregatedMedicalData(): Promise<AggregatedMedicalData>
   };
 }
 
+// Get aggregated medical data from specific selected records
+export async function getMedicalDataFromRecords(
+  recordIds: string[]
+): Promise<AggregatedMedicalData> {
+  if (recordIds.length === 0) {
+    return { conditions: [], medications: [], summaries: [], recordCount: 0 };
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('medical_records')
+    .select('*')
+    .eq('user_id', user.id)
+    .in('id', recordIds);
+
+  if (error) throw error;
+
+  const records = (data || []) as MedicalRecord[];
+  
+  const conditionsSet = new Set<string>();
+  const medicationsSet = new Set<string>();
+  const summaries: AggregatedMedicalData['summaries'] = [];
+
+  records.forEach(record => {
+    if (record.extracted_conditions) {
+      record.extracted_conditions.forEach(c => conditionsSet.add(c));
+    }
+    if (record.extracted_medications) {
+      record.extracted_medications.forEach(m => medicationsSet.add(m));
+    }
+    if (record.extracted_summary) {
+      summaries.push({
+        title: record.title,
+        summary: record.extracted_summary,
+        date: record.record_date,
+      });
+    }
+  });
+
+  return {
+    conditions: Array.from(conditionsSet),
+    medications: Array.from(medicationsSet),
+    summaries,
+    recordCount: records.length,
+  };
+}
+
 // Get signed URL for viewing a file
 export async function getSignedUrl(fileUrl: string): Promise<string> {
   const urlParts = fileUrl.split('/medical-records/');

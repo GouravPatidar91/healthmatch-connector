@@ -9,10 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useUserHealthChecks, useUserProfile } from '@/services/userDataService';
-import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera, X, FileHeart, Plus, ExternalLink } from 'lucide-react';
+import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera, X, FileHeart, Plus, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { getAggregatedMedicalData, AggregatedMedicalData } from '@/services/medicalRecordService';
+import { getMedicalRecords, getMedicalDataFromRecords, MedicalRecord, AggregatedMedicalData } from '@/services/medicalRecordService';
+import { MedicalRecordSelector } from '@/components/health-check/MedicalRecordSelector';
 
 // Updated symptom categories with expanded dental symptoms based on dental departments
 const symptomCategories = [
@@ -120,8 +121,14 @@ const HealthCheck = () => {
   const [currentSymptomForPhoto, setCurrentSymptomForPhoto] = useState<string>("");
   const [cameraActive, setCameraActive] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [medicalData, setMedicalData] = useState<AggregatedMedicalData | null>(null);
-  const [loadingMedicalData, setLoadingMedicalData] = useState(true);
+  
+  // Medical records selection state
+  const [userRecords, setUserRecords] = useState<MedicalRecord[]>([]);
+  const [loadingRecords, setLoadingRecords] = useState(true);
+  const [includeRecordsDecision, setIncludeRecordsDecision] = useState<'pending' | 'yes' | 'no'>('pending');
+  const [showRecordSelector, setShowRecordSelector] = useState(false);
+  const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
+  const [selectedRecordsData, setSelectedRecordsData] = useState<AggregatedMedicalData | null>(null);
 
   // Auto-populate weight from profile
   useEffect(() => {
@@ -130,28 +137,20 @@ const HealthCheck = () => {
     }
   }, [profile]);
 
-  // Fetch medical records data on mount
+  // Fetch medical records on mount (for display only, not auto-populate)
   useEffect(() => {
-    const fetchMedicalData = async () => {
+    const fetchRecords = async () => {
       try {
-        const data = await getAggregatedMedicalData();
-        setMedicalData(data);
-        
-        // Auto-populate conditions and medications if user hasn't entered any
-        if (data.conditions.length > 0 && !previousConditions) {
-          setPreviousConditions(data.conditions.join(', '));
-        }
-        if (data.medications.length > 0 && !medications) {
-          setMedications(data.medications.join(', '));
-        }
+        const records = await getMedicalRecords();
+        setUserRecords(records);
       } catch (error) {
-        console.error('Error fetching medical data:', error);
+        console.error('Error fetching medical records:', error);
       } finally {
-        setLoadingMedicalData(false);
+        setLoadingRecords(false);
       }
     };
     
-    fetchMedicalData();
+    fetchRecords();
   }, []);
 
   // Add cleanup effect for camera stream
@@ -163,6 +162,41 @@ const HealthCheck = () => {
       }
     };
   }, [stream]);
+
+  // Handle confirming record selection
+  const handleConfirmRecordSelection = async () => {
+    if (selectedRecordIds.length === 0) {
+      setShowRecordSelector(false);
+      return;
+    }
+
+    try {
+      const data = await getMedicalDataFromRecords(selectedRecordIds);
+      setSelectedRecordsData(data);
+      
+      // Populate conditions and medications from selected records
+      if (data.conditions.length > 0) {
+        setPreviousConditions(data.conditions.join(', '));
+      }
+      if (data.medications.length > 0) {
+        setMedications(data.medications.join(', '));
+      }
+      
+      setShowRecordSelector(false);
+      
+      toast({
+        title: "Records included",
+        description: `Data from ${selectedRecordIds.length} record${selectedRecordIds.length > 1 ? 's' : ''} added to your health check.`,
+      });
+    } catch (error) {
+      console.error('Error fetching selected records data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load selected records data.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSymptomToggle = (symptom: string, category: string) => {
     setSelectedSymptoms((current) => {
@@ -578,8 +612,8 @@ const HealthCheck = () => {
       </div>
       
       <form className="space-y-8">
-        {/* Medical Records Integration Banner */}
-        {!loadingMedicalData && medicalData && medicalData.recordCount > 0 && (
+        {/* Medical Records Permission Banner */}
+        {!loadingRecords && userRecords.length > 0 && includeRecordsDecision === 'pending' && (
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="pt-4">
               <div className="flex items-start gap-3">
@@ -587,64 +621,101 @@ const HealthCheck = () => {
                   <FileHeart className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-sm mb-1">Your Medical History</h3>
+                  <h3 className="font-semibold text-sm mb-1">Include Medical Records?</h3>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Based on {medicalData.recordCount} uploaded medical record{medicalData.recordCount > 1 ? 's' : ''}
+                    You have {userRecords.length} uploaded medical record{userRecords.length > 1 ? 's' : ''}. 
+                    Would you like to include data from these records for more accurate analysis?
                   </p>
                   
-                  {medicalData.conditions.length > 0 && (
-                    <div className="mb-2">
-                      <span className="text-xs font-medium mr-2">Conditions:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {medicalData.conditions.slice(0, 5).map((condition, i) => (
-                          <Badge key={i} variant="outline" className="text-xs bg-red-500/5 text-red-600 border-red-200">
-                            {condition}
-                          </Badge>
-                        ))}
-                        {medicalData.conditions.length > 5 && (
-                          <Badge variant="outline" className="text-xs">+{medicalData.conditions.length - 5} more</Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {medicalData.medications.length > 0 && (
-                    <div className="mb-3">
-                      <span className="text-xs font-medium mr-2">Medications:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {medicalData.medications.slice(0, 5).map((med, i) => (
-                          <Badge key={i} variant="outline" className="text-xs bg-blue-500/5 text-blue-600 border-blue-200">
-                            {med}
-                          </Badge>
-                        ))}
-                        {medicalData.medications.length > 5 && (
-                          <Badge variant="outline" className="text-xs">+{medicalData.medications.length - 5} more</Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
                   <div className="flex gap-2">
-                    <Link to="/my-medical-records">
-                      <Button variant="outline" size="sm" className="text-xs">
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        View Records
-                      </Button>
-                    </Link>
-                    <Link to="/my-medical-records">
-                      <Button variant="ghost" size="sm" className="text-xs">
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add More
-                      </Button>
-                    </Link>
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        setIncludeRecordsDecision('yes');
+                        setShowRecordSelector(true);
+                      }}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Yes, Select Records
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIncludeRecordsDecision('no')}
+                    >
+                      No, Skip
+                    </Button>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
-        
-        {!loadingMedicalData && (!medicalData || medicalData.recordCount === 0) && (
+
+        {/* Selected Records Summary (after user has selected records) */}
+        {includeRecordsDecision === 'yes' && selectedRecordIds.length > 0 && selectedRecordsData && (
+          <Card className="border-green-500/20 bg-green-500/5">
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-green-500/10 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm mb-1 text-green-700">
+                    {selectedRecordIds.length} Record{selectedRecordIds.length > 1 ? 's' : ''} Selected
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Medical history from selected records will be included in your analysis.
+                  </p>
+                  
+                  {selectedRecordsData.conditions.length > 0 && (
+                    <div className="mb-2">
+                      <span className="text-xs font-medium mr-2">Conditions:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedRecordsData.conditions.slice(0, 5).map((condition, i) => (
+                          <Badge key={i} variant="outline" className="text-xs bg-red-500/5 text-red-600 border-red-200">
+                            {condition}
+                          </Badge>
+                        ))}
+                        {selectedRecordsData.conditions.length > 5 && (
+                          <Badge variant="outline" className="text-xs">+{selectedRecordsData.conditions.length - 5} more</Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedRecordsData.medications.length > 0 && (
+                    <div className="mb-3">
+                      <span className="text-xs font-medium mr-2">Medications:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedRecordsData.medications.slice(0, 5).map((med, i) => (
+                          <Badge key={i} variant="outline" className="text-xs bg-blue-500/5 text-blue-600 border-blue-200">
+                            {med}
+                          </Badge>
+                        ))}
+                        {selectedRecordsData.medications.length > 5 && (
+                          <Badge variant="outline" className="text-xs">+{selectedRecordsData.medications.length - 5} more</Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs"
+                    onClick={() => setShowRecordSelector(true)}
+                  >
+                    Change Selection
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No records state */}
+        {!loadingRecords && userRecords.length === 0 && (
           <Card className="border-dashed">
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
@@ -1015,6 +1086,16 @@ const HealthCheck = () => {
           </CardFooter>
         </Card>
       </form>
+
+      {/* Medical Record Selector Dialog */}
+      <MedicalRecordSelector
+        open={showRecordSelector}
+        onOpenChange={setShowRecordSelector}
+        records={userRecords}
+        selectedRecords={selectedRecordIds}
+        onSelectionChange={setSelectedRecordIds}
+        onConfirm={handleConfirmRecordSelection}
+      />
     </div>
   );
 };
