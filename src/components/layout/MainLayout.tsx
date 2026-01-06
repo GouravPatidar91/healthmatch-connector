@@ -6,6 +6,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useUserProfile } from "@/services/userDataService";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Footer from "./Footer";
 
 const MainLayout = () => {
@@ -15,6 +17,11 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { isAdmin, isPharmacy, loading: rolesLoading } = useUserRole();
+  const { profile } = useUserProfile();
+  
+  const userInitials = profile?.first_name && profile?.last_name 
+    ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
+    : user?.email?.[0]?.toUpperCase() || 'U';
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -103,9 +110,17 @@ const MainLayout = () => {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center space-x-4">
               {user && (
-                <div className="text-sm text-gray-600 font-medium px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-blue-100">
-                  {user.user_metadata.name || user.email}
-                </div>
+                <Link to="/profile" className="flex items-center gap-3 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-blue-100 hover:bg-blue-50 transition-colors">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={profile?.avatar_url || ""} alt="Profile" />
+                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-gray-600 font-medium">
+                    {profile?.first_name || user.user_metadata.name || user.email?.split('@')[0]}
+                  </span>
+                </Link>
               )}
               <Button 
                 variant="ghost" 
@@ -135,9 +150,20 @@ const MainLayout = () => {
                   </div>
                   
                   {user && (
-                    <div className="px-4 py-3 mb-6 text-sm text-gray-600 bg-blue-50/50 rounded-xl border border-blue-100">
-                      {user.user_metadata.name || user.email}
-                    </div>
+                    <Link to="/profile" className="flex items-center gap-3 px-4 py-3 mb-6 bg-blue-50/50 rounded-xl border border-blue-100 hover:bg-blue-100/50 transition-colors">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={profile?.avatar_url || ""} alt="Profile" />
+                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : 'Your Profile'}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </Link>
                   )}
                   
                   <nav className="flex flex-col gap-2">
