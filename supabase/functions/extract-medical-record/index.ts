@@ -1,7 +1,6 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,8 +22,8 @@ serve(async (req) => {
       );
     }
 
-    if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY not configured');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -50,7 +49,7 @@ IMPORTANT:
 - Return ONLY the JSON object, no additional text
 - If a field cannot be determined, use an empty array for arrays or null for strings`;
 
-    // Determine MIME type for Gemini
+    // Determine MIME type for the image
     let mimeType = fileType;
     if (fileType === 'application/pdf') {
       mimeType = 'application/pdf';
@@ -58,63 +57,77 @@ IMPORTANT:
       mimeType = fileType;
     }
 
-    const requestBody = {
-      contents: [
-        {
-          parts: [
-            { text: extractionPrompt },
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data: fileContent
-              }
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 2048,
-      }
-    };
-
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+    // Build the message with image content for vision model
+    const messages = [
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        role: 'user',
+        content: [
+          { type: 'text', text: extractionPrompt },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:${mimeType};base64,${fileContent}`
+            }
+          }
+        ]
       }
-    );
+    ];
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('[ExtractMedicalRecord] Gemini API error:', errorText);
+    console.log(`[ExtractMedicalRecord] Calling Lovable AI Gateway with model: google/gemini-2.5-flash`);
+
+    // Call Lovable AI Gateway (uses Gemini 2.5 Flash with vision)
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: messages,
+        max_tokens: 2048,
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[ExtractMedicalRecord] Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Usage limit reached. Please add credits.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: 'Failed to analyze document' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const geminiData = await geminiResponse.json();
+    const aiData = await response.json();
     
-    if (!geminiData.candidates || !geminiData.candidates[0]?.content?.parts?.[0]?.text) {
-      console.error('[ExtractMedicalRecord] Invalid Gemini response:', geminiData);
+    if (!aiData.choices || !aiData.choices[0]?.message?.content) {
+      console.error('[ExtractMedicalRecord] Invalid AI response:', aiData);
       return new Response(
         JSON.stringify({ error: 'Invalid response from AI' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const responseText = geminiData.candidates[0].content.parts[0].text;
+    const responseText = aiData.choices[0].message.content;
     console.log('[ExtractMedicalRecord] Raw response:', responseText);
 
     // Parse JSON from response
     let extractedData;
     try {
-      // Try to extract JSON from the response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         extractedData = JSON.parse(jsonMatch[0]);
@@ -123,7 +136,6 @@ IMPORTANT:
       }
     } catch (parseError) {
       console.error('[ExtractMedicalRecord] JSON parse error:', parseError);
-      // Return default structure if parsing fails
       extractedData = {
         conditions: [],
         medications: [],
