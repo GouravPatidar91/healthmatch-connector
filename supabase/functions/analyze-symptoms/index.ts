@@ -20,7 +20,8 @@ serve(async (req) => {
       severity, 
       duration, 
       height, 
-      weight, 
+      weight,
+      age,
       symptomDetails, 
       previousConditions, 
       medications, 
@@ -48,6 +49,9 @@ serve(async (req) => {
     const durationInfo = duration ? `Duration: ${duration}` : "";
     
     let clinicalContext = "";
+    if (age) {
+      clinicalContext += `Patient Age: ${age} years\n`;
+    }
     if (height && weight) {
       const heightInMeters = height / 100;
       const bmi = weight / (heightInMeters * heightInMeters);

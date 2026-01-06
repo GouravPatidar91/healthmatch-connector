@@ -1596,8 +1596,10 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          age: number | null
           allergies: string | null
           avatar_url: string | null
+          blood_group: string | null
           city: string | null
           created_at: string
           date_of_birth: string | null
@@ -1618,11 +1620,14 @@ export type Database = {
           phone: string | null
           region: string | null
           updated_at: string
+          weight: number | null
         }
         Insert: {
           address?: string | null
+          age?: number | null
           allergies?: string | null
           avatar_url?: string | null
+          blood_group?: string | null
           city?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -1643,11 +1648,14 @@ export type Database = {
           phone?: string | null
           region?: string | null
           updated_at?: string
+          weight?: number | null
         }
         Update: {
           address?: string | null
+          age?: number | null
           allergies?: string | null
           avatar_url?: string | null
+          blood_group?: string | null
           city?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -1668,6 +1676,7 @@ export type Database = {
           phone?: string | null
           region?: string | null
           updated_at?: string
+          weight?: number | null
         }
         Relationships: []
       }
