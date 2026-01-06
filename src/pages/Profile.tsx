@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserProfile, Profile as ProfileType } from "@/services/userDataService";
 import { getWorldCities, getCurrentPosition, getNearbyCities } from "@/utils/geolocation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, Camera, User } from "lucide-react";
 import { MapboxLocationPicker } from "@/components/maps/MapboxLocationPicker";
 import { supabase } from "@/integrations/supabase/client";
+
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 // Simple location selector without map dependency
 
@@ -21,6 +23,7 @@ const Profile = () => {
   const { toast } = useToast();
   const { profile, loading, error, updateProfile } = useUserProfile();
   const isMobile = useIsMobile();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<Partial<ProfileType>>({
     first_name: "",
     last_name: "",
@@ -34,11 +37,16 @@ const Profile = () => {
     medications: "",
     emergency_contact_name: "",
     emergency_contact_relationship: "",
-    emergency_contact_phone: ""
+    emergency_contact_phone: "",
+    avatar_url: "",
+    blood_group: "",
+    age: undefined,
+    weight: undefined
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   const [passwordForm, setPasswordForm] = useState({
     password: "",
@@ -58,18 +66,72 @@ const Profile = () => {
         gender: profile.gender || "",
         phone: profile.phone || "",
         address: profile.address || "",
-        city: profile.region || "", // Use region data as city initially
+        city: profile.region || "",
         medical_history: profile.medical_history || "",
         allergies: profile.allergies || "",
         medications: profile.medications || "",
         emergency_contact_name: profile.emergency_contact_name || "",
         emergency_contact_relationship: profile.emergency_contact_relationship || "",
-        emergency_contact_phone: profile.emergency_contact_phone || ""
+        emergency_contact_phone: profile.emergency_contact_phone || "",
+        avatar_url: profile.avatar_url || "",
+        blood_group: profile.blood_group || "",
+        age: profile.age || undefined,
+        weight: profile.weight || undefined
       });
     } else {
       console.log("No profile data available");
     }
   }, [profile]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image under 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+      
+      toast({
+        title: "Photo uploaded",
+        description: "Your profile photo has been updated"
+      });
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload photo. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingAvatar(false);
+      if (e.target) e.target.value = '';
+    }
+  };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -311,6 +373,42 @@ const Profile = () => {
               <CardDescription className="text-sm md:text-base">Update your personal details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Avatar Upload Section */}
+              <div className="flex flex-col items-center mb-6">
+                <div 
+                  className="relative w-24 h-24 rounded-full overflow-hidden cursor-pointer group border-2 border-primary/20 hover:border-primary/50 transition-colors"
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  {formData.avatar_url ? (
+                    <img 
+                      src={formData.avatar_url} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <User className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="h-6 w-6 text-white" />
+                  </div>
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <input 
+                  type="file"
+                  ref={avatarInputRef}
+                  onChange={handleAvatarChange}
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                />
+                <p className="text-sm text-muted-foreground mt-2">Click to upload photo</p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="first_name" className="text-sm md:text-base">First Name</Label>
@@ -360,6 +458,62 @@ const Profile = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Health Information Section */}
+                <Separator className="md:col-span-2 my-2" />
+                <div className="md:col-span-2">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Health Information</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="blood_group" className="text-sm md:text-base">Blood Group</Label>
+                  <Select 
+                    value={formData.blood_group || ""} 
+                    onValueChange={value => setFormData(prev => ({ ...prev, blood_group: value }))}
+                  >
+                    <SelectTrigger className="text-sm md:text-base">
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BLOOD_GROUPS.map(group => (
+                        <SelectItem key={group} value={group}>{group}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="age" className="text-sm md:text-base">Age (years)</Label>
+                  <Input
+                    id="age"
+                    name="age"
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={formData.age || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value ? parseInt(e.target.value) : undefined }))}
+                    placeholder="Enter your age"
+                    className="text-sm md:text-base"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight" className="text-sm md:text-base">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    name="weight"
+                    type="number"
+                    min="1"
+                    max="500"
+                    step="0.1"
+                    value={formData.weight || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                    placeholder="Enter your weight"
+                    className="text-sm md:text-base"
+                  />
+                  <p className="text-xs text-muted-foreground">Used in AI Health Check for accurate analysis</p>
+                </div>
+
+                <Separator className="md:col-span-2 my-2" />
+
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-sm md:text-base">Phone Number</Label>
                   <Input

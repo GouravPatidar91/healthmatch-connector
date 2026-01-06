@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useUserHealthChecks } from '@/services/userDataService';
+import { useUserHealthChecks, useUserProfile } from '@/services/userDataService';
 import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera, X, FileHeart, Plus, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,6 +99,7 @@ const MAX_IMAGE_DIMENSION = 1024;
 const HealthCheck = () => {
   const navigate = useNavigate();
   const { saveHealthCheck } = useUserHealthChecks();
+  const { profile } = useUserProfile();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -121,6 +122,13 @@ const HealthCheck = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [medicalData, setMedicalData] = useState<AggregatedMedicalData | null>(null);
   const [loadingMedicalData, setLoadingMedicalData] = useState(true);
+
+  // Auto-populate weight from profile
+  useEffect(() => {
+    if (profile?.weight && !weight) {
+      setWeight(profile.weight.toString());
+    }
+  }, [profile]);
 
   // Fetch medical records data on mount
   useEffect(() => {
@@ -437,7 +445,8 @@ const HealthCheck = () => {
           severity,
           duration,
           height: height ? parseFloat(height) : null,
-          weight: weight ? parseFloat(weight) : null,
+          weight: weight ? parseFloat(weight) : (profile?.weight || null),
+          age: profile?.age || null,
           symptomDetails: symptomsWithPhotos,
           previousConditions: previousConditions ? previousConditions.split(',').map(item => item.trim()).filter(item => item) : [],
           medications: medications ? medications.split(',').map(item => item.trim()).filter(item => item) : [],
