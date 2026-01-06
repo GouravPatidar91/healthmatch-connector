@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Emergency from "./pages/Emergency";
 import MedicalReports from "./pages/MedicalReports";
+import MyMedicalRecords from "./pages/MyMedicalRecords";
 import VendorDashboard from "./pages/VendorDashboard";
 import VendorRegistration from "./pages/VendorRegistration";
 import VendorOrderManagement from "./pages/VendorOrderManagement";
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="/medicine" element={<Medicine />} />
               <Route path="/vendor-registration" element={<VendorRegistration />} />
               <Route path="/medical-reports" element={<MedicalReports />} />
+              <Route path="/my-medical-records" element={<MyMedicalRecords />} />
               <Route path="/emergency" element={<Emergency />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />

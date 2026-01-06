@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,10 +7,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useUserHealthChecks } from '@/services/userDataService';
-import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera, X } from 'lucide-react';
+import { Loader2, Upload, Image as ImageIcon, AlertCircle, Camera, X, FileHeart, Plus, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getAggregatedMedicalData, AggregatedMedicalData } from '@/services/medicalRecordService';
 
 // Updated symptom categories with expanded dental symptoms based on dental departments
 const symptomCategories = [
@@ -117,6 +119,32 @@ const HealthCheck = () => {
   const [currentSymptomForPhoto, setCurrentSymptomForPhoto] = useState<string>("");
   const [cameraActive, setCameraActive] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [medicalData, setMedicalData] = useState<AggregatedMedicalData | null>(null);
+  const [loadingMedicalData, setLoadingMedicalData] = useState(true);
+
+  // Fetch medical records data on mount
+  useEffect(() => {
+    const fetchMedicalData = async () => {
+      try {
+        const data = await getAggregatedMedicalData();
+        setMedicalData(data);
+        
+        // Auto-populate conditions and medications if user hasn't entered any
+        if (data.conditions.length > 0 && !previousConditions) {
+          setPreviousConditions(data.conditions.join(', '));
+        }
+        if (data.medications.length > 0 && !medications) {
+          setMedications(data.medications.join(', '));
+        }
+      } catch (error) {
+        console.error('Error fetching medical data:', error);
+      } finally {
+        setLoadingMedicalData(false);
+      }
+    };
+    
+    fetchMedicalData();
+  }, []);
 
   // Add cleanup effect for camera stream
   useEffect(() => {
@@ -541,6 +569,94 @@ const HealthCheck = () => {
       </div>
       
       <form className="space-y-8">
+        {/* Medical Records Integration Banner */}
+        {!loadingMedicalData && medicalData && medicalData.recordCount > 0 && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileHeart className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm mb-1">Your Medical History</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Based on {medicalData.recordCount} uploaded medical record{medicalData.recordCount > 1 ? 's' : ''}
+                  </p>
+                  
+                  {medicalData.conditions.length > 0 && (
+                    <div className="mb-2">
+                      <span className="text-xs font-medium mr-2">Conditions:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {medicalData.conditions.slice(0, 5).map((condition, i) => (
+                          <Badge key={i} variant="outline" className="text-xs bg-red-500/5 text-red-600 border-red-200">
+                            {condition}
+                          </Badge>
+                        ))}
+                        {medicalData.conditions.length > 5 && (
+                          <Badge variant="outline" className="text-xs">+{medicalData.conditions.length - 5} more</Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {medicalData.medications.length > 0 && (
+                    <div className="mb-3">
+                      <span className="text-xs font-medium mr-2">Medications:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {medicalData.medications.slice(0, 5).map((med, i) => (
+                          <Badge key={i} variant="outline" className="text-xs bg-blue-500/5 text-blue-600 border-blue-200">
+                            {med}
+                          </Badge>
+                        ))}
+                        {medicalData.medications.length > 5 && (
+                          <Badge variant="outline" className="text-xs">+{medicalData.medications.length - 5} more</Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Link to="/my-medical-records">
+                      <Button variant="outline" size="sm" className="text-xs">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        View Records
+                      </Button>
+                    </Link>
+                    <Link to="/my-medical-records">
+                      <Button variant="ghost" size="sm" className="text-xs">
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add More
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {!loadingMedicalData && (!medicalData || medicalData.recordCount === 0) && (
+          <Card className="border-dashed">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileHeart className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">No medical records uploaded</p>
+                    <p className="text-xs text-muted-foreground">Upload records for more accurate AI analysis</p>
+                  </div>
+                </div>
+                <Link to="/my-medical-records">
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Records
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Patient Physical Information */}
         <Card>
           <CardHeader>
