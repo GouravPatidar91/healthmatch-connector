@@ -612,6 +612,10 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="notifications">
+            <AdminNotificationCenter />
+          </TabsContent>
           
           <TabsContent value="wallets" className="space-y-6">
             <AdminWalletStats stats={walletStats} loading={walletLoading} />
