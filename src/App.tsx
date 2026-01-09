@@ -23,6 +23,7 @@ import VendorDashboard from "./pages/VendorDashboard";
 import VendorRegistration from "./pages/VendorRegistration";
 import VendorOrderManagement from "./pages/VendorOrderManagement";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import InternshipTerms from "./pages/InternshipTerms";
 import NotFound from "./pages/NotFound";
 import DoctorRegistration from "./pages/DoctorRegistration";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/Privacy Policy" element={<PrivacyPolicy />} />
+            <Route path="/Terms of Service" element={<TermsOfService />} />
             <Route path="/internship-terms" element={<InternshipTerms />} />
             <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
 
