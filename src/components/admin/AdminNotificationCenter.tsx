@@ -98,77 +98,25 @@ export const AdminNotificationCenter: React.FC = () => {
 
     setSending(true);
     try {
-      // Create broadcast record
-      const { data: broadcast, error: broadcastError } = await supabase
-        .from('admin_broadcast_notifications')
-        .insert({
+      // Use edge function that has service role access to bypass RLS
+      const response = await supabase.functions.invoke('broadcast-notification', {
+        body: {
           title: manualTitle,
           message: manualMessage,
           type: notificationType,
-          target_audience: targetAudience,
-          is_ai_generated: false,
-          created_by: user?.id,
-          status: 'sending',
-        })
-        .select()
-        .single();
+          targetAudience: targetAudience,
+          isAiGenerated: false,
+          createdBy: user?.id,
+        },
+      });
 
-      if (broadcastError) throw broadcastError;
+      if (response.error) throw response.error;
 
-      // Get all user IDs based on target audience
-      let userQuery = supabase.from('profiles').select('id');
-      
-      if (targetAudience === 'active_users') {
-        // Users with health checks in last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const { data: activeUsers } = await supabase
-          .from('health_checks')
-          .select('user_id')
-          .gte('created_at', thirtyDaysAgo.toISOString());
-        
-        const activeUserIds = [...new Set(activeUsers?.map(u => u.user_id) || [])];
-        if (activeUserIds.length > 0) {
-          userQuery = userQuery.in('id', activeUserIds);
-        }
-      }
-
-      const { data: users, error: usersError } = await userQuery;
-      if (usersError) throw usersError;
-
-      // Create notifications for all users
-      const notifications = (users || []).map((profile) => ({
-        user_id: profile.id,
-        type: notificationType,
-        title: manualTitle,
-        message: manualMessage,
-        notification_category: notificationType,
-        priority: 'normal',
-        metadata: { broadcast_id: broadcast.id },
-      }));
-
-      if (notifications.length > 0) {
-        const { error: notifError } = await supabase
-          .from('customer_notifications')
-          .insert(notifications);
-
-        if (notifError) throw notifError;
-      }
-
-      // Update broadcast status
-      await supabase
-        .from('admin_broadcast_notifications')
-        .update({
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-          recipients_count: notifications.length,
-        })
-        .eq('id', broadcast.id);
+      const { recipientsCount } = response.data;
 
       toast({
         title: '🎉 Notification Sent!',
-        description: `Successfully sent to ${notifications.length} users.`,
+        description: `Successfully sent to ${recipientsCount} users.`,
       });
 
       // Reset form
@@ -234,59 +182,26 @@ export const AdminNotificationCenter: React.FC = () => {
 
     setSending(true);
     try {
-      // Create broadcast record
-      const { data: broadcast, error: broadcastError } = await supabase
-        .from('admin_broadcast_notifications')
-        .insert({
+      // Use edge function that has service role access to bypass RLS
+      const response = await supabase.functions.invoke('broadcast-notification', {
+        body: {
           title: generatedTitle,
           message: generatedMessage,
           type: 'marketing',
-          target_audience: 'all',
-          is_ai_generated: true,
-          ai_prompt: aiPrompt,
-          created_by: user?.id,
-          status: 'sending',
-        })
-        .select()
-        .single();
+          targetAudience: 'all',
+          isAiGenerated: true,
+          aiPrompt: aiPrompt,
+          createdBy: user?.id,
+        },
+      });
 
-      if (broadcastError) throw broadcastError;
+      if (response.error) throw response.error;
 
-      // Get all users
-      const { data: users, error: usersError } = await supabase
-        .from('profiles')
-        .select('id');
-
-      if (usersError) throw usersError;
-
-      // Create notifications
-      const notifications = (users || []).map((profile) => ({
-        user_id: profile.id,
-        type: 'marketing',
-        title: generatedTitle,
-        message: generatedMessage,
-        notification_category: 'marketing',
-        priority: 'normal',
-        metadata: { broadcast_id: broadcast.id, ai_generated: true },
-      }));
-
-      if (notifications.length > 0) {
-        await supabase.from('customer_notifications').insert(notifications);
-      }
-
-      // Update broadcast
-      await supabase
-        .from('admin_broadcast_notifications')
-        .update({
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-          recipients_count: notifications.length,
-        })
-        .eq('id', broadcast.id);
+      const { recipientsCount } = response.data;
 
       toast({
         title: '🚀 Sent Successfully!',
-        description: `AI notification sent to ${notifications.length} users.`,
+        description: `AI notification sent to ${recipientsCount} users.`,
       });
 
       // Reset
