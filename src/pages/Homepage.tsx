@@ -583,7 +583,7 @@ const Footer = () => {
             </li>
             <li>
               <button
-                onClick={() => navigate("/terms-of-service")}
+                onClick={() => navigate("/Terms of Service")}
                 className="hover:text-blue-400 transition-colors"
               >
                 Terms of Service

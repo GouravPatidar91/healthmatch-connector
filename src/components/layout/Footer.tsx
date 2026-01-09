@@ -72,10 +72,10 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
+                <Link to="/Terms of Service" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
                   <FileText className="h-2.5 w-2.5" />
                   Terms of Service
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -113,9 +113,9 @@ const Footer = () => {
               <Link to="/Privacy Policy" className="text-slate-400 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
-              <a href="#" className="text-slate-400 hover:text-white transition-colors">
+              <Link to="/Terms of Service" className="text-slate-400 hover:text-white transition-colors">
                 Terms of Service
-              </a>
+              </Link>
             </div>
           </div>
         </div>
