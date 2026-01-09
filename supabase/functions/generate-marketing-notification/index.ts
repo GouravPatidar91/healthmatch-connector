@@ -39,8 +39,11 @@ Requirements:
 - Title: Maximum 50 characters, use a relevant emoji at the start
 - Message: Maximum 150 characters, ${toneDescriptions[tone] || 'friendly and engaging'}
 - ${brandingInstruction}
+- IMPORTANT: Use Hinglish (Hindi-English mix) language that Indians commonly use in daily conversation
+- Examples of Hinglish: "Aaj ka health tip", "Apni health ka khayal rakho", "Yaar, ye try karo!", "Tension mat lo"
+- Mix Hindi words naturally with English - don't force it, keep it conversational and relatable
 - Make it action-oriented and create urgency where appropriate
-- Keep language simple and accessible
+- Keep language simple, fun, and accessible to all Indians
 - Must be suitable for all age groups
 
 Return ONLY a valid JSON object with this exact structure:
