@@ -575,7 +575,7 @@ const Footer = () => {
           <ul className="space-y-3 text-sm">
             <li>
               <button
-                onClick={() => navigate("/privacy-policy")}
+                onClick={() => navigate("/privacy")}
                 className="hover:text-blue-400 transition-colors"
               >
                 Privacy Policy
@@ -593,7 +593,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
-        © 2025 Curezy. All rights reserved. | <button onClick={() => navigate("/privacy-policy")} className="hover:text-blue-400 transition-colors">Privacy Policy</button>
+        © 2025 Curezy. All rights reserved. | <button onClick={() => navigate("/privacy")} className="hover:text-blue-400 transition-colors">Privacy Policy</button>
       </div>
     </footer>
   );

@@ -51,7 +51,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/internship-terms" element={<InternshipTerms />} />
             <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
 

@@ -66,7 +66,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/privacy-policy" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
+                <Link to="/privacy" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
                   <Shield className="h-2.5 w-2.5" />
                   Privacy Policy
                 </Link>
@@ -110,7 +110,7 @@ const Footer = () => {
               © {new Date().getFullYear()} Curezy. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-xs">
-              <Link to="/privacy-policy" className="text-slate-400 hover:text-white transition-colors">
+              <Link to="/privacy" className="text-slate-400 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
               <a href="#" className="text-slate-400 hover:text-white transition-colors">
