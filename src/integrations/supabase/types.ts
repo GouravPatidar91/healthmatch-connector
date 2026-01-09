@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_broadcast_notifications: {
+        Row: {
+          ai_prompt: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_ai_generated: boolean | null
+          message: string
+          recipients_count: number | null
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string | null
+          target_audience: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          ai_prompt?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_ai_generated?: boolean | null
+          message: string
+          recipients_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_audience?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          ai_prompt?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_ai_generated?: boolean | null
+          message?: string
+          recipients_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_audience?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       appointment_slots: {
         Row: {
           created_at: string
@@ -265,42 +313,58 @@ export type Database = {
       }
       customer_notifications: {
         Row: {
+          broadcast_id: string | null
           created_at: string | null
           id: string
           is_read: boolean | null
           message: string
           metadata: Json | null
+          notification_category: string | null
           order_id: string | null
+          priority: string | null
           read_at: string | null
           title: string
           type: string
           user_id: string
         }
         Insert: {
+          broadcast_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
           message: string
           metadata?: Json | null
+          notification_category?: string | null
           order_id?: string | null
+          priority?: string | null
           read_at?: string | null
           title: string
           type: string
           user_id: string
         }
         Update: {
+          broadcast_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
           message?: string
           metadata?: Json | null
+          notification_category?: string | null
           order_id?: string | null
+          priority?: string | null
           read_at?: string | null
           title?: string
           type?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "customer_notifications_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "admin_broadcast_notifications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customer_notifications_order_id_fkey"
             columns: ["order_id"]
@@ -1677,6 +1741,36 @@ export type Database = {
           region?: string | null
           updated_at?: string
           weight?: number | null
+        }
+        Relationships: []
+      }
+      push_notification_tokens: {
+        Row: {
+          created_at: string | null
+          device_type: string | null
+          fcm_token: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_type?: string | null
+          fcm_token: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_type?: string | null
+          fcm_token?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

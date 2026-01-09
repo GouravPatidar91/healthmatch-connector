@@ -9,6 +9,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useUserProfile } from "@/services/userDataService";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Footer from "./Footer";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -108,6 +109,9 @@ const MainLayout = () => {
           </Link>
           
           <div className="flex items-center gap-4">
+            {/* Notification Bell */}
+            {user && <NotificationBell />}
+            
             <div className="hidden md:flex items-center space-x-4">
               {user && (
                 <Link to="/profile" className="flex items-center gap-3 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-blue-100 hover:bg-blue-50 transition-colors">
