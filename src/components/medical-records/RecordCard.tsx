@@ -17,11 +17,12 @@ import {
   ChevronUp,
   Calendar,
   User,
-  Building2
+  Building2,
+  RefreshCw
 } from 'lucide-react';
-import { MedicalRecord, getSignedUrl, deleteMedicalRecord } from '@/services/medicalRecordService';
+import { MedicalRecord, getSignedUrl, deleteMedicalRecord, retryRecordAnalysis } from '@/services/medicalRecordService';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, differenceInMinutes } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +53,12 @@ export default function RecordCard({ record, onDelete }: RecordCardProps) {
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const { toast } = useToast();
+
+  // Check if record is old enough to show retry button (2 minutes)
+  const isOldEnoughForRetry = differenceInMinutes(new Date(), new Date(record.created_at)) >= 2;
+  const showRetryButton = !record.is_analyzed && isOldEnoughForRetry;
 
   const config = RECORD_TYPE_CONFIG[record.record_type] || RECORD_TYPE_CONFIG.other;
   const Icon = config.icon;
@@ -115,6 +121,34 @@ export default function RecordCard({ record, onDelete }: RecordCardProps) {
     }
   };
 
+  const handleRetryAnalysis = async () => {
+    setRetrying(true);
+    try {
+      const success = await retryRecordAnalysis(record.id);
+      if (success) {
+        toast({
+          title: 'Analysis complete',
+          description: 'Medical data has been extracted successfully.',
+        });
+        onDelete(); // Refresh the list
+      } else {
+        toast({
+          title: 'Analysis failed',
+          description: 'Could not extract data. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Retry failed',
+        description: error.message || 'Failed to retry analysis.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   const hasExtractedData = record.extracted_conditions?.length > 0 || 
                            record.extracted_medications?.length > 0 ||
                            record.extracted_summary;
@@ -130,14 +164,19 @@ export default function RecordCard({ record, onDelete }: RecordCardProps) {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm truncate">{record.title}</h3>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge variant="secondary" className="text-xs">
                   {config.label}
                 </Badge>
-                {!record.is_analyzed && (
+                {!record.is_analyzed && !showRetryButton && (
                   <Badge variant="outline" className="text-xs">
                     <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                     Analyzing...
+                  </Badge>
+                )}
+                {showRetryButton && (
+                  <Badge variant="destructive" className="text-xs">
+                    Analysis failed
                   </Badge>
                 )}
               </div>
@@ -225,6 +264,31 @@ export default function RecordCard({ record, onDelete }: RecordCardProps) {
                   {record.extracted_summary}
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Retry Analysis Button */}
+          {showRetryButton && (
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleRetryAnalysis}
+                disabled={retrying}
+              >
+                {retrying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry Analysis
+                  </>
+                )}
+              </Button>
             </div>
           )}
 

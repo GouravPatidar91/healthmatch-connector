@@ -52,13 +52,16 @@ export async function getMedicalRecords(): Promise<MedicalRecord[]> {
   return (data || []) as MedicalRecord[];
 }
 
-// Upload and analyze a new medical record
+// Upload and analyze a new medical record synchronously
 export async function uploadMedicalRecord(
   file: File,
-  metadata: RecordMetadata
+  metadata: RecordMetadata,
+  onProgress?: (status: string, percent: number) => void
 ): Promise<MedicalRecord> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
+  onProgress?.('Uploading file...', 10);
 
   // Generate unique file path
   const fileExt = file.name.split('.').pop();
@@ -70,6 +73,8 @@ export async function uploadMedicalRecord(
     .upload(fileName, file);
 
   if (uploadError) throw uploadError;
+
+  onProgress?.('Processing...', 30);
 
   // Get public URL
   const { data: urlData } = supabase.storage
@@ -98,14 +103,59 @@ export async function uploadMedicalRecord(
 
   if (insertError) throw insertError;
 
-  // Trigger AI analysis in background
-  analyzeRecordInBackground(record.id, file);
+  onProgress?.('Extracting medical data with AI...', 50);
 
-  return record as MedicalRecord;
+  // Perform AI analysis SYNCHRONOUSLY
+  try {
+    const extractionResult = await analyzeRecord(record.id, file);
+    
+    if (extractionResult.success) {
+      onProgress?.('Saving extracted data...', 90);
+      
+      // Update record with extracted data
+      const { data: updatedRecord, error: updateError } = await supabase
+        .from('medical_records')
+        .update({
+          extracted_conditions: extractionResult.conditions || [],
+          extracted_medications: extractionResult.medications || [],
+          extracted_summary: extractionResult.summary || null,
+          doctor_name: extractionResult.doctor_name || record.doctor_name,
+          hospital_name: extractionResult.hospital_name || record.hospital_name,
+          is_analyzed: true,
+        })
+        .eq('id', record.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Failed to update record with extracted data:', updateError);
+        return record as MedicalRecord;
+      }
+
+      onProgress?.('Complete!', 100);
+      return updatedRecord as MedicalRecord;
+    } else {
+      console.error('AI extraction failed:', extractionResult.error);
+      // Return record without extraction (user can retry)
+      return record as MedicalRecord;
+    }
+  } catch (error) {
+    console.error('AI analysis error:', error);
+    // Return record without extraction (user can retry)
+    return record as MedicalRecord;
+  }
 }
 
-// Analyze record with AI (called in background)
-async function analyzeRecordInBackground(recordId: string, file: File) {
+// Analyze record with AI
+async function analyzeRecord(recordId: string, file: File): Promise<{
+  success: boolean;
+  conditions?: string[];
+  medications?: string[];
+  summary?: string;
+  doctor_name?: string;
+  hospital_name?: string;
+  error?: string;
+}> {
   try {
     // Convert file to base64
     const base64 = await fileToBase64(file);
@@ -121,27 +171,74 @@ async function analyzeRecordInBackground(recordId: string, file: File) {
     });
 
     if (error) {
-      console.error('Error analyzing medical record:', error);
-      return;
+      return { success: false, error: error.message };
     }
 
-    // Update record with extracted data
-    if (data) {
-      await supabase
-        .from('medical_records')
-        .update({
-          extracted_conditions: data.conditions || [],
-          extracted_medications: data.medications || [],
-          extracted_summary: data.summary || null,
-          doctor_name: data.doctor_name || null,
-          hospital_name: data.hospital_name || null,
-          is_analyzed: true,
-        })
-        .eq('id', recordId);
+    if (data?.error) {
+      return { success: false, error: data.error };
     }
-  } catch (error) {
-    console.error('Background analysis failed:', error);
+
+    return {
+      success: true,
+      conditions: data.conditions || [],
+      medications: data.medications || [],
+      summary: data.summary || null,
+      doctor_name: data.doctor_name || null,
+      hospital_name: data.hospital_name || null,
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Analysis failed' };
   }
+}
+
+// Retry analysis for a record
+export async function retryRecordAnalysis(recordId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Get the record
+  const { data: record, error: fetchError } = await supabase
+    .from('medical_records')
+    .select('*')
+    .eq('id', recordId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (fetchError || !record) throw new Error('Record not found');
+
+  // Get the file from storage
+  const urlParts = record.file_url.split('/medical-records/');
+  if (urlParts.length < 2) throw new Error('Invalid file URL');
+  
+  const filePath = urlParts[1];
+  const { data: fileData, error: downloadError } = await supabase.storage
+    .from('medical-records')
+    .download(filePath);
+
+  if (downloadError || !fileData) throw new Error('Failed to download file');
+
+  // Create a File object from the blob
+  const file = new File([fileData], record.file_name, { type: record.file_type });
+
+  // Run analysis
+  const result = await analyzeRecord(recordId, file);
+
+  if (result.success) {
+    await supabase
+      .from('medical_records')
+      .update({
+        extracted_conditions: result.conditions || [],
+        extracted_medications: result.medications || [],
+        extracted_summary: result.summary || null,
+        doctor_name: result.doctor_name || record.doctor_name,
+        hospital_name: result.hospital_name || record.hospital_name,
+        is_analyzed: true,
+      })
+      .eq('id', recordId);
+    return true;
+  }
+
+  return false;
 }
 
 // Convert file to base64
