@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.delivery-partner-response]
 verify_jwt = false
+
+[functions.extract-medical-record]
+verify_jwt = false

@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, Image, X, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Upload, FileText, Image, X, Loader2, CheckCircle2, Brain } from 'lucide-react';
 import { uploadMedicalRecord, RecordMetadata } from '@/services/medicalRecordService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,6 +25,8 @@ const RECORD_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
+type UploadPhase = 'idle' | 'uploading' | 'analyzing' | 'complete' | 'error';
+
 export default function UploadRecordDialog({ open, onOpenChange, onSuccess }: UploadRecordDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -32,8 +35,10 @@ export default function UploadRecordDialog({ open, onOpenChange, onSuccess }: Up
   const [doctorName, setDoctorName] = useState('');
   const [hospitalName, setHospitalName] = useState('');
   const [notes, setNotes] = useState('');
-  const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadPhase, setUploadPhase] = useState<UploadPhase>('idle');
+  const [progressStatus, setProgressStatus] = useState('');
+  const [progressPercent, setProgressPercent] = useState(0);
   const { toast } = useToast();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -85,6 +90,19 @@ export default function UploadRecordDialog({ open, onOpenChange, onSuccess }: Up
     }
   };
 
+  const handleProgress = (status: string, percent: number) => {
+    setProgressStatus(status);
+    setProgressPercent(percent);
+    
+    if (percent < 50) {
+      setUploadPhase('uploading');
+    } else if (percent < 100) {
+      setUploadPhase('analyzing');
+    } else {
+      setUploadPhase('complete');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -97,7 +115,10 @@ export default function UploadRecordDialog({ open, onOpenChange, onSuccess }: Up
       return;
     }
 
-    setUploading(true);
+    setUploadPhase('uploading');
+    setProgressPercent(0);
+    setProgressStatus('Starting upload...');
+
     try {
       const metadata: RecordMetadata = {
         title,
@@ -108,25 +129,32 @@ export default function UploadRecordDialog({ open, onOpenChange, onSuccess }: Up
         notes: notes || undefined,
       };
 
-      await uploadMedicalRecord(file, metadata);
+      const result = await uploadMedicalRecord(file, metadata, handleProgress);
+      
+      setUploadPhase('complete');
+      setProgressPercent(100);
       
       toast({
-        title: 'Record uploaded',
-        description: 'Your medical record is being analyzed. This may take a moment.',
+        title: result.is_analyzed ? 'Record uploaded and analyzed!' : 'Record uploaded',
+        description: result.is_analyzed 
+          ? 'Medical data has been extracted successfully.' 
+          : 'Upload complete. Analysis may still be processing.',
       });
       
-      resetForm();
-      onOpenChange(false);
-      onSuccess();
+      // Wait a moment to show success state
+      setTimeout(() => {
+        resetForm();
+        onOpenChange(false);
+        onSuccess();
+      }, 1000);
     } catch (error: any) {
       console.error('Upload error:', error);
+      setUploadPhase('error');
       toast({
         title: 'Upload failed',
         description: error.message || 'Failed to upload medical record.',
         variant: 'destructive',
       });
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -138,7 +166,61 @@ export default function UploadRecordDialog({ open, onOpenChange, onSuccess }: Up
     setDoctorName('');
     setHospitalName('');
     setNotes('');
+    setUploadPhase('idle');
+    setProgressPercent(0);
+    setProgressStatus('');
   };
+
+  const isUploading = uploadPhase === 'uploading' || uploadPhase === 'analyzing';
+
+  // Show progress modal when uploading/analyzing
+  if (isUploading || uploadPhase === 'complete') {
+    return (
+      <Dialog open={open} onOpenChange={(v) => !isUploading && onOpenChange(v)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {uploadPhase === 'complete' ? (
+                <>
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  Analysis Complete
+                </>
+              ) : (
+                <>
+                  <Brain className="h-5 w-5 text-primary animate-pulse" />
+                  Analyzing Your Medical Record
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-6 space-y-4">
+            <Progress value={progressPercent} className="h-2" />
+            
+            <div className="text-center space-y-2">
+              <p className="text-sm font-medium">{progressStatus}</p>
+              <p className="text-xs text-muted-foreground">
+                {uploadPhase === 'analyzing' 
+                  ? 'AI is extracting conditions and medications from your document. This usually takes 15-30 seconds.'
+                  : uploadPhase === 'complete'
+                  ? 'Your medical record has been processed successfully!'
+                  : 'Please wait while we upload your file...'}
+              </p>
+            </div>
+
+            {uploadPhase === 'analyzing' && (
+              <div className="flex justify-center">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted px-3 py-2 rounded-full">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Processing with AI...
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -280,6 +362,13 @@ export default function UploadRecordDialog({ open, onOpenChange, onSuccess }: Up
             />
           </div>
 
+          {/* Info about AI analysis */}
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+            <p className="text-xs text-muted-foreground">
+              <strong className="text-foreground">⚡ Instant AI Analysis:</strong> Your record will be analyzed immediately after upload. Conditions and medications will be extracted in ~30 seconds.
+            </p>
+          </div>
+
           {/* Submit Button */}
           <div className="flex gap-3 pt-2">
             <Button
@@ -287,22 +376,12 @@ export default function UploadRecordDialog({ open, onOpenChange, onSuccess }: Up
               variant="outline"
               className="flex-1"
               onClick={() => onOpenChange(false)}
-              disabled={uploading}
             >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1" disabled={uploading || !file}>
-              {uploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Record
-                </>
-              )}
+            <Button type="submit" className="flex-1" disabled={!file}>
+              <Upload className="mr-2 h-4 w-4" />
+              Upload & Analyze
             </Button>
           </div>
         </form>

@@ -44,18 +44,6 @@ export default function MyMedicalRecords() {
     fetchRecords();
   }, []);
 
-  // Poll for analysis updates
-  useEffect(() => {
-    const unanalyzedCount = records.filter(r => !r.is_analyzed).length;
-    if (unanalyzedCount === 0) return;
-
-    const interval = setInterval(() => {
-      fetchRecords();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [records]);
-
   const filteredRecords = filterType === 'all' 
     ? records 
     : records.filter(r => r.record_type === filterType);
