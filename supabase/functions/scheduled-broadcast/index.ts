@@ -5,26 +5,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Morning health topics - rotate by day of week
+// Morning health topics in Hinglish - rotate by day of week
 const MORNING_TOPICS = [
-  "starting the week with positive health mindset and self-care tips",
-  "monday morning hydration and energy boosting tips",
-  "healthy breakfast ideas for a productive tuesday",
-  "midweek stress relief and mental wellness tips",
-  "thursday morning stretching and exercise routine",
-  "weekend health planning and preventive care reminders",
-  "saturday morning wellness rituals and relaxation tips",
+  "week ki shuruaat healthy mindset aur self-care tips ke saath karo",
+  "Monday morning mein hydration aur energy boost karne ke tips",
+  "Tuesday ke liye healthy breakfast ideas jo din ko productive banaye",
+  "midweek stress relief aur mental wellness tips - tension mat lo!",
+  "Thursday morning stretching aur light exercise ka routine",
+  "weekend health planning aur preventive care ke reminders",
+  "Saturday morning wellness rituals aur relaxation tips for family",
 ];
 
-// Noon marketing topics with varying tones - rotate by day
+// Noon marketing topics in Hinglish with varying tones - rotate by day
 const NOON_MARKETING = [
-  { topic: "using Curezy's AI health check feature for instant insights", tone: "casual" },
-  { topic: "booking verified doctor appointments easily on Curezy", tone: "friendly" },
-  { topic: "ordering medicines with fast 30-minute delivery", tone: "urgent" },
-  { topic: "storing and tracking health records digitally on Curezy", tone: "professional" },
-  { topic: "exclusive discounts and offers on medicine orders", tone: "casual" },
-  { topic: "Curezy's emergency SOS features for family safety", tone: "urgent" },
-  { topic: "connecting with specialist doctors near you", tone: "friendly" },
+  { topic: "Curezy ka AI health check feature use karo, instant health insights lo", tone: "casual" },
+  { topic: "verified doctors se appointment book karo easily on Curezy app", tone: "friendly" },
+  { topic: "medicines order karo aur 30 minute mein delivery pao - jaldi karo!", tone: "urgent" },
+  { topic: "apni health records digitally store karo Curezy pe - safe aur secure", tone: "professional" },
+  { topic: "medicine orders pe exclusive discounts aur offers mil rahe hain - miss mat karo!", tone: "casual" },
+  { topic: "Curezy ka emergency SOS feature - family ki safety ke liye must-have", tone: "urgent" },
+  { topic: "apne paas ke specialist doctors se connect karo aaj hi", tone: "friendly" },
 ];
 
 serve(async (req) => {
