@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Lock, Eye, Users, FileText, Phone, Mail } from "lucide-react";
@@ -13,12 +12,8 @@ const PrivacyPolicy = () => {
             <Shield className="h-12 w-12 text-blue-600 mr-3" />
             <h1 className="text-4xl font-bold text-slate-900">Privacy Policy</h1>
           </div>
-          <p className="text-lg text-slate-600">
-            Your privacy and data security are our top priorities
-          </p>
-          <p className="text-sm text-slate-500 mt-2">
-            Last updated: {new Date().toLocaleDateString()}
-          </p>
+          <p className="text-lg text-slate-600">Your privacy and data security are our top priorities</p>
+          <p className="text-sm text-slate-500 mt-2">Last updated: {new Date().toLocaleDateString()}</p>
         </div>
 
         {/* Introduction */}
@@ -31,7 +26,9 @@ const PrivacyPolicy = () => {
           </CardHeader>
           <CardContent className="prose prose-slate max-w-none">
             <p className="text-slate-700 leading-relaxed">
-              Curezy ("we," "our," or "us") is committed to protecting your privacy and ensuring the security of your personal health information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our healthcare platform and services.
+              Curezy ("we," "our," or "us") is committed to protecting your privacy and ensuring the security of your
+              personal health information. This Privacy Policy explains how we collect, use, disclose, and safeguard
+              your information when you use our healthcare platform and services.
             </p>
           </CardContent>
         </Card>
@@ -172,7 +169,7 @@ const PrivacyPolicy = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-slate-500" />
-                <span className="text-slate-700">1-800-HEALTH (1-800-432-5844)</span>
+                <span className="text-slate-700">+91 9165043258</span>
               </div>
             </div>
           </CardContent>
@@ -185,9 +182,9 @@ const PrivacyPolicy = () => {
           </CardHeader>
           <CardContent>
             <p className="text-slate-700">
-              We may update this Privacy Policy periodically to reflect changes in our practices or legal requirements. 
-              We will notify you of any material changes through email or prominent notices on our platform. 
-              Your continued use of Curezy after such modifications constitutes acceptance of the updated Privacy Policy.
+              We may update this Privacy Policy periodically to reflect changes in our practices or legal requirements.
+              We will notify you of any material changes through email or prominent notices on our platform. Your
+              continued use of Curezy after such modifications constitutes acceptance of the updated Privacy Policy.
             </p>
           </CardContent>
         </Card>
