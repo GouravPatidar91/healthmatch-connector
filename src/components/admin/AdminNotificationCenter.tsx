@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Send, Sparkles, RefreshCw, History, Users, Megaphone, Loader2 } from 'lucide-react';
+import { Send, Sparkles, RefreshCw, History, Users, Megaphone, Loader2, Clock, Sun, Coffee, Play } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface BroadcastNotification {
@@ -40,6 +40,28 @@ const AI_TONES = [
   { value: 'casual', label: 'Casual & Fun' },
 ];
 
+// Morning health topics - rotate by day of week
+const MORNING_TOPICS = [
+  "starting the week with positive health mindset",
+  "monday morning hydration tips",
+  "healthy breakfast ideas",
+  "midweek stress relief tips",
+  "morning stretching routine",
+  "weekend health planning",
+  "saturday morning wellness rituals",
+];
+
+// Noon marketing topics with varying tones
+const NOON_MARKETING = [
+  { topic: "AI health check feature", tone: "casual" },
+  { topic: "booking doctor appointments", tone: "friendly" },
+  { topic: "fast medicine delivery", tone: "urgent" },
+  { topic: "digital health records", tone: "professional" },
+  { topic: "medicine discounts", tone: "casual" },
+  { topic: "emergency SOS features", tone: "urgent" },
+  { topic: "specialist doctors", tone: "friendly" },
+];
+
 export const AdminNotificationCenter: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -62,7 +84,10 @@ export const AdminNotificationCenter: React.FC = () => {
   // History state
   const [broadcastHistory, setBroadcastHistory] = useState<BroadcastNotification[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
-
+  
+  // Scheduled notifications state
+  const [triggeringMorning, setTriggeringMorning] = useState(false);
+  const [triggeringNoon, setTriggeringNoon] = useState(false);
   // Fetch broadcast history
   useEffect(() => {
     fetchBroadcastHistory();
@@ -221,8 +246,140 @@ export const AdminNotificationCenter: React.FC = () => {
     }
   };
 
+  const handleTriggerScheduledBroadcast = async (scheduleType: 'morning_health' | 'noon_marketing') => {
+    const isMorning = scheduleType === 'morning_health';
+    if (isMorning) {
+      setTriggeringMorning(true);
+    } else {
+      setTriggeringNoon(true);
+    }
+
+    try {
+      const response = await supabase.functions.invoke('scheduled-broadcast', {
+        body: { scheduleType },
+      });
+
+      if (response.error) throw response.error;
+
+      const { recipientsCount, title } = response.data;
+
+      toast({
+        title: isMorning ? '🌅 Morning Notification Sent!' : '☀️ Noon Notification Sent!',
+        description: `"${title}" sent to ${recipientsCount} users.`,
+      });
+
+      fetchBroadcastHistory();
+    } catch (error) {
+      console.error('Error triggering scheduled broadcast:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to trigger ${isMorning ? 'morning' : 'noon'} broadcast.`,
+        variant: 'destructive',
+      });
+    } finally {
+      if (isMorning) {
+        setTriggeringMorning(false);
+      } else {
+        setTriggeringNoon(false);
+      }
+    }
+  };
+
+  const dayOfWeek = new Date().getDay();
+  const todayMorningTopic = MORNING_TOPICS[dayOfWeek];
+  const todayNoonConfig = NOON_MARKETING[dayOfWeek];
+
   return (
     <div className="space-y-6">
+      {/* Scheduled Notifications Section */}
+      <Card className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-amber-500" />
+            Automated Daily Notifications
+          </CardTitle>
+          <CardDescription>
+            AI-powered notifications sent automatically at 6 AM and 12 PM IST daily
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Morning Health Tip */}
+            <div className="bg-white rounded-xl p-4 border border-amber-200 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
+                  <Sun className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">Morning Health Tips</h4>
+                  <p className="text-xs text-gray-500">6:00 AM IST Daily</p>
+                </div>
+              </div>
+              <div className="bg-amber-50 rounded-lg p-3 mb-3">
+                <p className="text-xs text-amber-700 font-medium mb-1">Today's Topic:</p>
+                <p className="text-sm text-gray-700">{todayMorningTopic}</p>
+                <Badge variant="outline" className="mt-2 text-xs">
+                  Tone: Friendly
+                </Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-amber-300 hover:bg-amber-100"
+                onClick={() => handleTriggerScheduledBroadcast('morning_health')}
+                disabled={triggeringMorning}
+              >
+                {triggeringMorning ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4 mr-2" />
+                )}
+                Test Send Now
+              </Button>
+            </div>
+
+            {/* Noon Marketing */}
+            <div className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                  <Coffee className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">Noon Marketing</h4>
+                  <p className="text-xs text-gray-500">12:00 PM IST Daily</p>
+                </div>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                <p className="text-xs text-blue-700 font-medium mb-1">Today's Topic:</p>
+                <p className="text-sm text-gray-700">{todayNoonConfig.topic}</p>
+                <Badge variant="outline" className="mt-2 text-xs capitalize">
+                  Tone: {todayNoonConfig.tone}
+                </Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-blue-300 hover:bg-blue-100"
+                onClick={() => handleTriggerScheduledBroadcast('noon_marketing')}
+                disabled={triggeringNoon}
+              >
+                {triggeringNoon ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4 mr-2" />
+                )}
+                Test Send Now
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-gray-100 rounded-lg p-3 text-center">
+            <p className="text-xs text-gray-600">
+              ⏰ To enable automatic scheduling, set up pg_cron jobs in Supabase SQL Editor
+            </p>
+          </div>
+        </CardContent>
+      </Card>
       <Tabs defaultValue="manual" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="manual" className="flex items-center gap-2">
