@@ -1682,6 +1682,7 @@ export type Database = {
           medical_history: string | null
           medications: string | null
           phone: string | null
+          push_token: string | null
           region: string | null
           updated_at: string
           weight: number | null
@@ -1710,6 +1711,7 @@ export type Database = {
           medical_history?: string | null
           medications?: string | null
           phone?: string | null
+          push_token?: string | null
           region?: string | null
           updated_at?: string
           weight?: number | null
@@ -1738,6 +1740,7 @@ export type Database = {
           medical_history?: string | null
           medications?: string | null
           phone?: string | null
+          push_token?: string | null
           region?: string | null
           updated_at?: string
           weight?: number | null
