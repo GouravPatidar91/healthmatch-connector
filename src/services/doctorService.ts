@@ -309,16 +309,32 @@ export const checkDoctorAccess = async (userId: string): Promise<boolean> => {
   }
 };
 
-// Function to grant doctor access
+// Function to grant doctor access (adds 'doctor' role to user_roles table)
 export const grantDoctorAccess = async (userId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    // First update profiles.is_doctor for RLS purposes
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ is_doctor: true })
       .eq('id', userId);
 
-    if (error) {
-      console.error('Error granting doctor access:', error);
+    if (profileError) {
+      console.error('Error updating profile is_doctor:', profileError);
+      return false;
+    }
+
+    // Then add the 'doctor' role to user_roles table
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .upsert({ 
+        user_id: userId, 
+        role: 'doctor' as const
+      }, { 
+        onConflict: 'user_id,role' 
+      });
+
+    if (roleError) {
+      console.error('Error granting doctor role:', roleError);
       return false;
     }
 
@@ -329,16 +345,29 @@ export const grantDoctorAccess = async (userId: string): Promise<boolean> => {
   }
 };
 
-// Function to revoke doctor access
+// Function to revoke doctor access (removes 'doctor' role from user_roles table)
 export const revokeDoctorAccess = async (userId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    // First update profiles.is_doctor for RLS purposes
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ is_doctor: false })
       .eq('id', userId);
 
-    if (error) {
-      console.error('Error revoking doctor access:', error);
+    if (profileError) {
+      console.error('Error updating profile is_doctor:', profileError);
+      return false;
+    }
+
+    // Then remove the 'doctor' role from user_roles table
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId)
+      .eq('role', 'doctor');
+
+    if (roleError) {
+      console.error('Error revoking doctor role:', roleError);
       return false;
     }
 

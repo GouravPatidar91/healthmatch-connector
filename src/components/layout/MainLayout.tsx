@@ -17,7 +17,7 @@ const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const { isAdmin, isPharmacy, loading: rolesLoading } = useUserRole();
+  const { isAdmin, isPharmacy, isDoctor, loading: rolesLoading } = useUserRole();
   const { profile } = useUserProfile();
   
   const userInitials = profile?.first_name && profile?.last_name 
@@ -71,13 +71,18 @@ const MainLayout = () => {
   ];
   
   // Add role-specific navigation items
-  if (isPharmacy) {
+  if (isDoctor) {
     navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
   } else if (hasPendingDoctorApplication) {
     // Show a disabled version or an indicator that application is pending
     navigationItems.push({ name: "Doctor Application Pending", path: "/dashboard", icon: UserPlus });
   } else {
     navigationItems.push({ name: "Doctor Registration", path: "/doctor-registration", icon: UserPlus });
+  }
+  
+  // Add Vendor Dashboard for pharmacies
+  if (isPharmacy) {
+    navigationItems.push({ name: "Vendor Dashboard", path: "/vendor-dashboard", icon: LayoutDashboard });
   }
   
   // Add admin dashboard for admins
