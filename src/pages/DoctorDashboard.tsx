@@ -17,11 +17,11 @@ const DoctorDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { isPharmacy, loading: rolesLoading } = useUserRole();
+  const { isDoctor, loading: rolesLoading } = useUserRole();
   const [activeTab, setActiveTab] = useState("calendar");
   const [isPending, setIsPending] = useState(false);
 
-  // Check if user has doctor/pharmacy access
+  // Check if user has doctor access
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -30,7 +30,7 @@ const DoctorDashboard = () => {
     
     const checkAccess = async () => {
       if (!rolesLoading) {
-        if (!isPharmacy) {
+        if (!isDoctor) {
           // Check if user has a pending doctor application
           const { data, error } = await supabase
             .from('doctors')
@@ -59,7 +59,7 @@ const DoctorDashboard = () => {
     };
     
     checkAccess();
-  }, [user, isPharmacy, rolesLoading, navigate, toast]);
+  }, [user, isDoctor, rolesLoading, navigate, toast]);
   
   if (rolesLoading) {
     return (
@@ -72,7 +72,7 @@ const DoctorDashboard = () => {
     );
   }
   
-  if (!user || !isPharmacy) {
+  if (!user || !isDoctor) {
     return null;
   }
   
