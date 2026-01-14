@@ -374,6 +374,39 @@ export type Database = {
           },
         ]
       }
+      daily_steps: {
+        Row: {
+          calories_burned: number | null
+          created_at: string | null
+          date: string
+          distance_meters: number | null
+          id: string
+          step_count: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          calories_burned?: number | null
+          created_at?: string | null
+          date: string
+          distance_meters?: number | null
+          id?: string
+          step_count?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          calories_burned?: number | null
+          created_at?: string | null
+          date?: string
+          distance_meters?: number | null
+          id?: string
+          step_count?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       delivery_broadcasts: {
         Row: {
           accepted_at: string | null
@@ -691,6 +724,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          rating: number | null
           region: string
           registration_number: string
           specialization: string
@@ -712,6 +746,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name: string
+          rating?: number | null
           region: string
           registration_number: string
           specialization: string
@@ -733,6 +768,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name?: string
+          rating?: number | null
           region?: string
           registration_number?: string
           specialization?: string
@@ -2234,6 +2270,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          rating: number | null
           region: string
           registration_number: string
           specialization: string
