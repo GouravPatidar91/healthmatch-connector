@@ -279,7 +279,7 @@ const DoctorRegistration = () => {
             Doctor Registration
           </CardTitle>
           <CardDescription className="text-center">
-            Register yourself as a doctor to be available for appointments in HealthMatch
+            Register yourself as a doctor to be available for appointments in Curezy
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (event === 'SIGNED_IN' && !isInitialLoad) {
           toast({
             title: "Signed in successfully",
-            description: "Welcome to HealthMatch!"
+            description: "Welcome to Curezy!"
           });
           
           // Check if we're coming from Google OAuth redirect
