@@ -102,10 +102,7 @@ const MainLayout = () => {
       {/* Modern Floating Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-blue-100/50 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
-          <Link to="/dashboard" className="flex items-center space-x-3 group">
-            <div className="p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl group-hover:from-blue-600 group-hover:to-blue-700 transition-all duration-200 shadow-lg">
-              <Heart className="text-white h-6 w-6" />
-            </div>
+          <Link to="/dashboard" className="flex items-center group">
             <span className="font-bold text-xl bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
               Curezy
             </span>
@@ -148,9 +145,6 @@ const MainLayout = () => {
               <SheetContent side="left" className="w-72 bg-white/95 backdrop-blur-md z-[100]">
                 <div className="py-6 flex flex-col h-full">
                   <div className="flex items-center gap-3 mb-8">
-                    <div className="p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                      <Heart className="text-white h-6 w-6" />
-                    </div>
                     <span className="font-bold text-xl text-gray-900">
                       Curezy
                     </span>
