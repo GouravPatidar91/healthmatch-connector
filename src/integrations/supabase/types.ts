@@ -62,6 +62,54 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          calls_today: number | null
+          client: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          key_hash: string
+          key_id: string
+          last_used: string | null
+          name: string
+          permissions: string[] | null
+          rate_limit: number | null
+          total_calls: number | null
+        }
+        Insert: {
+          calls_today?: number | null
+          client: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash: string
+          key_id: string
+          last_used?: string | null
+          name: string
+          permissions?: string[] | null
+          rate_limit?: number | null
+          total_calls?: number | null
+        }
+        Update: {
+          calls_today?: number | null
+          client?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash?: string
+          key_id?: string
+          last_used?: string | null
+          name?: string
+          permissions?: string[] | null
+          rate_limit?: number | null
+          total_calls?: number | null
+        }
+        Relationships: []
+      }
       appointment_slots: {
         Row: {
           created_at: string
@@ -184,6 +232,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_logs: {
+        Row: {
+          actual_diagnosis: string | null
+          agents_agreed: boolean | null
+          ai_was_correct: boolean | null
+          consensus_confidence: number | null
+          data_completeness_score: number | null
+          doctor_id: string | null
+          doctor_notes: string | null
+          doctor_review_required: boolean | null
+          id: string
+          missing_data_suggestions: string | null
+          patient_id: string
+          reviewed_at: string | null
+          safety_flags: string | null
+          status: string | null
+          symptoms: string | null
+          timestamp: string
+          top_conditions: string | null
+        }
+        Insert: {
+          actual_diagnosis?: string | null
+          agents_agreed?: boolean | null
+          ai_was_correct?: boolean | null
+          consensus_confidence?: number | null
+          data_completeness_score?: number | null
+          doctor_id?: string | null
+          doctor_notes?: string | null
+          doctor_review_required?: boolean | null
+          id?: string
+          missing_data_suggestions?: string | null
+          patient_id: string
+          reviewed_at?: string | null
+          safety_flags?: string | null
+          status?: string | null
+          symptoms?: string | null
+          timestamp: string
+          top_conditions?: string | null
+        }
+        Update: {
+          actual_diagnosis?: string | null
+          agents_agreed?: boolean | null
+          ai_was_correct?: boolean | null
+          consensus_confidence?: number | null
+          data_completeness_score?: number | null
+          doctor_id?: string | null
+          doctor_notes?: string | null
+          doctor_review_required?: boolean | null
+          id?: string
+          missing_data_suggestions?: string | null
+          patient_id?: string
+          reviewed_at?: string | null
+          safety_flags?: string | null
+          status?: string | null
+          symptoms?: string | null
+          timestamp?: string
+          top_conditions?: string | null
+        }
+        Relationships: []
       }
       cart_order_broadcasts: {
         Row: {
@@ -1456,6 +1564,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      patient_visits: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          doctor_review_required: boolean | null
+          id: string
+          lab_highlights: Json | null
+          patient_id: string
+          risk_factors: string[] | null
+          symptoms: string[] | null
+          timestamp: string
+          top_condition: string | null
+          visit_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          doctor_review_required?: boolean | null
+          id?: string
+          lab_highlights?: Json | null
+          patient_id: string
+          risk_factors?: string[] | null
+          symptoms?: string[] | null
+          timestamp: string
+          top_condition?: string | null
+          visit_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          doctor_review_required?: boolean | null
+          id?: string
+          lab_highlights?: Json | null
+          patient_id?: string
+          risk_factors?: string[] | null
+          symptoms?: string[] | null
+          timestamp?: string
+          top_condition?: string | null
+          visit_id?: string
+        }
+        Relationships: []
       }
       pharmacy_notification_queue: {
         Row: {

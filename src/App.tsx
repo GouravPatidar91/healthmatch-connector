@@ -11,9 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import HealthCheck from "./pages/HealthCheck";
 import HealthCheckHistory from "./pages/HealthCheckHistory";
 import HealthCheckResults from "./pages/HealthCheckResults";
-import Appointments from "./pages/Appointments";
-import Medicine from "./pages/Medicine";
-import ComingSoon from "./pages/ComingSoon";
+import AppointmentsComingSoon from "./pages/AppointmentsComingSoon";
+import MedicineComingSoon from "./pages/MedicineComingSoon";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Emergency from "./pages/Emergency";
@@ -69,8 +68,8 @@ const App = () => (
               <Route path="/health-check" element={<HealthCheck />} />
               <Route path="/health-check-results" element={<HealthCheckResults />} />
               <Route path="/health-check-history" element={<HealthCheckHistory />} />
-              <Route path="/appointments" element={<Appointments />} />
-              <Route path="/medicine" element={<Medicine />} />
+              <Route path="/appointments" element={<AppointmentsComingSoon />} />
+              <Route path="/medicine" element={<MedicineComingSoon />} />
               <Route path="/vendor-registration" element={<VendorRegistration />} />
               <Route path="/medical-reports" element={<MedicalReports />} />
               <Route path="/my-medical-records" element={<MyMedicalRecords />} />
