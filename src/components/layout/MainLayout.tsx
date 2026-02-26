@@ -76,8 +76,6 @@ const MainLayout = () => {
   } else if (hasPendingDoctorApplication) {
     // Show a disabled version or an indicator that application is pending
     navigationItems.push({ name: "Doctor Application Pending", path: "/dashboard", icon: UserPlus });
-  } else {
-    navigationItems.push({ name: "Doctor Registration", path: "/doctor-registration", icon: UserPlus });
   }
   
   // Add Vendor Dashboard for pharmacies
