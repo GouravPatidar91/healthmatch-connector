@@ -451,7 +451,7 @@ const TermsOfService = () => {
             <div className="p-4 bg-white rounded-lg">
               <p className="text-sm text-slate-500 mb-1">Registered Office</p>
               <p className="text-slate-900">
-                Curezy Healthcare Technologies Private Limited<br />
+                Curezy LLP<br />
                 123 Healthcare Avenue, Tech Park<br />
                 Bengaluru, Karnataka 560001, India
               </p>
