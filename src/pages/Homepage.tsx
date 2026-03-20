@@ -487,8 +487,7 @@ const Footer = () => {
     <footer className="bg-gray-900 text-gray-300 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-12">
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-white">
-            <Heart className="fill-blue-600 text-blue-600" />
+          <div className="flex items-center text-white">
             <span className="text-2xl font-bold">Curezy</span>
           </div>
           <p className="text-gray-400 text-sm">
