@@ -388,7 +388,7 @@ const TermsOfService = () => {
             </p>
             <p className="text-slate-600">
               Any disputes arising from these Terms or the Services shall be subject to the exclusive 
-              jurisdiction of the courts in Bengaluru, Karnataka, India.
+              jurisdiction of the courts in Indore, Madhya Pradesh, India.
             </p>
             <p className="text-slate-600">
               Before initiating legal proceedings, you agree to attempt to resolve disputes through 
@@ -444,7 +444,7 @@ const TermsOfService = () => {
                 <Phone className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="text-sm text-slate-500">Phone</p>
-                  <p className="font-medium text-slate-900">1-800-CUREZY</p>
+                  <p className="font-medium text-slate-900">+91 9165043258</p>
                 </div>
               </div>
             </div>
@@ -452,8 +452,9 @@ const TermsOfService = () => {
               <p className="text-sm text-slate-500 mb-1">Registered Office</p>
               <p className="text-slate-900">
                 Curezy LLP<br />
-                123 Healthcare Avenue, Tech Park<br />
-                Bengaluru, Karnataka 560001, India
+                27-A Kushwah Shri Nagar, Indore Kumar Khadi<br />
+                Banganga Police Station, Indore, Indore - 452015<br />
+                Madhya Pradesh, India
               </p>
             </div>
           </CardContent>

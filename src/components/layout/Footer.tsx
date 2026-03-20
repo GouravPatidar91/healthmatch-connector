@@ -100,7 +100,7 @@ const Footer = () => {
             <ul className="space-y-2">
               <li className="flex items-center gap-2 text-xs">
                 <Phone className="h-3 w-3 text-blue-400" />
-                <span className="text-slate-400">1-800-HEALTH</span>
+                <span className="text-slate-400">+91 9165043258</span>
               </li>
               <li className="flex items-center gap-2 text-xs">
                 <Mail className="h-3 w-3 text-blue-400" />
@@ -109,8 +109,8 @@ const Footer = () => {
               <li className="flex items-start gap-2 text-xs">
                 <MapPin className="h-3 w-3 text-blue-400 mt-0.5" />
                 <span className="text-slate-400">
-                  123 Healthcare Ave<br />
-                  New York, NY 10001
+                  27-A Kushwah Shri Nagar, Indore Kumar Khadi<br />
+                  Indore - 452015, Madhya Pradesh
                 </span>
               </li>
             </ul>
