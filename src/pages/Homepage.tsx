@@ -567,22 +567,36 @@ const Footer = () => {
         </div>
 
         <div>
-          <h4 className="text-white font-bold mb-6">Legal</h4>
+          <h4 className="text-white font-bold mb-6">Legal & Policies</h4>
           <ul className="space-y-3 text-sm">
             <li>
-              <button
-                onClick={() => navigate("/Privacy Policy")}
-                className="hover:text-blue-400 transition-colors"
-              >
+              <button onClick={() => navigate("/Privacy Policy")} className="hover:text-blue-400 transition-colors">
                 Privacy Policy
               </button>
             </li>
             <li>
-              <button
-                onClick={() => navigate("/Terms of Service")}
-                className="hover:text-blue-400 transition-colors"
-              >
+              <button onClick={() => navigate("/Terms of Service")} className="hover:text-blue-400 transition-colors">
                 Terms of Service
+              </button>
+            </li>
+            <li>
+              <button onClick={() => navigate("/refund-policy")} className="hover:text-blue-400 transition-colors">
+                Refund Policy
+              </button>
+            </li>
+            <li>
+              <button onClick={() => navigate("/shipping-policy")} className="hover:text-blue-400 transition-colors">
+                Shipping Policy
+              </button>
+            </li>
+            <li>
+              <button onClick={() => navigate("/about-us")} className="hover:text-blue-400 transition-colors">
+                About Us
+              </button>
+            </li>
+            <li>
+              <button onClick={() => navigate("/contact-us")} className="hover:text-blue-400 transition-colors">
+                Contact Us
               </button>
             </li>
           </ul>

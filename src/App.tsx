@@ -24,6 +24,10 @@ import VendorOrderManagement from "./pages/VendorOrderManagement";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import InternshipTerms from "./pages/InternshipTerms";
+import ContactUs from "./pages/ContactUs";
+import RefundPolicy from "./pages/RefundPolicy";
+import ShippingPolicy from "./pages/ShippingPolicy";
+import AboutUs from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
 import DoctorRegistration from "./pages/DoctorRegistration";
 import DoctorDashboard from "./pages/DoctorDashboard";
@@ -54,6 +58,10 @@ const App = () => (
             <Route path="/Privacy Policy" element={<PrivacyPolicy />} />
             <Route path="/Terms of Service" element={<TermsOfService />} />
             <Route path="/internship-terms" element={<InternshipTerms />} />
+            <Route path="/contact-us" element={<ContactUs />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/shipping-policy" element={<ShippingPolicy />} />
+            <Route path="/about-us" element={<AboutUs />} />
             <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
 
             {/* Protected routes with auth check */}
