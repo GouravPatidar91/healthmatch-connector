@@ -388,7 +388,7 @@ const TermsOfService = () => {
             </p>
             <p className="text-slate-600">
               Any disputes arising from these Terms or the Services shall be subject to the exclusive 
-              jurisdiction of the courts in Bengaluru, Karnataka, India.
+              jurisdiction of the courts in Indore, Madhya Pradesh, India.
             </p>
             <p className="text-slate-600">
               Before initiating legal proceedings, you agree to attempt to resolve disputes through 
