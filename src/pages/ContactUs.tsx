@@ -59,9 +59,10 @@ const ContactUs = () => {
           </CardHeader>
           <CardContent>
             <p className="text-slate-700 leading-relaxed">
-              Curezy Healthcare Pvt. Ltd.<br />
-              Bhopal, Madhya Pradesh, India<br />
-              PIN: 462001
+              Curezy LLP<br />
+              27-A Kushwah Shri Nagar, Indore Kumar Khadi<br />
+              Banganga Police Station, Indore, Indore - 452015<br />
+              Madhya Pradesh, India
             </p>
           </CardContent>
         </Card>
