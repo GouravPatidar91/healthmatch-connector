@@ -67,10 +67,7 @@ const Navbar = () => {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-          <div className="bg-blue-600 p-1.5 rounded-lg">
-            <Heart className="w-5 h-5 text-white fill-current" />
-          </div>
+        <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
           <span className="text-2xl font-bold text-gray-900 tracking-tight">
             Curezy
           </span>
