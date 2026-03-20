@@ -55,16 +55,10 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Support */}
+          {/* Policies */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-white text-sm">Support</h3>
+            <h3 className="font-semibold text-white text-sm">Policies</h3>
             <ul className="space-y-1">
-              <li>
-                <Link to="/settings" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
-                  <Settings className="h-2.5 w-2.5" />
-                  Help Center
-                </Link>
-              </li>
               <li>
                 <Link to="/Privacy Policy" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
                   <Shield className="h-2.5 w-2.5" />
@@ -75,6 +69,26 @@ const Footer = () => {
                 <Link to="/Terms of Service" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
                   <FileText className="h-2.5 w-2.5" />
                   Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link to="/refund-policy" className="text-slate-400 hover:text-white transition-colors text-xs">
+                  Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/shipping-policy" className="text-slate-400 hover:text-white transition-colors text-xs">
+                  Shipping Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/about-us" className="text-slate-400 hover:text-white transition-colors text-xs">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact-us" className="text-slate-400 hover:text-white transition-colors text-xs">
+                  Contact Us
                 </Link>
               </li>
             </ul>

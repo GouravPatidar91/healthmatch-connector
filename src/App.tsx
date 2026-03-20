@@ -58,6 +58,10 @@ const App = () => (
             <Route path="/Privacy Policy" element={<PrivacyPolicy />} />
             <Route path="/Terms of Service" element={<TermsOfService />} />
             <Route path="/internship-terms" element={<InternshipTerms />} />
+            <Route path="/contact-us" element={<ContactUs />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/shipping-policy" element={<ShippingPolicy />} />
+            <Route path="/about-us" element={<AboutUs />} />
             <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
 
             {/* Protected routes with auth check */}
