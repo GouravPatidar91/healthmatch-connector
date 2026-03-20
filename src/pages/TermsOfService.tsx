@@ -452,8 +452,9 @@ const TermsOfService = () => {
               <p className="text-sm text-slate-500 mb-1">Registered Office</p>
               <p className="text-slate-900">
                 Curezy LLP<br />
-                123 Healthcare Avenue, Tech Park<br />
-                Bengaluru, Karnataka 560001, India
+                27-A Kushwah Shri Nagar, Indore Kumar Khadi<br />
+                Banganga Police Station, Indore, Indore - 452015<br />
+                Madhya Pradesh, India
               </p>
             </div>
           </CardContent>
