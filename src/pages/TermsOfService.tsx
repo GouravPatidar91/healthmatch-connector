@@ -486,7 +486,7 @@ const TermsOfService = () => {
             <span className="font-semibold">Curezy</span>
           </Link>
           <p className="mt-2 text-sm">
-            © {new Date().getFullYear()} Curezy Healthcare Technologies. All rights reserved.
+            © {new Date().getFullYear()} Curezy LLP. All rights reserved.
           </p>
         </div>
       </div>
