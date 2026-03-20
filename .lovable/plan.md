@@ -1,33 +1,35 @@
 
 
-## Plan: Two Coming Soon Pages + Redirects + Hide Doctor Registration
+## Plan: Create Razorpay Verification Pages
 
-### What will change
+Razorpay requires the following pages on your website for payment gateway activation/verification:
 
-1. **Create two new Coming Soon pages**:
-   - `src/pages/MedicineComingSoon.tsx` — themed for medicine delivery (pill/package icon, medicine-related messaging)
-   - `src/pages/AppointmentsComingSoon.tsx` — themed for doctor appointments (calendar/stethoscope icon, appointment-related messaging)
+1. **Contact Us** — Business contact details, support email, phone, address
+2. **Refund & Cancellation Policy** — Clear refund/cancellation terms for orders
+3. **Shipping & Delivery Policy** — Delivery timelines, charges, service areas
+4. **About Us** — Company overview, mission, what Curezy does
 
-2. **Redirect users to Coming Soon pages**:
-   - In `src/App.tsx`: Change the `/medicine` route to render `MedicineComingSoon` instead of `Medicine`, and `/appointments` route to render `AppointmentsComingSoon` instead of `Appointments`
-   - Dashboard "Book Appointment" and "Order Medicines" buttons will naturally redirect to these Coming Soon pages since they use `navigate('/appointments')` and `navigate('/medicine')` already
+You already have **Privacy Policy** and **Terms of Service** pages, which are also required — no changes needed there.
 
-3. **Hide Doctor Registration from sidebar navigation**:
-   - In `src/components/layout/MainLayout.tsx`: Remove the `else` block (lines 79-81) that adds "Doctor Registration" for regular users. Only show doctor-related nav items for users who already have the doctor role or have a pending application.
+### What will be created
 
-### Technical details
+**4 new pages:**
 
-**New files:**
-- `src/pages/MedicineComingSoon.tsx` — Similar to existing `ComingSoon.tsx` but with medicine-specific icon (Pill), title, description about medicine delivery service, and a "Book Appointment Instead" CTA redirecting to `/dashboard`
-- `src/pages/AppointmentsComingSoon.tsx` — Similar structure with appointment-specific icon (Calendar/Stethoscope), description about appointment booking, and a "Order Medicine Instead" CTA redirecting to `/dashboard`
+| Page | Route | Key Content |
+|------|-------|-------------|
+| Contact Us | `/contact-us` | Email (admin@curezy.in), phone, address, support form placeholder |
+| Refund & Cancellation Policy | `/refund-policy` | Order cancellation rules, refund timelines, prescription order policies |
+| Shipping & Delivery Policy | `/shipping-policy` | Delivery radius, estimated times, delivery charges (₹30-100), service areas |
+| About Us | `/about-us` | Curezy's mission, services (health check, medicine delivery, appointments, emergency), team vision |
 
 **Modified files:**
-- `src/App.tsx` — Import and swap route components for `/medicine` and `/appointments`
-- `src/components/layout/MainLayout.tsx` — Remove lines 79-81 (the `else` block adding "Doctor Registration" nav item for regular users)
+- `src/App.tsx` — Add 4 new public routes
+- `src/components/layout/Footer.tsx` — Add links to all 4 new pages in the Support and Quick Links sections
+- `src/pages/Homepage.tsx` — Add footer links to new policy pages
 
-### Impact
-- Patients see Coming Soon when clicking Appointments or Medicine
-- Doctor Registration link removed from sidebar for all regular users
-- Existing doctor/pharmacy/admin access is unaffected
-- Dashboard quick action buttons will land on the Coming Soon pages naturally
+### Design approach
+- Same visual style as existing Privacy Policy and Terms of Service pages (Card-based layout, consistent icons, back-to-home link)
+- All pages are public (no auth required) as Razorpay reviewers need to access them
+- Real Curezy branding and contact info (admin@curezy.in)
+- Healthcare-specific policy language appropriate for a medicine delivery platform
 
