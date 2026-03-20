@@ -444,7 +444,7 @@ const TermsOfService = () => {
                 <Phone className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="text-sm text-slate-500">Phone</p>
-                  <p className="font-medium text-slate-900">1-800-CUREZY</p>
+                  <p className="font-medium text-slate-900">+91 9165043258</p>
                 </div>
               </div>
             </div>
