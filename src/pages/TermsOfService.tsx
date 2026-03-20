@@ -54,7 +54,7 @@ const TermsOfService = () => {
               do not use our Services.
             </p>
             <p className="text-slate-600 leading-relaxed mt-4">
-              Curezy is operated by Curezy Healthcare Technologies Private Limited, a company registered in 
+              Curezy is operated by Curezy LLP, a company registered in 
               India. These Terms constitute a legally binding agreement between you and Curezy.
             </p>
           </CardContent>
