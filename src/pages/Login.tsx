@@ -139,14 +139,7 @@ const Login = () => {
       >
         {/* Header */}
         <div className="pt-8 pb-6 text-center">
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-600/30"
-          >
-            <Heart className="text-white w-6 h-6 fill-current" />
-          </motion.div>
+          
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Curezy</h1>
           <p className="text-gray-500 text-sm mt-1">Your personal healthcare assistant</p>
         </div>
