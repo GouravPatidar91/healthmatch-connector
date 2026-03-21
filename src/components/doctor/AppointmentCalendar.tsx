@@ -63,7 +63,14 @@ const AppointmentCalendar = () => {
   const appointmentsForSelectedDate = getAppointmentsForDate(selectedDate);
   const slotsForSelectedDate = getSlotsForDate(selectedDate);
   
-  const handleStatusChange = async (appointmentId: string, status: string, type: 'direct' | 'slot') => {
+  const handleStatusChange = async (appointmentId: string, status: string, type: 'direct' | 'slot', appointment?: any) => {
+    // If marking as completed and it's a pay_at_clinic appointment with pending payment, show payment dialog
+    if (status === 'completed' && appointment?.paymentMode === 'pay_at_clinic' && appointment?.paymentStatus === 'pending' && (appointment?.paymentAmount || 0) > 0) {
+      setSelectedAppointmentForPayment(appointment);
+      setPaymentDialogOpen(true);
+      return;
+    }
+
     try {
       if (status === 'completed') {
         await markAppointmentAsCompleted(appointmentId, type);
@@ -79,6 +86,13 @@ const AppointmentCalendar = () => {
         description: "Failed to update appointment status. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePaymentCollected = async () => {
+    if (selectedAppointmentForPayment) {
+      await markAppointmentAsCompleted(selectedAppointmentForPayment.id, selectedAppointmentForPayment.type);
+      setSelectedAppointmentForPayment(null);
     }
   };
   
