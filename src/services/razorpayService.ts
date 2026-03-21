@@ -60,12 +60,18 @@ export const verifyRazorpayPayment = async (
   return data?.verified || false;
 };
 
+export interface QRCodeResponse {
+  qr_code_id: string;
+  image_url: string;
+  amount: number;
+}
+
 export const generatePaymentQR = async (
   amount: number,
   appointmentId: string,
   doctorName: string,
   patientName: string
-): Promise<{ payment_link_url: string; payment_link_id: string }> => {
+): Promise<QRCodeResponse> => {
   const { data, error } = await supabase.functions.invoke('generate-payment-qr', {
     body: { amount, appointment_id: appointmentId, doctor_name: doctorName, patient_name: patientName },
   });

@@ -28,55 +28,56 @@ serve(async (req) => {
       throw new Error('Razorpay credentials not configured');
     }
 
-    const webhookUrl = `${SUPABASE_URL}/functions/v1/razorpay-webhook`;
-
-    // Create Razorpay Payment Link with UPI deep link enabled
-    const response = await fetch('https://api.razorpay.com/v1/payment_links', {
+    // Create Razorpay QR Code (true UPI QR, not a payment link)
+    const response = await fetch('https://api.razorpay.com/v1/payments/qr_codes', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Basic ' + btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`),
       },
       body: JSON.stringify({
-        amount: Math.round(amount * 100),
-        currency: 'INR',
-        description: `Consultation fee - Dr. ${doctor_name || 'Doctor'}`,
-        customer: {
-          name: patient_name || 'Patient',
-        },
-        upi_link: true,
+        type: 'upi_qr',
+        name: `Dr. ${doctor_name || 'Doctor'} - Consultation`,
+        usage: 'single_use',
+        fixed_amount: true,
+        payment_amount: Math.round(amount * 100), // amount in paise
+        description: `Consultation fee for ${patient_name || 'Patient'}`,
+        customer_id: undefined,
+        close_by: Math.floor(Date.now() / 1000) + 1800, // expires in 30 minutes
         notes: {
           appointment_id,
           type: 'clinic_qr_payment',
+          doctor_name: doctor_name || '',
+          patient_name: patient_name || '',
         },
-        callback_url: webhookUrl,
-        callback_method: 'get',
       }),
     });
 
-    const paymentLink = await response.json();
+    const qrCode = await response.json();
 
     if (!response.ok) {
-      console.error('Razorpay payment link creation failed:', paymentLink);
-      throw new Error(paymentLink.error?.description || 'Failed to create payment link');
+      console.error('Razorpay QR Code creation failed:', qrCode);
+      throw new Error(qrCode.error?.description || 'Failed to create QR code');
     }
 
-    // Store the payment link ID for webhook reference
+    console.log('Razorpay QR Code created:', qrCode.id);
+
+    // Store the QR code ID on the appointment for webhook reconciliation
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, supabaseKey);
 
     await supabase
       .from('appointments')
-      .update({ 
-        razorpay_order_id: paymentLink.id,
-        payment_amount: amount
+      .update({
+        razorpay_order_id: qrCode.id, // store QR code ID here
+        payment_amount: amount,
       })
       .eq('id', appointment_id);
 
     return new Response(JSON.stringify({
-      payment_link_id: paymentLink.id,
-      payment_link_url: paymentLink.short_url,
-      amount: paymentLink.amount,
+      qr_code_id: qrCode.id,
+      image_url: qrCode.image_url, // official QR image from Razorpay
+      amount: qrCode.payment_amount,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
