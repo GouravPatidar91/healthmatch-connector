@@ -124,11 +124,12 @@ const DoctorPaymentCollectionDialog = ({
             </div>
           ) : qrImageUrl ? (
             <div className="flex flex-col items-center gap-4">
-              <div className="w-[220px] h-[220px] bg-white rounded-xl border border-border shadow-sm overflow-hidden flex items-center justify-center">
+              <div className="w-[220px] h-[220px] bg-white rounded-xl border border-border shadow-sm overflow-hidden relative">
                 <img
                   src={qrImageUrl}
                   alt="UPI Payment QR Code"
-                  className="w-[400px] h-auto scale-[1.8] translate-y-[8%]"
+                  className="absolute w-[280px] left-1/2 -translate-x-1/2"
+                  style={{ top: '-28%' }}
                 />
               </div>
               <p className="text-sm text-muted-foreground text-center">
