@@ -1,40 +1,98 @@
 
+## Plan: Replace Payment-Link QR with True UPI QR Flow
 
-## Plan: Fix Doctor Payment System Issues
+### What’s actually causing the issue
+The current doctor QR flow is not a real UPI QR flow. It:
+1. Creates a Razorpay **Payment Link**
+2. Encodes the **hosted URL** (`short_url`) into the QR
+3. So when scanned, the customer is sent to a **Razorpay web page**
 
-There are 4 distinct bugs to fix:
+That behavior is expected for URL-based payment links. To behave more like Rapido, the QR must represent a **native UPI-compatible payment target**, not a hosted checkout page.
 
-### Issue 1: Online payment silently fails, falls back to "pay at clinic"
-**Root cause**: The `create-razorpay-order` edge function uses `receipt: \`appt_${appointment_id}\`` which is a UUID (36 chars) prefixed with `appt_` = 41 chars. Razorpay limits receipt to 40 chars. The error logs confirm: `"receipt: the length must be no more than 40."`. The payment creation fails, the catch block silently switches to `pay_at_clinic`.
+### Implementation approach
+I’ll switch the in-clinic QR collection flow from **Razorpay Payment Links** to **Razorpay QR Codes API** so the doctor dashboard shows a scan-and-pay QR that UPI apps can handle directly.
 
-**Fix**: In `create-razorpay-order/index.ts`, truncate receipt to `appt_${appointment_id.substring(0, 35)}` (40 chars max).
+### Changes to make
 
-### Issue 2: QR code opens Razorpay checkout page instead of direct UPI intent
-**Root cause**: The `generate-payment-qr` edge function creates a Razorpay Payment Link which opens a full Razorpay page. To get UPI-app-like behavior (like Rapido), we need to generate a **UPI deep link/intent URL** instead, using the `upi_link: true` option in the Razorpay Payment Link API.
+#### 1. Replace QR generation backend
+**File:** `supabase/functions/generate-payment-qr/index.ts`
 
-**Fix**: In `generate-payment-qr/index.ts`, add `"upi_link": true` to the payment link creation body. This makes Razorpay return a `short_url` that directly opens UPI apps on mobile (like Google Pay, PhonePe, etc.) instead of a Razorpay checkout page.
+- Stop creating `payment_links`
+- Create a **Razorpay QR Code** instead
+- Save the returned Razorpay QR code id on the appointment for later matching
+- Return QR metadata needed by the UI:
+  - `qr_code_id`
+  - `image_url` / `payload`
+  - amount
+  - expiry / status if available
 
-### Issue 3: After QR payment, DB not updated & doctor wallet not credited
-**Root cause**: The `razorpay-webhook` function handles `payment_link.paid` events correctly in code, but the webhook URL needs to be configured in the Razorpay Dashboard to point to the edge function. Without that, no events arrive. Additionally, we should add **client-side polling** as a fallback — after QR is generated, poll the appointment's `payment_status` to detect when the webhook has processed.
+Why:
+- Payment Link QR = opens hosted page
+- QR Code API = proper payment QR flow for scan-and-pay
 
-**Fix**:
-1. In `generate-payment-qr/index.ts`, add a `callback_url` pointing to the webhook function URL so Razorpay can redirect after payment.
-2. In `DoctorPaymentCollectionDialog.tsx`, add polling: after QR is shown, poll `appointments.payment_status` every 5 seconds. When it changes to `'paid'`, show the success state.
+#### 2. Update webhook handling
+**File:** `supabase/functions/razorpay-webhook/index.ts`
 
-### Issue 4: No "Payment Completed" popup after QR payment on doctor dashboard
-**Root cause**: No polling mechanism exists. The dialog just shows the QR forever.
+Add support for the webhook events produced by Razorpay QR payments, not just `payment_link.paid`.
 
-**Fix**: Add polling in `DoctorPaymentCollectionDialog.tsx` that checks `payment_status` on the appointment every 5 seconds. When `paid`, show the green checkmark success UI and credit confirmation.
+Planned webhook logic:
+- Handle QR-related payment success events
+- Resolve the appointment from:
+  - QR code id, or
+  - notes/metadata attached during QR creation
+- Update appointment:
+  - `payment_status = 'paid'`
+  - `razorpay_payment_id`
+- Credit doctor wallet once
+- Guard against duplicate credits if webhook retries
 
----
+Why:
+- Current webhook is wired around `payment_link.paid`
+- After moving to QR Codes API, payment completion event shape changes
 
-### Files to modify
+#### 3. Update doctor QR dialog UI
+**File:** `src/components/doctor/DoctorPaymentCollectionDialog.tsx`
 
-| File | Change |
-|------|--------|
-| `supabase/functions/create-razorpay-order/index.ts` | Truncate receipt to 40 chars |
-| `supabase/functions/generate-payment-qr/index.ts` | Add `upi_link: true`, set proper `callback_url` |
-| `src/components/doctor/DoctorPaymentCollectionDialog.tsx` | Add payment status polling + success state |
+- Render the returned **QR image/payload from the QR Codes API**
+- Keep polling as a fallback, but make it watch the same appointment status as now
+- Update labels to indicate this is a direct UPI scan-and-pay flow
+- If the API returns both image and payload, prefer the official QR image over regenerating a QR from a URL string
 
-3 files, 4 bug fixes.
+Why:
+- Right now the UI renders a QR from `payment_link_url`, which is the main reason scanning redirects to a page
 
+#### 4. Update frontend service contract
+**File:** `src/services/razorpayService.ts`
+
+- Change `generatePaymentQR()` return type from payment-link fields to QR-code fields
+- Ensure the dialog consumes the new shape cleanly
+
+### Important product constraint
+If the goal is:
+- **Patient scans QR from their own phone in the clinic** → use **Razorpay QR Codes**
+- **Patient taps a button on the same phone to open GPay/PhonePe directly** → use a **UPI intent/deep link**
+
+Those are different flows. Your current doctor dashboard flow is clearly the first one, so QR Codes API is the correct fix.
+
+### Extra safety fixes I’d include
+- Add idempotency protection so wallet credit happens only once per appointment
+- Store QR code reference separately instead of overloading `razorpay_order_id`
+- Improve webhook logging for QR payments so failures are easier to trace
+
+### Files to update
+- `supabase/functions/generate-payment-qr/index.ts`
+- `supabase/functions/razorpay-webhook/index.ts`
+- `src/components/doctor/DoctorPaymentCollectionDialog.tsx`
+- `src/services/razorpayService.ts`
+
+### Expected result after this change
+- Doctor clicks **Generate QR**
+- Dashboard shows a real **scan-to-pay UPI QR**
+- Patient scans from GPay / PhonePe / Paytm or scanner that supports UPI QR
+- Payment completes without first landing on a hosted Razorpay payment page
+- Appointment status updates to paid
+- Doctor wallet gets credited
+- Doctor sees the payment-completed state in the dashboard
+
+### Technical note
+If Razorpay’s QR webhook payload does not carry enough appointment context directly, I’ll map the Razorpay QR id to the appointment during QR creation and use that mapping in the webhook. This will make reconciliation reliable even if payload fields differ from Payment Links.
