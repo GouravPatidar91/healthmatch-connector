@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { doctorWalletService } from '@/services/doctorWalletService';
 import { generatePaymentQR } from '@/services/razorpayService';
 import { supabase } from '@/integrations/supabase/client';
-import { Banknote, QrCode, Loader2, CheckCircle } from 'lucide-react';
+import { Banknote, QrCode, Loader2, CheckCircle, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface Props {
@@ -19,6 +19,8 @@ interface Props {
   onPaymentCollected: () => void;
 }
 
+const QR_EXPIRY_SECONDS = 30 * 60;
+
 const DoctorPaymentCollectionDialog = ({
   open, onOpenChange, appointmentId, doctorId, doctorName, patientName, amount, onPaymentCollected
 }: Props) => {
@@ -29,9 +31,23 @@ const DoctorPaymentCollectionDialog = ({
   const [qrCodeId, setQrCodeId] = useState<string | null>(null);
   const [cashCollected, setCashCollected] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(QR_EXPIRY_SECONDS);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const qrCreatedAtRef = useRef<number>(0);
 
-  // Poll payment status via Razorpay API when QR is shown
+  useEffect(() => {
+    if ((qrImageUrl || qrContent) && !paymentCompleted) {
+      timerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - qrCreatedAtRef.current) / 1000);
+        const remaining = Math.max(0, QR_EXPIRY_SECONDS - elapsed);
+        setSecondsLeft(remaining);
+        if (remaining <= 0 && timerRef.current) clearInterval(timerRef.current);
+      }, 1000);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [qrImageUrl, qrContent, paymentCompleted]);
+
   useEffect(() => {
     if (qrCodeId && !paymentCompleted) {
       pollingRef.current = setInterval(async () => {
@@ -39,30 +55,18 @@ const DoctorPaymentCollectionDialog = ({
           const { data, error } = await supabase.functions.invoke('check-qr-payment-status', {
             body: { qr_code_id: qrCodeId, appointment_id: appointmentId },
           });
-
-          if (error) {
-            console.error('QR status check error:', error);
-            return;
-          }
-
+          if (error) return;
           if (data?.paid) {
             setPaymentCompleted(true);
             if (pollingRef.current) clearInterval(pollingRef.current);
-            toast({ title: 'Payment Received! ✅', description: `₹${amount} has been credited to your wallet` });
-            setTimeout(() => {
-              onPaymentCollected();
-              onOpenChange(false);
-            }, 2000);
+            if (timerRef.current) clearInterval(timerRef.current);
+            toast({ title: 'Payment Received! ✅', description: `₹${amount} credited to your wallet` });
+            setTimeout(() => { onPaymentCollected(); onOpenChange(false); }, 2000);
           }
-        } catch (err) {
-          console.error('Polling error:', err);
-        }
+        } catch {}
       }, 5000);
     }
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [qrCodeId, paymentCompleted, appointmentId, amount, onPaymentCollected, onOpenChange, toast]);
 
   const handleCollectCash = async () => {
@@ -71,20 +75,12 @@ const DoctorPaymentCollectionDialog = ({
       const success = await doctorWalletService.collectCashPayment(appointmentId, doctorId, amount);
       if (success) {
         setCashCollected(true);
-        toast({ title: 'Cash Collected', description: `₹${amount} has been credited to your wallet` });
-        setTimeout(() => {
-          onPaymentCollected();
-          onOpenChange(false);
-          setCashCollected(false);
-        }, 1500);
-      } else {
-        throw new Error('Failed to collect cash');
-      }
-    } catch (error) {
+        toast({ title: 'Cash Collected', description: `₹${amount} credited to your wallet` });
+        setTimeout(() => { onPaymentCollected(); onOpenChange(false); setCashCollected(false); }, 1500);
+      } else throw new Error('Failed');
+    } catch {
       toast({ title: 'Error', description: 'Failed to process cash collection', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleGenerateQR = async () => {
@@ -94,36 +90,38 @@ const DoctorPaymentCollectionDialog = ({
       setQrImageUrl(result.image_url);
       setQrContent(result.qr_content || null);
       setQrCodeId(result.qr_code_id || null);
-      toast({ title: 'QR Generated', description: 'Ask the patient to scan and pay via any UPI app' });
-    } catch (error) {
-      console.error('QR generation error:', error);
+      qrCreatedAtRef.current = Date.now();
+      setSecondsLeft(QR_EXPIRY_SECONDS);
+    } catch {
       toast({ title: 'Error', description: 'Failed to generate payment QR', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleClose = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
-    setQrImageUrl(null);
-    setQrContent(null);
-    setQrCodeId(null);
-    setCashCollected(false);
-    setPaymentCompleted(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setQrImageUrl(null); setQrContent(null); setQrCodeId(null);
+    setCashCollected(false); setPaymentCompleted(false);
+    setSecondsLeft(QR_EXPIRY_SECONDS);
     onOpenChange(false);
+  };
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Collect Payment</DialogTitle>
-          <DialogDescription>
+          <DialogTitle>
             Collect ₹{amount} from {patientName} for this consultation
-          </DialogDescription>
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="py-4">
           {cashCollected || paymentCompleted ? (
             <div className="flex flex-col items-center py-8 gap-3">
               <CheckCircle className="h-16 w-16 text-green-500" />
@@ -133,26 +131,22 @@ const DoctorPaymentCollectionDialog = ({
               <p className="text-sm text-muted-foreground">₹{amount} credited to your wallet</p>
             </div>
           ) : qrImageUrl ? (
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-3">
               <div className="w-[240px] h-[240px] bg-white rounded-xl border border-border shadow-sm flex items-center justify-center p-4">
                 {qrContent ? (
-                  <QRCodeSVG
-                    value={qrContent}
-                    size={200}
-                    level="M"
-                    includeMargin={false}
-                  />
+                  <QRCodeSVG value={qrContent} size={200} level="M" includeMargin={false} />
                 ) : (
-                  <img
-                    src={qrImageUrl}
-                    alt="UPI Payment QR Code"
-                    className="w-full h-full object-contain"
-                  />
+                  <img src={qrImageUrl} alt="UPI QR" className="w-full h-full object-contain" />
                 )}
               </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Ask the patient to scan this QR with any UPI app (GPay, PhonePe, Paytm) to pay ₹{amount}
-              </p>
+
+              <p className="text-2xl font-bold text-foreground">₹{amount}</p>
+
+              <div className={`flex items-center gap-1.5 text-xs ${secondsLeft < 60 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                <Clock className="h-3.5 w-3.5" />
+                <span>Expires in {formatTime(secondsLeft)}</span>
+              </div>
+
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Waiting for payment...
@@ -160,35 +154,14 @@ const DoctorPaymentCollectionDialog = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3">
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2 hover:bg-green-50 hover:border-green-300"
-                onClick={handleCollectCash}
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                ) : (
-                  <>
-                    <Banknote className="h-8 w-8 text-green-600" />
-                    <span className="text-sm font-medium">Collect Cash</span>
-                  </>
+              <Button variant="outline" className="h-24 flex flex-col gap-2 hover:bg-green-50 hover:border-green-300" onClick={handleCollectCash} disabled={loading}>
+                {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : (
+                  <><Banknote className="h-8 w-8 text-green-600" /><span className="text-sm font-medium">Collect Cash</span></>
                 )}
               </Button>
-
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2 hover:bg-blue-50 hover:border-blue-300"
-                onClick={handleGenerateQR}
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                ) : (
-                  <>
-                    <QrCode className="h-8 w-8 text-blue-600" />
-                    <span className="text-sm font-medium">Generate UPI QR Code</span>
-                  </>
+              <Button variant="outline" className="h-24 flex flex-col gap-2 hover:bg-blue-50 hover:border-blue-300" onClick={handleGenerateQR} disabled={loading}>
+                {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : (
+                  <><QrCode className="h-8 w-8 text-blue-600" /><span className="text-sm font-medium">Generate UPI QR Code</span></>
                 )}
               </Button>
             </div>
