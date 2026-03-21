@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppointmentCalendar from '@/components/doctor/AppointmentCalendar';
 import AppointmentSlots from '@/components/doctor/AppointmentSlots';
 import DoctorNotifications from '@/components/doctor/DoctorNotifications';
+import DoctorWallet from '@/components/doctor/DoctorWallet';
+import DoctorFeeSettings from '@/components/doctor/DoctorFeeSettings';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +23,6 @@ const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState("calendar");
   const [isPending, setIsPending] = useState(false);
 
-  // Check if user has doctor access
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -31,7 +32,6 @@ const DoctorDashboard = () => {
     const checkAccess = async () => {
       if (!rolesLoading) {
         if (!isDoctor) {
-          // Check if user has a pending doctor application
           const { data, error } = await supabase
             .from('doctors')
             .select('verified')
@@ -65,8 +65,8 @@ const DoctorDashboard = () => {
     return (
       <div className="container mx-auto py-6 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -80,29 +80,26 @@ const DoctorDashboard = () => {
     <div className="container mx-auto px-3 py-4 md:px-6 md:py-6">
       <div className="flex flex-col space-y-4 md:space-y-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-600">Doctor Dashboard</h1>
-          <p className="text-slate-500 text-sm md:text-base">Manage your appointments, schedule, and patient health checks</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">Doctor Dashboard</h1>
+          <p className="text-muted-foreground text-sm md:text-base">Manage your appointments, schedule, wallet and settings</p>
         </div>
 
         <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className={`${isMobile ? 'grid grid-cols-1 h-auto space-y-1 bg-white/60 p-1' : 'grid grid-cols-3'} w-full max-w-2xl`}>
-            <TabsTrigger 
-              value="calendar"
-              className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
-            >
-              Calendar View
+          <TabsList className={`${isMobile ? 'grid grid-cols-2 h-auto gap-1 bg-muted/60 p-1' : 'grid grid-cols-5'} w-full max-w-3xl`}>
+            <TabsTrigger value="calendar" className="text-xs md:text-sm">
+              Calendar
             </TabsTrigger>
-            <TabsTrigger 
-              value="slots"
-              className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
-            >
-              Appointment Slots
+            <TabsTrigger value="slots" className="text-xs md:text-sm">
+              Slots
             </TabsTrigger>
-            <TabsTrigger 
-              value="notifications"
-              className={`text-xs md:text-sm ${isMobile ? 'w-full py-3' : ''}`}
-            >
-              Patient Health Checks
+            <TabsTrigger value="notifications" className="text-xs md:text-sm">
+              Health Checks
+            </TabsTrigger>
+            <TabsTrigger value="wallet" className="text-xs md:text-sm">
+              Wallet
+            </TabsTrigger>
+            <TabsTrigger value="fee-settings" className="text-xs md:text-sm">
+              Fee Settings
             </TabsTrigger>
           </TabsList>
           
@@ -110,7 +107,7 @@ const DoctorDashboard = () => {
             <Card className="modern-card">
               <CardHeader>
                 <CardTitle className="text-lg md:text-xl">Appointment Calendar</CardTitle>
-                <CardDescription className="text-sm md:text-base">View and manage your scheduled appointments</CardDescription>
+                <CardDescription>View and manage your scheduled appointments</CardDescription>
               </CardHeader>
               <CardContent>
                 <AppointmentCalendar />
@@ -122,7 +119,7 @@ const DoctorDashboard = () => {
             <Card className="modern-card">
               <CardHeader>
                 <CardTitle className="text-lg md:text-xl">Appointment Slots</CardTitle>
-                <CardDescription className="text-sm md:text-base">Create and manage your available appointment slots</CardDescription>
+                <CardDescription>Create and manage your available appointment slots</CardDescription>
               </CardHeader>
               <CardContent>
                 <AppointmentSlots />
@@ -134,12 +131,28 @@ const DoctorDashboard = () => {
             <Card className="modern-card">
               <CardHeader>
                 <CardTitle className="text-lg md:text-xl">Patient Health Check Notifications</CardTitle>
-                <CardDescription className="text-sm md:text-base">Review health check data shared by your patients for upcoming appointments</CardDescription>
+                <CardDescription>Review health check data shared by your patients</CardDescription>
               </CardHeader>
               <CardContent>
                 <DoctorNotifications />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="wallet">
+            <Card className="modern-card">
+              <CardHeader>
+                <CardTitle className="text-lg md:text-xl">Wallet & Earnings</CardTitle>
+                <CardDescription>Track your consultation earnings and manage withdrawals</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DoctorWallet />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="fee-settings">
+            <DoctorFeeSettings />
           </TabsContent>
         </Tabs>
       </div>
