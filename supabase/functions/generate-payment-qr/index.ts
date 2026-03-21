@@ -62,6 +62,22 @@ serve(async (req) => {
 
     console.log('Razorpay QR Code created:', qrCode.id);
 
+    // Fetch QR code details to get the raw content/payload
+    let qrContent = '';
+    try {
+      const detailRes = await fetch(`https://api.razorpay.com/v1/payments/qr_codes/${qrCode.id}`, {
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`),
+        },
+      });
+      const detailData = await detailRes.json();
+      // Razorpay returns the raw UPI content in the 'content' field or we can construct it
+      qrContent = detailData?.content || '';
+      console.log('QR detail fields:', Object.keys(detailData));
+    } catch (e) {
+      console.error('Failed to fetch QR details:', e);
+    }
+
     // Store the QR code ID on the appointment for webhook reconciliation
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, supabaseKey);
@@ -69,14 +85,15 @@ serve(async (req) => {
     await supabase
       .from('appointments')
       .update({
-        razorpay_order_id: qrCode.id, // store QR code ID here
+        razorpay_order_id: qrCode.id,
         payment_amount: amount,
       })
       .eq('id', appointment_id);
 
     return new Response(JSON.stringify({
       qr_code_id: qrCode.id,
-      image_url: qrCode.image_url, // official QR image from Razorpay
+      image_url: qrCode.image_url,
+      qr_content: qrContent,
       amount: qrCode.payment_amount,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

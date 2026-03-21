@@ -6,6 +6,7 @@ import { doctorWalletService } from '@/services/doctorWalletService';
 import { generatePaymentQR } from '@/services/razorpayService';
 import { supabase } from '@/integrations/supabase/client';
 import { Banknote, QrCode, Loader2, CheckCircle } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface Props {
   open: boolean;
@@ -24,6 +25,7 @@ const DoctorPaymentCollectionDialog = ({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrContent, setQrContent] = useState<string | null>(null);
   const [cashCollected, setCashCollected] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -86,6 +88,7 @@ const DoctorPaymentCollectionDialog = ({
     try {
       const result = await generatePaymentQR(amount, appointmentId, doctorName, patientName);
       setQrImageUrl(result.image_url);
+      setQrContent(result.qr_content || null);
       toast({ title: 'QR Generated', description: 'Ask the patient to scan and pay via any UPI app' });
     } catch (error) {
       console.error('QR generation error:', error);
@@ -98,6 +101,7 @@ const DoctorPaymentCollectionDialog = ({
   const handleClose = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     setQrImageUrl(null);
+    setQrContent(null);
     setCashCollected(false);
     setPaymentCompleted(false);
     onOpenChange(false);
@@ -124,13 +128,21 @@ const DoctorPaymentCollectionDialog = ({
             </div>
           ) : qrImageUrl ? (
             <div className="flex flex-col items-center gap-4">
-              <div className="w-[220px] h-[220px] bg-white rounded-xl border border-border shadow-sm overflow-hidden relative">
-                <img
-                  src={qrImageUrl}
-                  alt="UPI Payment QR Code"
-                  className="absolute w-[280px] left-1/2 -translate-x-1/2"
-                  style={{ top: '-28%' }}
-                />
+              <div className="w-[240px] h-[240px] bg-white rounded-xl border border-border shadow-sm flex items-center justify-center p-4">
+                {qrContent ? (
+                  <QRCodeSVG
+                    value={qrContent}
+                    size={200}
+                    level="M"
+                    includeMargin={false}
+                  />
+                ) : (
+                  <img
+                    src={qrImageUrl}
+                    alt="UPI Payment QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 Ask the patient to scan this QR with any UPI app (GPay, PhonePe, Paytm) to pay ₹{amount}
