@@ -23,7 +23,9 @@ serve(async (req) => {
   try {
     const body = await req.text();
     const signature = req.headers.get('x-razorpay-signature');
-    const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
+    // Razorpay webhook signatures use the Webhook Secret from the Dashboard,
+    // NOT the API Key Secret. Fall back to KEY_SECRET if webhook secret is not set.
+    const WEBHOOK_SECRET = Deno.env.get('RAZORPAY_WEBHOOK_SECRET') || Deno.env.get('RAZORPAY_KEY_SECRET');
 
     if (!RAZORPAY_KEY_SECRET) throw new Error('Razorpay secret not configured');
 
