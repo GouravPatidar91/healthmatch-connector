@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface Wallet {
   id: string;
   user_id: string;
-  owner_type: 'delivery_partner' | 'vendor';
+  owner_type: 'delivery_partner' | 'vendor' | 'doctor';
   owner_id: string;
   balance: number;
   total_earned: number;
