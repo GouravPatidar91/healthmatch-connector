@@ -20,8 +20,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import DoctorPaymentCollectionDialog from "./DoctorPaymentCollectionDialog";
 
 const AppointmentCalendar = () => {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedAppointmentForPayment, setSelectedAppointmentForPayment] = useState<any>(null);
   const { toast } = useToast();
   
   const { 
