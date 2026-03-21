@@ -1,49 +1,48 @@
 
 
-## Plan: Reliable Unbranded QR Code via Server-Side Image Decoding
+# Plan: Payment-First Approach for Online Appointments
 
-### Problem
-The current approach tries to decode Razorpay's branded PNG using `jsqr` and `upng-js` via ESM imports in Deno, but it's silently failing — likely due to ESM module compatibility issues in the Deno edge function runtime. When `qrContent` comes back empty, the frontend falls back to showing the branded Razorpay `image_url`.
+## Current Problem
+The current flow creates the appointment first, then processes payment. If payment fails/is cancelled, we attempt to delete the appointment — but the delete can silently fail, leaving orphaned appointments.
 
-### Root Cause
-The `jsqr` and `upng-js` libraries imported via `esm.sh` may not work correctly in Deno's edge function environment (CJS/ESM interop issues, missing default exports, or UPNG not producing valid RGBA data). The logs show no output, suggesting the function may not even be deploying correctly or the decode silently fails.
+## New Approach
+**Only create the appointment in the database after successful payment.** This eliminates the need for any delete/cleanup logic.
 
-### Solution: Fix the server-side decoding approach
+## Implementation Steps
 
-The architecture is correct — create Razorpay QR, fetch branded image, decode it to extract raw UPI string, return to frontend for clean rendering via `QRCodeSVG`. The issue is purely in the library imports/usage.
+### 1. Restructure `handleSubmit` in `BookAppointmentDialog.tsx`
 
-### Changes
+For **online payment** flow:
+1. Collect all appointment data but **do not insert** into the database yet
+2. Create a Razorpay order using a temporary reference (no appointment ID yet)
+3. Open Razorpay checkout
+4. **Only after successful payment**: insert the appointment into the database with `payment_status: 'paid'` and store the `razorpay_payment_id` and `razorpay_order_id`
+5. If payment fails/cancelled: do nothing — no appointment was ever created
 
-**File: `supabase/functions/generate-payment-qr/index.ts`**
+For **pay at clinic** flow: no change — insert immediately as before.
 
-Replace the current `jsqr` + `upng-js` approach with a more reliable method:
+### 2. Update `create-razorpay-order` Edge Function
 
-1. Use the **Canvas API** approach — Deno doesn't have Canvas, so instead use a different PNG decoding strategy
-2. Import `pngs` (a Deno-native PNG decoder) or use `png-js` that works better in Deno
-3. Actually, the simplest fix: use `jsqr` with a **proper default import** pattern and decode the PNG manually using raw byte parsing
+Currently requires `appointment_id`. Change it to accept appointment metadata (doctor_id, user_id, amount) and make `appointment_id` optional. Use a temporary receipt identifier instead (e.g., `pre_appt_<timestamp>`). Skip the appointment update step when no appointment_id is provided.
 
-Concrete fix:
-- Replace `import jsQR from "https://esm.sh/jsqr@1.4.0"` with `import jsQR from "https://esm.sh/jsqr@1.4.0?bundle"`  
-- Replace `import UPNG from "https://esm.sh/upng-js@2.1.0"` with `import UPNG from "https://esm.sh/upng-js@2.1.0?bundle"`
-- The `?bundle` flag tells esm.sh to bundle the module properly for Deno, resolving CJS interop issues
-- Add extensive logging so we can see exactly what's happening: log the image fetch status, decoded dimensions, jsQR result
-- Add a fallback: if image decoding still fails, construct the UPI string manually using Razorpay's QR code details endpoint (`GET /v1/payments/qr_codes/{qr_code_id}`) which may return additional payment metadata
+### 3. Update `processOnlinePayment` in `BookAppointmentDialog.tsx`
 
-**No changes needed to:**
-- `src/components/doctor/DoctorPaymentCollectionDialog.tsx` — already correctly renders `QRCodeSVG` when `qrContent` is available
-- `src/services/razorpayService.ts` — already has `qr_content` in the interface
+- Accept appointment data object instead of appointment ID
+- After Razorpay success callback with verified payment:
+  - Insert the appointment into the database
+  - Store `razorpay_order_id` and `razorpay_payment_id` on the new appointment record
+- Return the created appointment so health check data can be sent afterward
 
-### Fallback chain (in the edge function)
-1. Try decode branded PNG → extract UPI string via jsQR
-2. If that fails, fetch QR code details from Razorpay API and try to extract payment metadata  
-3. If that also fails, return empty `qr_content` and frontend shows branded image (current behavior, as last resort)
+### 4. Update `verify-razorpay-payment` Edge Function
 
-### Expected result
-- The edge function successfully decodes the Razorpay branded QR PNG
-- Returns the raw UPI string (e.g. `upi://pay?pa=...&pn=...&am=...`) as `qr_content`
-- Frontend renders a clean, centered QR code via `QRCodeSVG` with zero branding
-- Payment polling and webhook reconciliation continue unchanged
+Make the `appointment_id` parameter optional. When provided, update the appointment as before. When not provided, just verify the signature and return success — the client will handle the appointment creation.
 
-### File to update
-- `supabase/functions/generate-payment-qr/index.ts`
+## Technical Details
+
+**File changes:**
+- `src/components/appointments/BookAppointmentDialog.tsx` — Restructure `handleSubmit` and `processOnlinePayment` to payment-first flow
+- `supabase/functions/create-razorpay-order/index.ts` — Make `appointment_id` optional, use fallback receipt
+- `supabase/functions/verify-razorpay-payment/index.ts` — Make `appointment_id` optional in the verification flow
+
+**Key benefit:** Zero orphaned appointments. No delete calls needed. The database only ever contains valid, paid appointments.
 
