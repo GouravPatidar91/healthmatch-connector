@@ -19,7 +19,7 @@ interface Props {
   onPaymentCollected: () => void;
 }
 
-const QR_EXPIRY_SECONDS = 30 * 60;
+const QR_EXPIRY_SECONDS = 2 * 60;
 
 const DoctorPaymentCollectionDialog = ({
   open, onOpenChange, appointmentId, doctorId, doctorName, patientName, amount, onPaymentCollected
