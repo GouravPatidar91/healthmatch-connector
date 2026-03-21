@@ -65,6 +65,7 @@ const DoctorPaymentCollectionDialog = ({
             setPaymentCompleted(true);
             if (pollingRef.current) clearInterval(pollingRef.current);
             if (timerRef.current) clearInterval(timerRef.current);
+            await supabase.from('appointments').update({ status: 'completed' }).eq('id', appointmentId);
             toast({ title: 'Payment Received! ✅', description: `₹${amount} credited to your wallet` });
             setTimeout(() => { onPaymentCollected(); onOpenChange(false); }, 2000);
           }
