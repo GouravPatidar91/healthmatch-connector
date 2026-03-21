@@ -25,6 +25,7 @@ const DoctorPaymentCollectionDialog = ({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrContent, setQrContent] = useState<string | null>(null);
   const [cashCollected, setCashCollected] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
