@@ -3,32 +3,21 @@ import React, { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger 
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useDoctorSlots } from "@/services/doctorSlotService";
 import { useUnifiedDoctorAppointments } from "@/services/unifiedAppointmentService";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, CheckCircle, Clock, X, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import DoctorPaymentCollectionDialog from "./DoctorPaymentCollectionDialog";
 
 const AppointmentCalendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
