@@ -43,6 +43,56 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Handle QR Code payment events
+    if (event.event === 'qr_code.credited') {
+      const qrCodeId = event.payload?.qr_code?.entity?.id;
+      const notes = event.payload?.qr_code?.entity?.notes;
+      const appointmentId = notes?.appointment_id;
+      const paymentId = event.payload?.payment?.entity?.id;
+
+      console.log('QR payment received - QR ID:', qrCodeId, 'Appointment:', appointmentId, 'Payment:', paymentId);
+
+      if (appointmentId) {
+        // Idempotency: check if already paid
+        const { data: appointment } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('id', appointmentId)
+          .single();
+
+        if (appointment && appointment.payment_status !== 'paid') {
+          await supabase
+            .from('appointments')
+            .update({
+              payment_status: 'paid',
+              razorpay_payment_id: paymentId || qrCodeId,
+            })
+            .eq('id', appointmentId);
+
+          const doctorId = appointment.doctor_id;
+          const amount = appointment.payment_amount || 0;
+
+          if (doctorId && amount > 0) {
+            const walletId = await supabase.rpc('get_or_create_wallet', {
+              _user_id: doctorId, _owner_type: 'doctor', _owner_id: doctorId,
+            });
+
+            if (walletId.data) {
+              await supabase.rpc('credit_wallet', {
+                _wallet_id: walletId.data, _order_id: null, _amount: amount,
+                _description: `QR Payment - Appointment ${appointmentId.substring(0, 8)}`,
+                _category: 'consultation_fee',
+              });
+              console.log('Doctor wallet credited:', amount);
+            }
+          }
+        } else {
+          console.log('Appointment already paid or not found, skipping wallet credit');
+        }
+      }
+    }
+
+    // Keep legacy payment_link.paid handler
     if (event.event === 'payment_link.paid') {
       const paymentLinkId = event.payload?.payment_link?.entity?.id;
       const notes = event.payload?.payment_link?.entity?.notes;
@@ -55,7 +105,7 @@ serve(async (req) => {
           .eq('id', appointmentId)
           .single();
 
-        if (appointment) {
+        if (appointment && appointment.payment_status !== 'paid') {
           await supabase
             .from('appointments')
             .update({
