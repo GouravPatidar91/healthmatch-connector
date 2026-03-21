@@ -55,7 +55,6 @@ serve(async (req) => {
       console.log('QR payment received - QR ID:', qrCodeId, 'Appointment:', appointmentId, 'Payment:', paymentId);
 
       if (appointmentId) {
-        // Idempotency: check if already paid
         const { data: appointment } = await supabase
           .from('appointments')
           .select('*')
@@ -63,6 +62,19 @@ serve(async (req) => {
           .single();
 
         if (appointment && appointment.payment_status !== 'paid') {
+          // Fetch patient name
+          let patientDisplayName = 'Patient';
+          if (appointment.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', appointment.user_id)
+              .single();
+            if (profile) {
+              patientDisplayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Patient';
+            }
+          }
+
           await supabase
             .from('appointments')
             .update({
@@ -82,7 +94,7 @@ serve(async (req) => {
             if (walletId.data) {
               await supabase.rpc('credit_wallet', {
                 _wallet_id: walletId.data, _order_id: null, _amount: amount,
-                _description: `QR Payment - Appointment ${appointmentId.substring(0, 8)}`,
+                _description: `QR Payment - ${patientDisplayName}`,
                 _category: 'consultation_fee',
               });
               console.log('Doctor wallet credited:', amount);
@@ -108,6 +120,19 @@ serve(async (req) => {
           .single();
 
         if (appointment && appointment.payment_status !== 'paid') {
+          // Fetch patient name
+          let patientDisplayName = 'Patient';
+          if (appointment.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', appointment.user_id)
+              .single();
+            if (profile) {
+              patientDisplayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Patient';
+            }
+          }
+
           await supabase
             .from('appointments')
             .update({
@@ -127,7 +152,7 @@ serve(async (req) => {
             if (walletId.data) {
               await supabase.rpc('credit_wallet', {
                 _wallet_id: walletId.data, _order_id: null, _amount: amount,
-                _description: `QR Payment - Appointment ${appointmentId.substring(0, 8)}`,
+                _description: `QR Payment - ${patientDisplayName}`,
                 _category: 'consultation_fee',
               });
             }

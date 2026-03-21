@@ -92,8 +92,28 @@ class DoctorWalletService {
     }
   }
 
-  async collectCashPayment(appointmentId: string, doctorId: string, amount: number): Promise<boolean> {
+  async collectCashPayment(appointmentId: string, doctorId: string, amount: number, patientName?: string): Promise<boolean> {
     try {
+      // Fetch patient name from appointment if not provided
+      let displayName = patientName || 'Patient';
+      if (!patientName) {
+        const { data: appt } = await supabase
+          .from('appointments')
+          .select('user_id')
+          .eq('id', appointmentId)
+          .single();
+        if (appt?.user_id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', appt.user_id)
+            .single();
+          if (profile) {
+            displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Patient';
+          }
+        }
+      }
+
       // Update appointment payment status
       const { error: apptError } = await supabase
         .from('appointments')
@@ -114,7 +134,7 @@ class DoctorWalletService {
           _wallet_id: walletId,
           _order_id: null,
           _amount: amount,
-          _description: `Cash collection - Appointment ${appointmentId.substring(0, 8)}`,
+          _description: `Cash collection - ${displayName}`,
           _category: 'consultation_fee',
         });
       }
