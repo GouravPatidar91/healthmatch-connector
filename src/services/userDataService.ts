@@ -8,24 +8,24 @@ import { Json } from "@/integrations/supabase/types";
 export interface Appointment {
   id?: string;
   user_id?: string;
-  doctor_id?: string; // Add doctor_id property
+  doctor_id?: string;
   doctor_name: string;
   doctor_specialty?: string;
   date: string;
   time: string;
   reason?: string;
-  status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'payment_failed';
   notes?: string;
   created_at?: string;
   updated_at?: string;
 }
 
 // Helper function to ensure status is of the correct type
-const validateAppointmentStatus = (status: string | null): 'pending' | 'confirmed' | 'cancelled' | 'completed' => {
-  if (status === 'pending' || status === 'confirmed' || status === 'cancelled' || status === 'completed') {
+const validateAppointmentStatus = (status: string | null): 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'payment_failed' => {
+  if (status === 'pending' || status === 'confirmed' || status === 'cancelled' || status === 'completed' || status === 'payment_failed') {
     return status;
   }
-  return 'pending'; // Default value if status is invalid
+  return 'pending';
 };
 
 // Helper function to convert database row to Appointment type

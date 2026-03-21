@@ -224,10 +224,21 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
 
           toast({ title: "Payment Successful", description: "Your appointment has been booked and payment processed!" });
         } catch (paymentError: any) {
-          // Payment failed/cancelled — no appointment was ever created
+          // Payment failed/cancelled — insert a payment_failed record so user can see it
+          try {
+            await supabase
+              .from('appointments')
+              .insert([{
+                ...appointmentData,
+                status: 'payment_failed',
+                payment_status: 'failed',
+              }]);
+          } catch (insertErr) {
+            console.error('Failed to insert payment_failed record:', insertErr);
+          }
           toast({
-            title: "Payment Cancelled",
-            description: "Payment was not completed. Appointment was not created.",
+            title: "Payment Failed",
+            description: "Payment was not completed. The appointment is marked as payment failed.",
             variant: "destructive",
           });
           setLoading(false);
