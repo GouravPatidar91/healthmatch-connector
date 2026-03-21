@@ -14,15 +14,15 @@ export interface Appointment {
   date: string;
   time: string;
   reason?: string;
-  status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'payment_failed';
+  status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   notes?: string;
   created_at?: string;
   updated_at?: string;
 }
 
 // Helper function to ensure status is of the correct type
-const validateAppointmentStatus = (status: string | null): 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'payment_failed' => {
-  if (status === 'pending' || status === 'confirmed' || status === 'cancelled' || status === 'completed' || status === 'payment_failed') {
+const validateAppointmentStatus = (status: string | null): 'pending' | 'confirmed' | 'cancelled' | 'completed' => {
+  if (status === 'pending' || status === 'confirmed' || status === 'cancelled' || status === 'completed') {
     return status;
   }
   return 'pending';
