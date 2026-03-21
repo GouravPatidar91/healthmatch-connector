@@ -17,6 +17,9 @@ export interface UnifiedAppointment {
   doctorName?: string;
   startTime?: string;
   endTime?: string;
+  paymentMode?: string;
+  paymentStatus?: string;
+  paymentAmount?: number;
 }
 
 export const useUnifiedDoctorAppointments = () => {
@@ -143,7 +146,10 @@ export const useUnifiedDoctorAppointments = () => {
             type: 'direct' as const,
             userId: appointment.user_id,
             doctorId: appointment.doctor_id,
-            doctorName: appointment.doctor_name
+            doctorName: appointment.doctor_name,
+            paymentMode: (appointment as any).payment_mode,
+            paymentStatus: (appointment as any).payment_status,
+            paymentAmount: (appointment as any).payment_amount,
           });
         }
         console.log('✅ Processed', directAppointments.length, 'direct appointments');

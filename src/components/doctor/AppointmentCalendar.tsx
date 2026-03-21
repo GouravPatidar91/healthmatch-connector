@@ -3,36 +3,28 @@ import React, { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger 
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useDoctorSlots } from "@/services/doctorSlotService";
 import { useUnifiedDoctorAppointments } from "@/services/unifiedAppointmentService";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, CheckCircle, Clock, X, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import DoctorPaymentCollectionDialog from "./DoctorPaymentCollectionDialog";
 
 const AppointmentCalendar = () => {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedAppointmentForPayment, setSelectedAppointmentForPayment] = useState<any>(null);
   const { toast } = useToast();
   
   const { 
@@ -71,7 +63,14 @@ const AppointmentCalendar = () => {
   const appointmentsForSelectedDate = getAppointmentsForDate(selectedDate);
   const slotsForSelectedDate = getSlotsForDate(selectedDate);
   
-  const handleStatusChange = async (appointmentId: string, status: string, type: 'direct' | 'slot') => {
+  const handleStatusChange = async (appointmentId: string, status: string, type: 'direct' | 'slot', appointment?: any) => {
+    // If marking as completed and it's a pay_at_clinic appointment with pending payment, show payment dialog
+    if (status === 'completed' && appointment?.paymentMode === 'pay_at_clinic' && appointment?.paymentStatus === 'pending' && (appointment?.paymentAmount || 0) > 0) {
+      setSelectedAppointmentForPayment(appointment);
+      setPaymentDialogOpen(true);
+      return;
+    }
+
     try {
       if (status === 'completed') {
         await markAppointmentAsCompleted(appointmentId, type);
@@ -87,6 +86,13 @@ const AppointmentCalendar = () => {
         description: "Failed to update appointment status. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePaymentCollected = async () => {
+    if (selectedAppointmentForPayment) {
+      await markAppointmentAsCompleted(selectedAppointmentForPayment.id, selectedAppointmentForPayment.type);
+      setSelectedAppointmentForPayment(null);
     }
   };
   
@@ -233,7 +239,7 @@ const AppointmentCalendar = () => {
                               <Button 
                                 variant="ghost" 
                                 size="icon"
-                                onClick={() => handleStatusChange(appointment.id, 'confirmed', appointment.type)}
+                                onClick={() => handleStatusChange(appointment.id, 'confirmed', appointment.type, appointment)}
                                 title="Confirm appointment"
                                 className="h-8 w-8 hover:bg-sage-100"
                               >
@@ -244,7 +250,7 @@ const AppointmentCalendar = () => {
                               variant="ghost" 
                               size="icon"
                               disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
-                              onClick={() => handleStatusChange(appointment.id, 'completed', appointment.type)}
+                              onClick={() => handleStatusChange(appointment.id, 'completed', appointment.type, appointment)}
                               title="Mark as completed"
                               className="h-8 w-8 hover:bg-sage-100"
                             >
@@ -254,7 +260,7 @@ const AppointmentCalendar = () => {
                               variant="ghost" 
                               size="icon"
                               disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
-                              onClick={() => handleStatusChange(appointment.id, 'cancelled', appointment.type)}
+                              onClick={() => handleStatusChange(appointment.id, 'cancelled', appointment.type, appointment)}
                               title="Cancel appointment"
                               className="h-8 w-8 hover:bg-sage-100"
                             >
@@ -339,6 +345,18 @@ const AppointmentCalendar = () => {
             </div>
           )}
         </div>
+      )}
+      {selectedAppointmentForPayment && (
+        <DoctorPaymentCollectionDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          appointmentId={selectedAppointmentForPayment.id}
+          doctorId={user?.id || ''}
+          doctorName={selectedAppointmentForPayment.doctorName || 'Doctor'}
+          patientName={selectedAppointmentForPayment.patientName}
+          amount={selectedAppointmentForPayment.paymentAmount || 0}
+          onPaymentCollected={handlePaymentCollected}
+        />
       )}
     </div>
   );

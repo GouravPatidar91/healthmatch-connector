@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface Wallet {
   id: string;
   user_id: string;
-  owner_type: 'delivery_partner' | 'vendor';
+  owner_type: 'delivery_partner' | 'vendor' | 'doctor';
   owner_id: string;
   balance: number;
   total_earned: number;
@@ -40,7 +40,7 @@ export interface DailyEarnings {
 }
 
 class WalletService {
-  async getWallet(userId: string, ownerType: 'delivery_partner' | 'vendor'): Promise<Wallet | null> {
+  async getWallet(userId: string, ownerType: 'delivery_partner' | 'vendor' | 'doctor'): Promise<Wallet | null> {
     try {
       const { data, error } = await supabase
         .from('wallets')

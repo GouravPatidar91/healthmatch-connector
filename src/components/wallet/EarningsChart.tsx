@@ -4,7 +4,7 @@ import type { DailyEarnings } from "@/services/walletService";
 
 interface EarningsChartProps {
   data: DailyEarnings[];
-  ownerType: 'delivery_partner' | 'vendor';
+  ownerType: 'delivery_partner' | 'vendor' | 'doctor';
   loading?: boolean;
 }
 
