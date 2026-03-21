@@ -156,7 +156,7 @@ const Appointments = () => {
             ) : (
               <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {specializedDoctors.map((doctor) => (
-                  <Card key={doctor.id} className="modern-card">
+                  <Card key={doctor.id} className="modern-card cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => handleBookAppointment(doctor)}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1">
@@ -200,16 +200,6 @@ const Appointments = () => {
                           </div>
                         )}
                       </div>
-
-                      <Button 
-                        onClick={() => handleBookAppointment(doctor)}
-                        className="btn-modern w-full text-xs md:text-sm mb-2"
-                      >
-                        <CalendarDays className="mr-2 h-3 w-3 md:h-4 md:w-4" />
-                        Book Appointment
-                      </Button>
-
-                      <DoctorSlots doctor={doctor} />
                     </CardContent>
                   </Card>
                 ))}

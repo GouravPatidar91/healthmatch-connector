@@ -169,7 +169,7 @@ export const NearbyDoctorsView = () => {
 
       <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {doctors.map((doctor) => (
-          <Card key={doctor.id} className="modern-card hover:shadow-lg transition-all duration-200">
+          <Card key={doctor.id} className="modern-card cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => handleBookAppointment(doctor)}>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
@@ -208,23 +208,9 @@ export const NearbyDoctorsView = () => {
                   </div>
                 )}
               </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-                  Available
-                </Badge>
-                
-                <Button
-                  onClick={() => handleBookAppointment(doctor)}
-                  size="sm"
-                  className="btn-modern text-xs md:text-sm"
-                >
-                  <CalendarDays className="mr-2 h-3 w-3 md:h-4 md:w-4" />
-                  Book Now
-                </Button>
-              </div>
-
-              <DoctorSlots doctor={doctor} />
+              <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                Available
+              </Badge>
             </CardContent>
           </Card>
         ))}
