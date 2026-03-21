@@ -14,8 +14,8 @@ serve(async (req) => {
   try {
     const { amount, appointment_id, doctor_id, user_id, currency = 'INR' } = await req.json();
 
-    if (!amount || !appointment_id) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+    if (!amount) {
+      return new Response(JSON.stringify({ error: 'Missing required field: amount' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -27,6 +27,11 @@ serve(async (req) => {
       throw new Error('Razorpay credentials not configured');
     }
 
+    // Use appointment_id if provided, otherwise use a temporary receipt
+    const receipt = appointment_id
+      ? `appt_${appointment_id.substring(0, 35)}`
+      : `pre_appt_${Date.now()}`;
+
     // Create Razorpay order
     const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
@@ -37,9 +42,9 @@ serve(async (req) => {
       body: JSON.stringify({
         amount: Math.round(amount * 100), // Convert to paise
         currency,
-        receipt: `appt_${appointment_id.substring(0, 35)}`,
+        receipt,
         notes: {
-          appointment_id,
+          appointment_id: appointment_id || '',
           doctor_id: doctor_id || '',
           user_id: user_id || '',
         },
@@ -53,15 +58,17 @@ serve(async (req) => {
       throw new Error(order.error?.description || 'Failed to create Razorpay order');
     }
 
-    // Update appointment with razorpay_order_id
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Only update appointment if appointment_id is provided
+    if (appointment_id) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-    await supabase
-      .from('appointments')
-      .update({ razorpay_order_id: order.id, payment_amount: amount })
-      .eq('id', appointment_id);
+      await supabase
+        .from('appointments')
+        .update({ razorpay_order_id: order.id, payment_amount: amount })
+        .eq('id', appointment_id);
+    }
 
     return new Response(JSON.stringify({
       order_id: order.id,

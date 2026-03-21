@@ -103,13 +103,19 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
     return newDoctor.id;
   };
 
-  const processOnlinePayment = async (appointmentId: string, doctorId: string, userId: string, amount: number) => {
+  const processOnlinePayment = async (
+    appointmentData: any,
+    doctorId: string,
+    userId: string,
+    amount: number
+  ): Promise<any> => {
     const scriptLoaded = await loadRazorpayScript();
     if (!scriptLoaded) throw new Error('Failed to load payment gateway');
 
-    const orderData = await createRazorpayOrder(amount, appointmentId, doctorId, userId);
+    // Create Razorpay order WITHOUT an appointment_id
+    const orderData = await createRazorpayOrder(amount, doctorId, userId);
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
       openRazorpayCheckout(
         {
           key: orderData.key_id,
@@ -121,13 +127,27 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
         },
         async (response) => {
           try {
+            // Verify payment signature (no appointment_id yet)
             await verifyRazorpayPayment(
               response.razorpay_order_id,
               response.razorpay_payment_id,
-              response.razorpay_signature,
-              appointmentId
+              response.razorpay_signature
             );
-            resolve();
+
+            // Payment verified — NOW create the appointment
+            const { data: appointment, error: insertError } = await supabase
+              .from('appointments')
+              .insert([{
+                ...appointmentData,
+                payment_status: 'paid',
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+              }])
+              .select()
+              .single();
+
+            if (insertError) throw insertError;
+            resolve(appointment);
           } catch (err) {
             reject(err);
           }
@@ -184,27 +204,27 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
         notes: formData.notes || null,
         status: 'pending',
         payment_mode: paymentMode,
-        payment_status: paymentMode === 'online' && consultationFee > 0 ? 'pending' : 'pending',
+        payment_status: 'pending',
         payment_amount: consultationFee,
       };
 
-      const { data: appointment, error: appointmentError } = await supabase
-        .from('appointments')
-        .insert([appointmentData])
-        .select()
-        .single();
-
-      if (appointmentError) throw appointmentError;
-      if (!appointment.doctor_id) throw new Error('Appointment created but doctor assignment failed');
-
-      // Process online payment if selected
       if (paymentMode === 'online' && consultationFee > 0) {
+        // PAYMENT-FIRST: Don't insert appointment yet, process payment first
         try {
-          await processOnlinePayment(appointment.id, doctorId, user.id, consultationFee);
+          const appointment = await processOnlinePayment(appointmentData, doctorId, user.id, consultationFee);
+          
+          // Send health check data if available
+          if (healthCheckData && appointment) {
+            try {
+              await sendHealthCheckToDoctor(healthCheckData, appointment.id, doctorId);
+            } catch (error) {
+              console.error('Error sending health check:', error);
+            }
+          }
+
           toast({ title: "Payment Successful", description: "Your appointment has been booked and payment processed!" });
         } catch (paymentError: any) {
-          // Payment failed/cancelled — delete the appointment
-          await supabase.from('appointments').delete().eq('id', appointment.id);
+          // Payment failed/cancelled — no appointment was ever created
           toast({
             title: "Payment Cancelled",
             description: "Payment was not completed. Appointment was not created.",
@@ -214,7 +234,15 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
           return;
         }
       } else {
-        // Send health check data if available
+        // PAY AT CLINIC: Insert appointment immediately
+        const { data: appointment, error: appointmentError } = await supabase
+          .from('appointments')
+          .insert([appointmentData])
+          .select()
+          .single();
+
+        if (appointmentError) throw appointmentError;
+
         if (healthCheckData && appointment) {
           try {
             await sendHealthCheckToDoctor(healthCheckData, appointment.id, doctorId);
