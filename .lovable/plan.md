@@ -1,48 +1,36 @@
 
 
-# Plan: Payment-First Approach for Online Appointments
+# Fix: Online Payment Failure Still Creating Pending Appointments
 
-## Current Problem
-The current flow creates the appointment first, then processes payment. If payment fails/is cancelled, we attempt to delete the appointment — but the delete can silently fail, leaving orphaned appointments.
+## Problem
+When a user selects "Pay Online" and cancels/fails the payment, a pending appointment is still being created in the database.
 
-## New Approach
-**Only create the appointment in the database after successful payment.** This eliminates the need for any delete/cleanup logic.
+## Root Cause Analysis
+The current `BookAppointmentDialog.tsx` code appears to implement a payment-first flow, but there may be a deployment timing issue or the Razorpay `ondismiss` callback may not be properly rejecting. Additionally, the user wants failed payment attempts to show as a visible "failed" record rather than disappearing entirely.
 
-## Implementation Steps
+## Plan
 
-### 1. Restructure `handleSubmit` in `BookAppointmentDialog.tsx`
+### 1. Harden the payment-first flow in `BookAppointmentDialog.tsx`
+- Ensure the online payment path **never** inserts an appointment before payment succeeds
+- On payment failure/cancellation: insert an appointment with `status: 'payment_failed'` and `payment_status: 'failed'` so the user can see the failed attempt in their appointment list
+- This satisfies the user's preference for "Show failed status"
 
-For **online payment** flow:
-1. Collect all appointment data but **do not insert** into the database yet
-2. Create a Razorpay order using a temporary reference (no appointment ID yet)
-3. Open Razorpay checkout
-4. **Only after successful payment**: insert the appointment into the database with `payment_status: 'paid'` and store the `razorpay_payment_id` and `razorpay_order_id`
-5. If payment fails/cancelled: do nothing — no appointment was ever created
+### 2. Update `userDataService.ts` appointment status validation
+- Add `'payment_failed'` to the valid appointment status types so it renders correctly in the UI
 
-For **pay at clinic** flow: no change — insert immediately as before.
+### 3. Update `PatientAppointments.tsx` to display failed payment status
+- Show a distinct visual indicator (red badge) for `payment_failed` appointments
+- Optionally add a "Retry Payment" button on failed appointments
 
-### 2. Update `create-razorpay-order` Edge Function
+### Technical Details
 
-Currently requires `appointment_id`. Change it to accept appointment metadata (doctor_id, user_id, amount) and make `appointment_id` optional. Use a temporary receipt identifier instead (e.g., `pre_appt_<timestamp>`). Skip the appointment update step when no appointment_id is provided.
+**File: `src/components/appointments/BookAppointmentDialog.tsx`**
+- In the `catch` block for `processOnlinePayment` (around line 226): instead of just showing a toast and returning, insert the appointment with `status: 'payment_failed'` and `payment_status: 'failed'`
+- This ensures users see the failed attempt but it's clearly not a valid booking
 
-### 3. Update `processOnlinePayment` in `BookAppointmentDialog.tsx`
+**File: `src/services/userDataService.ts`**
+- Update `validateAppointmentStatus` to include `'payment_failed'` as a valid status
 
-- Accept appointment data object instead of appointment ID
-- After Razorpay success callback with verified payment:
-  - Insert the appointment into the database
-  - Store `razorpay_order_id` and `razorpay_payment_id` on the new appointment record
-- Return the created appointment so health check data can be sent afterward
-
-### 4. Update `verify-razorpay-payment` Edge Function
-
-Make the `appointment_id` parameter optional. When provided, update the appointment as before. When not provided, just verify the signature and return success — the client will handle the appointment creation.
-
-## Technical Details
-
-**File changes:**
-- `src/components/appointments/BookAppointmentDialog.tsx` — Restructure `handleSubmit` and `processOnlinePayment` to payment-first flow
-- `supabase/functions/create-razorpay-order/index.ts` — Make `appointment_id` optional, use fallback receipt
-- `supabase/functions/verify-razorpay-payment/index.ts` — Make `appointment_id` optional in the verification flow
-
-**Key benefit:** Zero orphaned appointments. No delete calls needed. The database only ever contains valid, paid appointments.
+**File: `src/components/appointments/PatientAppointments.tsx`**
+- Add UI handling for `payment_failed` status with appropriate styling
 
