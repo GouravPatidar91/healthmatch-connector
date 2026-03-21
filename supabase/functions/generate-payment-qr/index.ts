@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import jsQR from "https://esm.sh/jsqr@1.4.0";
+import UPNG from "https://esm.sh/upng-js@2.1.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +30,7 @@ serve(async (req) => {
       throw new Error('Razorpay credentials not configured');
     }
 
-    // Create Razorpay QR Code (true UPI QR, not a payment link)
+    // Create Razorpay QR Code
     const response = await fetch('https://api.razorpay.com/v1/payments/qr_codes', {
       method: 'POST',
       headers: {
@@ -40,10 +42,10 @@ serve(async (req) => {
         name: `Dr. ${doctor_name || 'Doctor'} - Consultation`,
         usage: 'single_use',
         fixed_amount: true,
-        payment_amount: Math.round(amount * 100), // amount in paise
+        payment_amount: Math.round(amount * 100),
         description: `Consultation fee for ${patient_name || 'Patient'}`,
         customer_id: undefined,
-        close_by: Math.floor(Date.now() / 1000) + 1800, // expires in 30 minutes
+        close_by: Math.floor(Date.now() / 1000) + 1800,
         notes: {
           appointment_id,
           type: 'clinic_qr_payment',
@@ -62,23 +64,26 @@ serve(async (req) => {
 
     console.log('Razorpay QR Code created:', qrCode.id);
 
-    // Fetch QR code details to get the raw content/payload
+    // Decode the branded QR image to extract raw UPI string
     let qrContent = '';
     try {
-      const detailRes = await fetch(`https://api.razorpay.com/v1/payments/qr_codes/${qrCode.id}`, {
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`),
-        },
-      });
-      const detailData = await detailRes.json();
-      // Razorpay returns the raw UPI content in the 'content' field or we can construct it
-      qrContent = detailData?.content || '';
-      console.log('QR detail fields:', Object.keys(detailData));
+      const imgRes = await fetch(qrCode.image_url);
+      const imgBuffer = await imgRes.arrayBuffer();
+      const decoded = UPNG.decode(imgBuffer);
+      const rgba = UPNG.toRGBA8(decoded)[0];
+      const pixels = new Uint8ClampedArray(rgba);
+      const result = jsQR(pixels, decoded.width, decoded.height);
+      if (result && result.data) {
+        qrContent = result.data;
+        console.log('Decoded QR content:', qrContent.substring(0, 80));
+      } else {
+        console.log('jsQR could not decode the image');
+      }
     } catch (e) {
-      console.error('Failed to fetch QR details:', e);
+      console.error('Failed to decode QR image:', e);
     }
 
-    // Store the QR code ID on the appointment for webhook reconciliation
+    // Store the QR code ID on the appointment
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, supabaseKey);
 
