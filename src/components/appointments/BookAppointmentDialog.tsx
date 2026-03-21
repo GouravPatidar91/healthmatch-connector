@@ -404,12 +404,43 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
             </div>
             <div className="space-y-2">
               <Label>Time *</Label>
-              <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
-                <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {slotsLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading available slots...
+                </div>
+              ) : useDoctorSlots ? (
+                (() => {
+                  const selectedDateStr = date ? format(date, 'yyyy-MM-dd') : '';
+                  const slotsForDate = doctorSlots.filter(s => s.date === selectedDateStr);
+                  return slotsForDate.length > 0 ? (
+                    <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
+                      <SelectTrigger><SelectValue placeholder="Select available slot" /></SelectTrigger>
+                      <SelectContent>
+                        {slotsForDate.map((slot) => (
+                          <SelectItem key={slot.id} value={slot.start_time}>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {slot.start_time} - {slot.end_time} ({slot.duration} min)
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-2">
+                      {date ? 'No available slots on this date. Pick another date.' : 'Select a date first.'}
+                    </p>
+                  );
+                })()
+              ) : (
+                <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
+                  <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
+                  <SelectContent>
+                    {fallbackTimeSlots.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
