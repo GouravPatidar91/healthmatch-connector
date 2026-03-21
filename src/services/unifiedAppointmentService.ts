@@ -17,6 +17,9 @@ export interface UnifiedAppointment {
   doctorName?: string;
   startTime?: string;
   endTime?: string;
+  paymentMode?: string;
+  paymentStatus?: string;
+  paymentAmount?: number;
 }
 
 export const useUnifiedDoctorAppointments = () => {
