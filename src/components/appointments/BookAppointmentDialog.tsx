@@ -398,7 +398,20 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={date} onSelect={setDate} disabled={(d) => d < new Date()} initialFocus />
+                  <Calendar 
+                    mode="single" 
+                    selected={date} 
+                    onSelect={setDate} 
+                    disabled={(d) => {
+                      if (d < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+                      if (useDoctorSlots) {
+                        const dateStr = format(d, 'yyyy-MM-dd');
+                        return !doctorSlots.some(s => s.date === dateStr);
+                      }
+                      return false;
+                    }} 
+                    initialFocus 
+                  />
                 </PopoverContent>
               </Popover>
             </div>
