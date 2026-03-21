@@ -127,13 +127,21 @@ const DoctorPaymentCollectionDialog = ({
             </div>
           ) : qrImageUrl ? (
             <div className="flex flex-col items-center gap-4">
-              <div className="w-[220px] h-[220px] bg-white rounded-xl border border-border shadow-sm overflow-hidden relative">
-                <img
-                  src={qrImageUrl}
-                  alt="UPI Payment QR Code"
-                  className="absolute w-[280px] left-1/2 -translate-x-1/2"
-                  style={{ top: '-28%' }}
-                />
+              <div className="w-[240px] h-[240px] bg-white rounded-xl border border-border shadow-sm flex items-center justify-center p-4">
+                {qrContent ? (
+                  <QRCodeSVG
+                    value={qrContent}
+                    size={200}
+                    level="M"
+                    includeMargin={false}
+                  />
+                ) : (
+                  <img
+                    src={qrImageUrl}
+                    alt="UPI Payment QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                )}
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 Ask the patient to scan this QR with any UPI app (GPay, PhonePe, Paytm) to pay ₹{amount}
