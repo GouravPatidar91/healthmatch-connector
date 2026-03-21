@@ -11,7 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import HealthCheck from "./pages/HealthCheck";
 import HealthCheckHistory from "./pages/HealthCheckHistory";
 import HealthCheckResults from "./pages/HealthCheckResults";
-import AppointmentsComingSoon from "./pages/AppointmentsComingSoon";
+import Appointments from "./pages/Appointments";
 import MedicineComingSoon from "./pages/MedicineComingSoon";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
