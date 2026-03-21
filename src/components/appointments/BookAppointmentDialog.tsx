@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2, Lock, IndianRupee, CreditCard, Banknote } from "lucide-react";
-import { format } from "date-fns";
+import { CalendarIcon, Loader2, Lock, IndianRupee, CreditCard, Banknote, Clock } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,7 @@ interface BookAppointmentDialogProps {
   healthCheckData?: HealthCheck | null;
 }
 
-const timeSlots = [
+const fallbackTimeSlots = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
   "12:00", "12:30", "14:00", "14:30", "15:00", "15:30",
   "16:00", "16:30", "17:00", "17:30"
@@ -34,12 +34,23 @@ const specialties = [
   "Orthopedics", "Pediatrics", "Psychiatry", "Radiology", "Surgery", "Urology"
 ];
 
+interface DoctorAvailableSlot {
+  id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  duration: number;
+}
+
 export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, healthCheckData }: BookAppointmentDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
   const [paymentMode, setPaymentMode] = useState<'online' | 'pay_at_clinic'>('pay_at_clinic');
   const [consultationFee, setConsultationFee] = useState<number>(0);
+  const [doctorSlots, setDoctorSlots] = useState<DoctorAvailableSlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [useDoctorSlots, setUseDoctorSlots] = useState(false);
   const [formData, setFormData] = useState({
     doctorName: selectedDoctor?.name || '',
     doctorSpecialty: selectedDoctor?.specialization || '',
@@ -68,6 +79,53 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
       }
     }
   }, [selectedDoctor]);
+
+  // Fetch doctor's available slots when dialog opens with a selected doctor
+  useEffect(() => {
+    if (open && selectedDoctor?.id) {
+      const fetchDoctorSlots = async () => {
+        setSlotsLoading(true);
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const { data, error } = await supabase
+            .from('appointment_slots')
+            .select('id, date, start_time, end_time, duration')
+            .eq('doctor_id', selectedDoctor.id)
+            .eq('status', 'available')
+            .gte('date', today)
+            .order('date')
+            .order('start_time');
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            setDoctorSlots(data);
+            setUseDoctorSlots(true);
+          } else {
+            setDoctorSlots([]);
+            setUseDoctorSlots(false);
+          }
+        } catch (err) {
+          console.error('Error fetching doctor slots:', err);
+          setDoctorSlots([]);
+          setUseDoctorSlots(false);
+        } finally {
+          setSlotsLoading(false);
+        }
+      };
+      fetchDoctorSlots();
+    } else {
+      setDoctorSlots([]);
+      setUseDoctorSlots(false);
+    }
+  }, [open, selectedDoctor?.id]);
+
+  // Reset time when date changes and doctor slots are active
+  useEffect(() => {
+    if (useDoctorSlots) {
+      setFormData(prev => ({ ...prev, time: '' }));
+    }
+  }, [date, useDoctorSlots]);
 
   const isDoctorFieldsLocked = Boolean(selectedDoctor);
 
@@ -340,18 +398,62 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={date} onSelect={setDate} disabled={(d) => d < new Date()} initialFocus />
+                  <Calendar 
+                    mode="single" 
+                    selected={date} 
+                    onSelect={setDate} 
+                    disabled={(d) => {
+                      if (d < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+                      if (useDoctorSlots) {
+                        const dateStr = format(d, 'yyyy-MM-dd');
+                        return !doctorSlots.some(s => s.date === dateStr);
+                      }
+                      return false;
+                    }} 
+                    initialFocus 
+                  />
                 </PopoverContent>
               </Popover>
             </div>
             <div className="space-y-2">
               <Label>Time *</Label>
-              <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
-                <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {slotsLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading available slots...
+                </div>
+              ) : useDoctorSlots ? (
+                (() => {
+                  const selectedDateStr = date ? format(date, 'yyyy-MM-dd') : '';
+                  const slotsForDate = doctorSlots.filter(s => s.date === selectedDateStr);
+                  return slotsForDate.length > 0 ? (
+                    <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
+                      <SelectTrigger><SelectValue placeholder="Select available slot" /></SelectTrigger>
+                      <SelectContent>
+                        {slotsForDate.map((slot) => (
+                          <SelectItem key={slot.id} value={slot.start_time}>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {slot.start_time} - {slot.end_time} ({slot.duration} min)
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-2">
+                      {date ? 'No available slots on this date. Pick another date.' : 'Select a date first.'}
+                    </p>
+                  );
+                })()
+              ) : (
+                <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
+                  <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
+                  <SelectContent>
+                    {fallbackTimeSlots.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
