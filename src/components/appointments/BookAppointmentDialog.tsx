@@ -112,7 +112,7 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
     const scriptLoaded = await loadRazorpayScript();
     if (!scriptLoaded) throw new Error('Failed to load payment gateway');
 
-    // Create Razorpay order WITHOUT an appointment_id
+    // Create Razorpay order (no appointment exists yet)
     const orderData = await createRazorpayOrder(amount, doctorId, userId);
 
     return new Promise<any>((resolve, reject) => {
@@ -127,32 +127,26 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
         },
         async (response) => {
           try {
-            // Verify payment signature (no appointment_id yet)
-            await verifyRazorpayPayment(
-              response.razorpay_order_id,
-              response.razorpay_payment_id,
-              response.razorpay_signature
-            );
-
-            // Payment verified — NOW create the appointment
-            const { data: appointment, error: insertError } = await supabase
-              .from('appointments')
-              .insert([{
-                ...appointmentData,
-                payment_status: 'paid',
+            // Call server-side function to verify payment AND create appointment
+            const { data, error } = await supabase.functions.invoke('create-paid-appointment', {
+              body: {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
-              }])
-              .select()
-              .single();
+                razorpay_signature: response.razorpay_signature,
+                appointment_data: appointmentData,
+              },
+            });
 
-            if (insertError) throw insertError;
-            resolve(appointment);
+            if (error || !data?.success) {
+              throw new Error(error?.message || data?.error || 'Failed to create appointment');
+            }
+
+            resolve(data.appointment);
           } catch (err) {
             reject(err);
           }
         },
-        reject
+        () => reject(new Error('Payment was cancelled or failed'))
       );
     });
   };
@@ -224,21 +218,10 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
 
           toast({ title: "Payment Successful", description: "Your appointment has been booked and payment processed!" });
         } catch (paymentError: any) {
-          // Payment failed/cancelled — insert a payment_failed record so user can see it
-          try {
-            await supabase
-              .from('appointments')
-              .insert([{
-                ...appointmentData,
-                status: 'payment_failed',
-                payment_status: 'failed',
-              }]);
-          } catch (insertErr) {
-            console.error('Failed to insert payment_failed record:', insertErr);
-          }
+          // Payment failed/cancelled — NO appointment is created
           toast({
-            title: "Payment Failed",
-            description: "Payment was not completed. The appointment is marked as payment failed.",
+            title: "Payment Not Completed",
+            description: "Payment was cancelled or failed. No appointment has been booked. You can try again or switch to Pay at Clinic.",
             variant: "destructive",
           });
           setLoading(false);
