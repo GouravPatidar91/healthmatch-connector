@@ -134,7 +134,7 @@ class DoctorWalletService {
           _wallet_id: walletId,
           _order_id: null,
           _amount: amount,
-          _description: `Cash collection - ${displayName}`,
+          _description: `Received from - ${displayName}`,
           _category: 'consultation_fee',
         });
       }

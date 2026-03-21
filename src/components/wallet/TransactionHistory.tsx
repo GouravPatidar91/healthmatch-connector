@@ -40,6 +40,8 @@ const getCategoryBadge = (category: string | null, description: string | null) =
   if (category === 'consultation_fee' && description) {
     if (description.toLowerCase().includes('qr')) {
       label = 'QR payment';
+    } else if (description.toLowerCase().includes('received from')) {
+      label = 'Received';
     } else if (description.toLowerCase().includes('cash')) {
       label = 'Cash collection';
     }
