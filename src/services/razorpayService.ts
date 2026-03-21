@@ -63,6 +63,7 @@ export const verifyRazorpayPayment = async (
 export interface QRCodeResponse {
   qr_code_id: string;
   image_url: string;
+  qr_content?: string;
   amount: number;
 }
 

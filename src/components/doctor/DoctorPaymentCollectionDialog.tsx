@@ -6,6 +6,7 @@ import { doctorWalletService } from '@/services/doctorWalletService';
 import { generatePaymentQR } from '@/services/razorpayService';
 import { supabase } from '@/integrations/supabase/client';
 import { Banknote, QrCode, Loader2, CheckCircle } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface Props {
   open: boolean;
