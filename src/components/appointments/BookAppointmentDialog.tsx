@@ -97,18 +97,10 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
             .order('start_time');
 
           if (error) throw error;
-
-          if (data && data.length > 0) {
-            setDoctorSlots(data);
-            setUseDoctorSlots(true);
-          } else {
-            setDoctorSlots([]);
-            setUseDoctorSlots(false);
-          }
+          setDoctorSlots(data && data.length > 0 ? data : []);
         } catch (err) {
           console.error('Error fetching doctor slots:', err);
           setDoctorSlots([]);
-          setUseDoctorSlots(false);
         } finally {
           setSlotsLoading(false);
         }
@@ -116,16 +108,19 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
       fetchDoctorSlots();
     } else {
       setDoctorSlots([]);
-      setUseDoctorSlots(false);
     }
   }, [open, selectedDoctor?.id]);
 
-  // Reset time when date changes and doctor slots are active
-  useEffect(() => {
-    if (useDoctorSlots) {
-      setFormData(prev => ({ ...prev, time: '' }));
-    }
-  }, [date, useDoctorSlots]);
+  const hasDoctorSlots = doctorSlots.length > 0;
+
+  const groupedSlots = useMemo(() => {
+    const groups: Record<string, DoctorAvailableSlot[]> = {};
+    doctorSlots.forEach(slot => {
+      if (!groups[slot.date]) groups[slot.date] = [];
+      groups[slot.date].push(slot);
+    });
+    return groups;
+  }, [doctorSlots]);
 
   const isDoctorFieldsLocked = Boolean(selectedDoctor);
 
