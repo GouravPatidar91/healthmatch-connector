@@ -1,11 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+async function hmacSha256(key: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', encoder.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
+  return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -24,9 +32,9 @@ serve(async (req) => {
     const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
     if (!RAZORPAY_KEY_SECRET) throw new Error('Razorpay secret not configured');
 
-    // Verify signature
+    // Verify signature using Web Crypto API
     const body = razorpay_order_id + '|' + razorpay_payment_id;
-    const expectedSignature = hmac('sha256', RAZORPAY_KEY_SECRET, body, 'utf8', 'hex');
+    const expectedSignature = await hmacSha256(RAZORPAY_KEY_SECRET, body);
 
     if (expectedSignature !== razorpay_signature) {
       return new Response(JSON.stringify({ error: 'Invalid payment signature' }), {
@@ -45,17 +53,12 @@ serve(async (req) => {
       .eq('id', appointment_id)
       .single();
 
-    if (apptError || !appointment) {
-      throw new Error('Appointment not found');
-    }
+    if (apptError || !appointment) throw new Error('Appointment not found');
 
     // Update appointment payment status
     await supabase
       .from('appointments')
-      .update({
-        payment_status: 'paid',
-        razorpay_payment_id,
-      })
+      .update({ payment_status: 'paid', razorpay_payment_id })
       .eq('id', appointment_id);
 
     // Credit doctor wallet
@@ -63,18 +66,13 @@ serve(async (req) => {
     const amount = appointment.payment_amount || 0;
 
     if (doctorId && amount > 0) {
-      // Get doctor's user_id (doctor_id IS the user_id in doctors table)
       const walletId = await supabase.rpc('get_or_create_wallet', {
-        _user_id: doctorId,
-        _owner_type: 'doctor',
-        _owner_id: doctorId,
+        _user_id: doctorId, _owner_type: 'doctor', _owner_id: doctorId,
       });
 
       if (walletId.data) {
         await supabase.rpc('credit_wallet', {
-          _wallet_id: walletId.data,
-          _order_id: null,
-          _amount: amount,
+          _wallet_id: walletId.data, _order_id: null, _amount: amount,
           _description: `Consultation fee - Appointment ${appointment_id.substring(0, 8)}`,
           _category: 'consultation_fee',
         });

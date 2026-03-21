@@ -1,11 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+async function hmacSha256(key: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', encoder.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
+  return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,7 +29,7 @@ serve(async (req) => {
 
     // Verify webhook signature
     if (signature) {
-      const expectedSignature = hmac('sha256', RAZORPAY_KEY_SECRET, body, 'utf8', 'hex');
+      const expectedSignature = await hmacSha256(RAZORPAY_KEY_SECRET, body);
       if (expectedSignature !== signature) {
         console.error('Invalid webhook signature');
         return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 400 });
@@ -41,7 +49,6 @@ serve(async (req) => {
       const appointmentId = notes?.appointment_id;
 
       if (appointmentId) {
-        // Get appointment
         const { data: appointment } = await supabase
           .from('appointments')
           .select('*')
@@ -49,7 +56,6 @@ serve(async (req) => {
           .single();
 
         if (appointment) {
-          // Update payment status
           await supabase
             .from('appointments')
             .update({
@@ -58,22 +64,17 @@ serve(async (req) => {
             })
             .eq('id', appointmentId);
 
-          // Credit doctor wallet
           const doctorId = appointment.doctor_id;
           const amount = appointment.payment_amount || 0;
 
           if (doctorId && amount > 0) {
             const walletId = await supabase.rpc('get_or_create_wallet', {
-              _user_id: doctorId,
-              _owner_type: 'doctor',
-              _owner_id: doctorId,
+              _user_id: doctorId, _owner_type: 'doctor', _owner_id: doctorId,
             });
 
             if (walletId.data) {
               await supabase.rpc('credit_wallet', {
-                _wallet_id: walletId.data,
-                _order_id: null,
-                _amount: amount,
+                _wallet_id: walletId.data, _order_id: null, _amount: amount,
                 _description: `QR Payment - Appointment ${appointmentId.substring(0, 8)}`,
                 _category: 'consultation_fee',
               });
