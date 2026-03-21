@@ -66,10 +66,10 @@ serve(async (req) => {
           console.error('Failed to fetch QR payments:', e);
         }
 
-        // Update appointment
+        // Update appointment payment and auto-complete
         await supabase
           .from('appointments')
-          .update({ payment_status: 'paid', razorpay_payment_id: paymentId })
+          .update({ payment_status: 'paid', razorpay_payment_id: paymentId, status: 'completed' })
           .eq('id', appointment_id);
 
         // Credit doctor wallet
