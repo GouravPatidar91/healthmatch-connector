@@ -26,22 +26,26 @@ const DoctorPaymentCollectionDialog = ({
   const [loading, setLoading] = useState(false);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [qrContent, setQrContent] = useState<string | null>(null);
+  const [qrCodeId, setQrCodeId] = useState<string | null>(null);
   const [cashCollected, setCashCollected] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Poll payment status when QR is shown
+  // Poll payment status via Razorpay API when QR is shown
   useEffect(() => {
-    if (qrImageUrl && !paymentCompleted) {
+    if (qrCodeId && !paymentCompleted) {
       pollingRef.current = setInterval(async () => {
         try {
-          const { data } = await supabase
-            .from('appointments')
-            .select('payment_status')
-            .eq('id', appointmentId)
-            .single();
+          const { data, error } = await supabase.functions.invoke('check-qr-payment-status', {
+            body: { qr_code_id: qrCodeId, appointment_id: appointmentId },
+          });
 
-          if (data?.payment_status === 'paid') {
+          if (error) {
+            console.error('QR status check error:', error);
+            return;
+          }
+
+          if (data?.paid) {
             setPaymentCompleted(true);
             if (pollingRef.current) clearInterval(pollingRef.current);
             toast({ title: 'Payment Received! ✅', description: `₹${amount} has been credited to your wallet` });
@@ -59,7 +63,7 @@ const DoctorPaymentCollectionDialog = ({
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [qrImageUrl, paymentCompleted, appointmentId, amount, onPaymentCollected, onOpenChange, toast]);
+  }, [qrCodeId, paymentCompleted, appointmentId, amount, onPaymentCollected, onOpenChange, toast]);
 
   const handleCollectCash = async () => {
     setLoading(true);
@@ -89,6 +93,7 @@ const DoctorPaymentCollectionDialog = ({
       const result = await generatePaymentQR(amount, appointmentId, doctorName, patientName);
       setQrImageUrl(result.image_url);
       setQrContent(result.qr_content || null);
+      setQrCodeId(result.qr_code_id || null);
       toast({ title: 'QR Generated', description: 'Ask the patient to scan and pay via any UPI app' });
     } catch (error) {
       console.error('QR generation error:', error);
@@ -102,6 +107,7 @@ const DoctorPaymentCollectionDialog = ({
     if (pollingRef.current) clearInterval(pollingRef.current);
     setQrImageUrl(null);
     setQrContent(null);
+    setQrCodeId(null);
     setCashCollected(false);
     setPaymentCompleted(false);
     onOpenChange(false);
