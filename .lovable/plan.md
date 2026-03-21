@@ -1,34 +1,35 @@
 
-# Strict Payment-First Flow for Online Appointments — IMPLEMENTED
 
-## What was done
+# Plan: Two-Section Booking UI (Available Slots + Manual Booking)
 
-### 1. Removed failure insert from `BookAppointmentDialog.tsx`
-- The `catch` block no longer inserts any appointment record on payment failure
-- Toast now says: "Payment was cancelled or failed. No appointment has been booked."
-- Dialog stays open so user can retry or switch to Pay at Clinic
+## What Changes
 
-### 2. Created `create-paid-appointment` edge function
-- Validates JWT, verifies Razorpay signature server-side
-- Only after verification: inserts appointment with `payment_status: 'paid'`, `payment_mode: 'online'`
-- Credits doctor wallet
-- Uses service role to bypass RLS (online appointments can't be inserted by client)
+Update the date/time selection area in `BookAppointmentDialog.tsx` to show two clearly labeled sections using Tabs when a doctor has available slots:
 
-### 3. Database trigger `trg_validate_online_appointment`
-- Blocks any INSERT where `payment_mode = 'online'` but:
-  - `payment_status != 'paid'`
-  - `razorpay_order_id IS NULL`
-  - `razorpay_payment_id IS NULL`
+### Section 1: "Available Slots" (default when slots exist)
+- Shows doctor-created slots grouped by date as clickable chips/buttons
+- Selecting a slot auto-fills both date and time
+- Visual: date headers with time slot buttons beneath
 
-### 4. Tightened RLS policy
-- Patients can only INSERT appointments with `payment_mode = 'pay_at_clinic'`
-- Online appointments are created server-side via edge function (service role)
+### Section 2: "Manual Booking"  
+- The existing calendar date picker + generic fallback time slot dropdown
+- Always available regardless of whether doctor has slots
 
-### 5. Cleaned up `payment_failed` status
-- Removed from `userDataService.ts` type definitions
-- Removed from `PatientAppointments.tsx` badge styling
+### When doctor has NO slots
+- Skip the tabs entirely, show only the Manual Booking UI (current fallback behavior)
 
-## Result
-- Failed/cancelled payment = NO database row created
-- Successful payment = appointment created server-side with verified payment data
-- Database-level enforcement prevents any regression
+## Implementation
+
+**File: `src/components/appointments/BookAppointmentDialog.tsx`**
+
+1. Add a `bookingMode` state: `'available' | 'manual'` (default `'available'` when slots exist, `'manual'` otherwise)
+
+2. Replace lines 390-458 (the current date/time grid) with:
+   - A `Tabs` component with two tabs: "Available Slots" and "Manual Booking"
+   - **Available Slots tab**: render `doctorSlots` grouped by date, each date as a header, time slots as small buttons. Clicking a slot sets `date` and `formData.time` directly. Highlight the selected slot.
+   - **Manual Booking tab**: the existing Calendar popover + fallback time dropdown (always uses `fallbackTimeSlots`, calendar allows any future date)
+
+3. Remove the `useDoctorSlots` logic that restricts calendar dates — the calendar in Manual mode should allow any future date. The Available Slots tab handles doctor-specific slots separately.
+
+4. Keep all other logic (payment, submission, health check data) unchanged.
+
