@@ -80,6 +80,53 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
     }
   }, [selectedDoctor]);
 
+  // Fetch doctor's available slots when dialog opens with a selected doctor
+  useEffect(() => {
+    if (open && selectedDoctor?.id) {
+      const fetchDoctorSlots = async () => {
+        setSlotsLoading(true);
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const { data, error } = await supabase
+            .from('appointment_slots')
+            .select('id, date, start_time, end_time, duration')
+            .eq('doctor_id', selectedDoctor.id)
+            .eq('status', 'available')
+            .gte('date', today)
+            .order('date')
+            .order('start_time');
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            setDoctorSlots(data);
+            setUseDoctorSlots(true);
+          } else {
+            setDoctorSlots([]);
+            setUseDoctorSlots(false);
+          }
+        } catch (err) {
+          console.error('Error fetching doctor slots:', err);
+          setDoctorSlots([]);
+          setUseDoctorSlots(false);
+        } finally {
+          setSlotsLoading(false);
+        }
+      };
+      fetchDoctorSlots();
+    } else {
+      setDoctorSlots([]);
+      setUseDoctorSlots(false);
+    }
+  }, [open, selectedDoctor?.id]);
+
+  // Reset time when date changes and doctor slots are active
+  useEffect(() => {
+    if (useDoctorSlots) {
+      setFormData(prev => ({ ...prev, time: '' }));
+    }
+  }, [date, useDoctorSlots]);
+
   const isDoctorFieldsLocked = Boolean(selectedDoctor);
 
   const findOrCreateDoctorId = async (doctorName: string, doctorSpecialty?: string): Promise<string> => {
