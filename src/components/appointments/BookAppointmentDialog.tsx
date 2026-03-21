@@ -203,13 +203,15 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
           await processOnlinePayment(appointment.id, doctorId, user.id, consultationFee);
           toast({ title: "Payment Successful", description: "Your appointment has been booked and payment processed!" });
         } catch (paymentError: any) {
-          // Payment failed/cancelled but appointment is created
+          // Payment failed/cancelled — delete the appointment
+          await supabase.from('appointments').delete().eq('id', appointment.id);
           toast({
-            title: "Appointment Booked",
-            description: "Appointment created but payment was not completed. You can pay at the clinic.",
+            title: "Payment Cancelled",
+            description: "Payment was not completed. Appointment was not created.",
+            variant: "destructive",
           });
-          // Update payment mode to pay_at_clinic since online failed
-          await supabase.from('appointments').update({ payment_mode: 'pay_at_clinic' }).eq('id', appointment.id);
+          setLoading(false);
+          return;
         }
       } else {
         // Send health check data if available
