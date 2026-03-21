@@ -46,11 +46,24 @@ serve(async (req) => {
       // Check if already processed (idempotency)
       const { data: appointment } = await supabase
         .from('appointments')
-        .select('payment_status, doctor_id, payment_amount')
+        .select('payment_status, doctor_id, payment_amount, user_id')
         .eq('id', appointment_id)
         .single();
 
       if (appointment && appointment.payment_status !== 'paid') {
+        // Fetch patient name
+        let patientDisplayName = 'Patient';
+        if (appointment.user_id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', appointment.user_id)
+            .single();
+          if (profile) {
+            patientDisplayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Patient';
+          }
+        }
+
         // Get payment ID from Razorpay QR payments
         let paymentId = qr_code_id;
         try {
@@ -84,7 +97,7 @@ serve(async (req) => {
           if (walletId) {
             await supabase.rpc('credit_wallet', {
               _wallet_id: walletId, _order_id: null, _amount: amount,
-              _description: `QR Payment - Appointment ${appointment_id.substring(0, 8)}`,
+              _description: `QR Payment - ${patientDisplayName}`,
               _category: 'consultation_fee',
             });
             console.log('Doctor wallet credited:', amount);

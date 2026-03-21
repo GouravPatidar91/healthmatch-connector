@@ -78,7 +78,7 @@ const DoctorPaymentCollectionDialog = ({
   const handleCollectCash = async () => {
     setLoading(true);
     try {
-      const success = await doctorWalletService.collectCashPayment(appointmentId, doctorId, amount);
+      const success = await doctorWalletService.collectCashPayment(appointmentId, doctorId, amount, patientName);
       if (success) {
         await supabase.from('appointments').update({ status: 'completed' }).eq('id', appointmentId);
         setCashCollected(true);
