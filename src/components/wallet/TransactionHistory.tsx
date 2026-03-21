@@ -123,7 +123,7 @@ export const TransactionHistory = ({ transactions, loading }: TransactionHistory
                     <p className="text-sm font-medium text-foreground truncate">
                       {transaction.description || "Transaction"}
                     </p>
-                    {getCategoryBadge(transaction.category)}
+                    {getCategoryBadge(transaction.category, transaction.description)}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {new Date(transaction.created_at).toLocaleDateString("en-US", {
