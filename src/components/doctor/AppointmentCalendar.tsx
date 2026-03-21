@@ -239,7 +239,7 @@ const AppointmentCalendar = () => {
                               <Button 
                                 variant="ghost" 
                                 size="icon"
-                                onClick={() => handleStatusChange(appointment.id, 'confirmed', appointment.type)}
+                                onClick={() => handleStatusChange(appointment.id, 'confirmed', appointment.type, appointment)}
                                 title="Confirm appointment"
                                 className="h-8 w-8 hover:bg-sage-100"
                               >
