@@ -44,7 +44,7 @@ serve(async (req) => {
         customer: {
           name: patient_name || 'Patient',
         },
-        upi_link: true,
+        // upi_link: true, // Enable this when using Razorpay Live Mode keys
         notes: {
           appointment_id,
           type: 'clinic_qr_payment',
