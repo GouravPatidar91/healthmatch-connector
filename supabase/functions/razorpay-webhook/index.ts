@@ -27,11 +27,11 @@ serve(async (req) => {
     // NOT the API Key Secret. Fall back to KEY_SECRET if webhook secret is not set.
     const WEBHOOK_SECRET = Deno.env.get('RAZORPAY_WEBHOOK_SECRET') || Deno.env.get('RAZORPAY_KEY_SECRET');
 
-    if (!RAZORPAY_KEY_SECRET) throw new Error('Razorpay secret not configured');
+    if (!WEBHOOK_SECRET) throw new Error('Razorpay secret not configured');
 
     // Verify webhook signature
     if (signature) {
-      const expectedSignature = await hmacSha256(RAZORPAY_KEY_SECRET, body);
+      const expectedSignature = await hmacSha256(WEBHOOK_SECRET, body);
       if (expectedSignature !== signature) {
         console.error('Invalid webhook signature');
         return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 400 });
