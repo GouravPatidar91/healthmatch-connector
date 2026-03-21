@@ -1,35 +1,25 @@
 
 
-# Plan: Two-Section Booking UI (Available Slots + Manual Booking)
+# Remove Book Appointment Button, Make Doctor Card Clickable
 
 ## What Changes
 
-Update the date/time selection area in `BookAppointmentDialog.tsx` to show two clearly labeled sections using Tabs when a doctor has available slots:
+**Goal**: Remove the standalone "Book Appointment" button from each doctor card. Instead, clicking anywhere on the card opens the `BookAppointmentDialog`, where users pick from Available Slots or Manual Booking tabs.
 
-### Section 1: "Available Slots" (default when slots exist)
-- Shows doctor-created slots grouped by date as clickable chips/buttons
-- Selecting a slot auto-fills both date and time
-- Visual: date headers with time slot buttons beneath
+## Changes
 
-### Section 2: "Manual Booking"  
-- The existing calendar date picker + generic fallback time slot dropdown
-- Always available regardless of whether doctor has slots
+### 1. `src/pages/Appointments.tsx` (Browse Doctors tab)
+- Remove the `<Button>` with "Book Appointment" from each doctor card
+- Remove the `<DoctorSlots>` component from inside the card (slots will be shown in the dialog)
+- Make the entire `<Card>` clickable with `onClick={() => handleBookAppointment(doctor)}` and add `cursor-pointer hover:shadow-lg` styles
 
-### When doctor has NO slots
-- Skip the tabs entirely, show only the Manual Booking UI (current fallback behavior)
+### 2. `src/components/appointments/NearbyDoctorsView.tsx` (Nearby tab)
+- Same changes: remove the "Book Now" button and `<DoctorSlots>` from each card
+- Make the `<Card>` clickable to open `BookAppointmentDialog`
 
-## Implementation
+### 3. No changes to `BookAppointmentDialog.tsx`
+- It already has both "Available Slots" and "Manual Booking" tabs built in — those will remain the slot selection UI once a card is clicked.
 
-**File: `src/components/appointments/BookAppointmentDialog.tsx`**
-
-1. Add a `bookingMode` state: `'available' | 'manual'` (default `'available'` when slots exist, `'manual'` otherwise)
-
-2. Replace lines 390-458 (the current date/time grid) with:
-   - A `Tabs` component with two tabs: "Available Slots" and "Manual Booking"
-   - **Available Slots tab**: render `doctorSlots` grouped by date, each date as a header, time slots as small buttons. Clicking a slot sets `date` and `formData.time` directly. Highlight the selected slot.
-   - **Manual Booking tab**: the existing Calendar popover + fallback time dropdown (always uses `fallbackTimeSlots`, calendar allows any future date)
-
-3. Remove the `useDoctorSlots` logic that restricts calendar dates — the calendar in Manual mode should allow any future date. The Available Slots tab handles doctor-specific slots separately.
-
-4. Keep all other logic (payment, submission, health check data) unchanged.
+## Result
+User sees doctor cards with info only → clicks a card → dialog opens with Available Slots / Manual Booking tabs → selects slot → books appointment.
 
