@@ -51,7 +51,6 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
   const [consultationFee, setConsultationFee] = useState<number>(0);
   const [doctorSlots, setDoctorSlots] = useState<DoctorAvailableSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [useDoctorSlots, setUseDoctorSlots] = useState(false);
   const [formData, setFormData] = useState({
     doctorName: selectedDoctor?.name || '',
     doctorSpecialty: selectedDoctor?.specialization || '',
