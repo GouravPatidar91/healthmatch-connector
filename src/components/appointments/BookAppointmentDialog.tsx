@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,7 +51,6 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
   const [consultationFee, setConsultationFee] = useState<number>(0);
   const [doctorSlots, setDoctorSlots] = useState<DoctorAvailableSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [useDoctorSlots, setUseDoctorSlots] = useState(false);
   const [formData, setFormData] = useState({
     doctorName: selectedDoctor?.name || '',
     doctorSpecialty: selectedDoctor?.specialization || '',
@@ -97,18 +97,10 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
             .order('start_time');
 
           if (error) throw error;
-
-          if (data && data.length > 0) {
-            setDoctorSlots(data);
-            setUseDoctorSlots(true);
-          } else {
-            setDoctorSlots([]);
-            setUseDoctorSlots(false);
-          }
+          setDoctorSlots(data && data.length > 0 ? data : []);
         } catch (err) {
           console.error('Error fetching doctor slots:', err);
           setDoctorSlots([]);
-          setUseDoctorSlots(false);
         } finally {
           setSlotsLoading(false);
         }
@@ -116,16 +108,19 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
       fetchDoctorSlots();
     } else {
       setDoctorSlots([]);
-      setUseDoctorSlots(false);
     }
   }, [open, selectedDoctor?.id]);
 
-  // Reset time when date changes and doctor slots are active
-  useEffect(() => {
-    if (useDoctorSlots) {
-      setFormData(prev => ({ ...prev, time: '' }));
-    }
-  }, [date, useDoctorSlots]);
+  const hasDoctorSlots = doctorSlots.length > 0;
+
+  const groupedSlots = useMemo(() => {
+    const groups: Record<string, DoctorAvailableSlot[]> = {};
+    doctorSlots.forEach(slot => {
+      if (!groups[slot.date]) groups[slot.date] = [];
+      groups[slot.date].push(slot);
+    });
+    return groups;
+  }, [doctorSlots]);
 
   const isDoctorFieldsLocked = Boolean(selectedDoctor);
 
@@ -387,75 +382,124 @@ export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, heal
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar 
-                    mode="single" 
-                    selected={date} 
-                    onSelect={setDate} 
-                    disabled={(d) => {
-                      if (d < new Date(new Date().setHours(0, 0, 0, 0))) return true;
-                      if (useDoctorSlots) {
-                        const dateStr = format(d, 'yyyy-MM-dd');
-                        return !doctorSlots.some(s => s.date === dateStr);
-                      }
-                      return false;
-                    }} 
-                    initialFocus 
-                  />
-                </PopoverContent>
-              </Popover>
+          {/* Date & Time Selection */}
+          {slotsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading available slots...
             </div>
-            <div className="space-y-2">
-              <Label>Time *</Label>
-              {slotsLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading available slots...
-                </div>
-              ) : useDoctorSlots ? (
-                (() => {
-                  const selectedDateStr = date ? format(date, 'yyyy-MM-dd') : '';
-                  const slotsForDate = doctorSlots.filter(s => s.date === selectedDateStr);
-                  return slotsForDate.length > 0 ? (
+          ) : hasDoctorSlots ? (
+            <Tabs defaultValue="available" className="w-full">
+              <TabsList className="w-full">
+                <TabsTrigger value="available" className="flex-1">Available Slots</TabsTrigger>
+                <TabsTrigger value="manual" className="flex-1">Manual Booking</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="available" className="space-y-3 mt-3">
+                {Object.entries(groupedSlots).map(([dateStr, slots]) => (
+                  <div key={dateStr} className="space-y-2">
+                    <p className="text-sm font-medium text-foreground">
+                      {format(parseISO(dateStr), 'EEEE, MMM d, yyyy')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {slots.map((slot) => {
+                        const isSelected = date && format(date, 'yyyy-MM-dd') === dateStr && formData.time === slot.start_time;
+                        return (
+                          <Button
+                            key={slot.id}
+                            type="button"
+                            size="sm"
+                            variant={isSelected ? 'default' : 'outline'}
+                            className="text-xs"
+                            onClick={() => {
+                              setDate(parseISO(dateStr));
+                              setFormData(prev => ({ ...prev, time: slot.start_time }));
+                            }}
+                          >
+                            <Clock className="h-3 w-3 mr-1" />
+                            {slot.start_time} - {slot.end_time}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {date && formData.time && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: {format(date, 'PPP')} at {formData.time}
+                  </p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="manual" className="mt-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Date *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {date ? format(date, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          onSelect={setDate}
+                          disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Time *</Label>
                     <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
-                      <SelectTrigger><SelectValue placeholder="Select available slot" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
                       <SelectContent>
-                        {slotsForDate.map((slot) => (
-                          <SelectItem key={slot.id} value={slot.start_time}>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {slot.start_time} - {slot.end_time} ({slot.duration} min)
-                            </span>
-                          </SelectItem>
-                        ))}
+                        {fallbackTimeSlots.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  ) : (
-                    <p className="text-sm text-muted-foreground py-2">
-                      {date ? 'No available slots on this date. Pick another date.' : 'Select a date first.'}
-                    </p>
-                  );
-                })()
-              ) : (
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label>Time *</Label>
                 <Select value={formData.time} onValueChange={(value) => setFormData({ ...formData, time: value })}>
                   <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
                   <SelectContent>
                     {fallbackTimeSlots.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
-              )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Consultation Fee Display */}
           {consultationFee > 0 && (
