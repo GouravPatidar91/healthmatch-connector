@@ -94,7 +94,7 @@ serve(async (req) => {
             if (walletId.data) {
               await supabase.rpc('credit_wallet', {
                 _wallet_id: walletId.data, _order_id: null, _amount: amount,
-                _description: `QR Payment - ${patientDisplayName}`,
+                _description: `Received from - ${patientDisplayName}`,
                 _category: 'consultation_fee',
               });
               console.log('Doctor wallet credited:', amount);
