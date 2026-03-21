@@ -22,7 +22,7 @@ const getTransactionIcon = (type: string) => {
   }
 };
 
-const getCategoryBadge = (category: string | null) => {
+const getCategoryBadge = (category: string | null, description: string | null) => {
   if (!category) return null;
 
   const variants: Record<string, { bg: string; text: string }> = {
@@ -30,13 +30,24 @@ const getCategoryBadge = (category: string | null) => {
     tip: { bg: "bg-green-500/10", text: "text-green-500" },
     commission: { bg: "bg-purple-500/10", text: "text-purple-500" },
     medicine_sale: { bg: "bg-orange-500/10", text: "text-orange-500" },
+    consultation_fee: { bg: "bg-emerald-500/10", text: "text-emerald-500" },
+    withdrawal: { bg: "bg-red-500/10", text: "text-red-500" },
   };
 
   const variant = variants[category] || { bg: "bg-muted", text: "text-muted-foreground" };
 
+  let label = category.replace(/_/g, " ");
+  if (category === 'consultation_fee' && description) {
+    if (description.toLowerCase().includes('qr')) {
+      label = 'QR payment';
+    } else if (description.toLowerCase().includes('cash')) {
+      label = 'Cash collection';
+    }
+  }
+
   return (
     <Badge variant="outline" className={`${variant.bg} ${variant.text} border-0 text-xs`}>
-      {category.replace(/_/g, " ")}
+      {label}
     </Badge>
   );
 };
@@ -112,7 +123,7 @@ export const TransactionHistory = ({ transactions, loading }: TransactionHistory
                     <p className="text-sm font-medium text-foreground truncate">
                       {transaction.description || "Transaction"}
                     </p>
-                    {getCategoryBadge(transaction.category)}
+                    {getCategoryBadge(transaction.category, transaction.description)}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {new Date(transaction.created_at).toLocaleDateString("en-US", {

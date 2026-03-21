@@ -1,0 +1,2 @@
+ALTER TABLE public.wallets DROP CONSTRAINT wallets_owner_type_check;
+ALTER TABLE public.wallets ADD CONSTRAINT wallets_owner_type_check CHECK (owner_type = ANY (ARRAY['delivery_partner'::text, 'vendor'::text, 'doctor'::text]));
