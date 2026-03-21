@@ -250,7 +250,7 @@ const AppointmentCalendar = () => {
                               variant="ghost" 
                               size="icon"
                               disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
-                              onClick={() => handleStatusChange(appointment.id, 'completed', appointment.type)}
+                              onClick={() => handleStatusChange(appointment.id, 'completed', appointment.type, appointment)}
                               title="Mark as completed"
                               className="h-8 w-8 hover:bg-sage-100"
                             >
