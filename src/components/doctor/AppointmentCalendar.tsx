@@ -346,6 +346,18 @@ const AppointmentCalendar = () => {
           )}
         </div>
       )}
+      {selectedAppointmentForPayment && (
+        <DoctorPaymentCollectionDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          appointmentId={selectedAppointmentForPayment.id}
+          doctorId={user?.id || ''}
+          doctorName={selectedAppointmentForPayment.doctorName || 'Doctor'}
+          patientName={selectedAppointmentForPayment.patientName}
+          amount={selectedAppointmentForPayment.paymentAmount || 0}
+          onPaymentCollected={handlePaymentCollected}
+        />
+      )}
     </div>
   );
 };
