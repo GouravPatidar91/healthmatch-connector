@@ -52,7 +52,7 @@ const DoctorWallet = () => {
         loading={loading}
       />
       <EarningsOverview earnings={earnings} loading={loading} />
-      <EarningsChart data={dailyEarnings} loading={loading} />
+      <EarningsChart data={dailyEarnings} ownerType="doctor" loading={loading} />
       <TransactionHistory transactions={transactions} loading={loading} />
     </div>
   );

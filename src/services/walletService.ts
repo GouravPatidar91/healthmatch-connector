@@ -40,7 +40,7 @@ export interface DailyEarnings {
 }
 
 class WalletService {
-  async getWallet(userId: string, ownerType: 'delivery_partner' | 'vendor'): Promise<Wallet | null> {
+  async getWallet(userId: string, ownerType: 'delivery_partner' | 'vendor' | 'doctor'): Promise<Wallet | null> {
     try {
       const { data, error } = await supabase
         .from('wallets')
