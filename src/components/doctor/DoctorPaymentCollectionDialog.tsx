@@ -101,6 +101,7 @@ const DoctorPaymentCollectionDialog = ({
   const handleClose = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     setQrImageUrl(null);
+    setQrContent(null);
     setCashCollected(false);
     setPaymentCompleted(false);
     onOpenChange(false);
