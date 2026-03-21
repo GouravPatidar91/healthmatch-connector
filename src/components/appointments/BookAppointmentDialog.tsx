@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2, Lock, IndianRupee, CreditCard, Banknote } from "lucide-react";
-import { format } from "date-fns";
+import { CalendarIcon, Loader2, Lock, IndianRupee, CreditCard, Banknote, Clock } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,7 @@ interface BookAppointmentDialogProps {
   healthCheckData?: HealthCheck | null;
 }
 
-const timeSlots = [
+const fallbackTimeSlots = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
   "12:00", "12:30", "14:00", "14:30", "15:00", "15:30",
   "16:00", "16:30", "17:00", "17:30"
@@ -34,12 +34,23 @@ const specialties = [
   "Orthopedics", "Pediatrics", "Psychiatry", "Radiology", "Surgery", "Urology"
 ];
 
+interface DoctorAvailableSlot {
+  id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  duration: number;
+}
+
 export const BookAppointmentDialog = ({ open, onOpenChange, selectedDoctor, healthCheckData }: BookAppointmentDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
   const [paymentMode, setPaymentMode] = useState<'online' | 'pay_at_clinic'>('pay_at_clinic');
   const [consultationFee, setConsultationFee] = useState<number>(0);
+  const [doctorSlots, setDoctorSlots] = useState<DoctorAvailableSlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [useDoctorSlots, setUseDoctorSlots] = useState(false);
   const [formData, setFormData] = useState({
     doctorName: selectedDoctor?.name || '',
     doctorSpecialty: selectedDoctor?.specialization || '',
