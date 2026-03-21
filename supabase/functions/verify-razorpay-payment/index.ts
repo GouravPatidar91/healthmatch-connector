@@ -23,8 +23,8 @@ serve(async (req) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointment_id } = await req.json();
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !appointment_id) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return new Response(JSON.stringify({ error: 'Missing required payment fields' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -42,43 +42,47 @@ serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // If appointment_id is provided, update the appointment and credit doctor wallet
+    if (appointment_id) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get appointment details
-    const { data: appointment, error: apptError } = await supabase
-      .from('appointments')
-      .select('*')
-      .eq('id', appointment_id)
-      .single();
+      // Get appointment details
+      const { data: appointment, error: apptError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('id', appointment_id)
+        .single();
 
-    if (apptError || !appointment) throw new Error('Appointment not found');
+      if (apptError || !appointment) throw new Error('Appointment not found');
 
-    // Update appointment payment status
-    await supabase
-      .from('appointments')
-      .update({ payment_status: 'paid', razorpay_payment_id })
-      .eq('id', appointment_id);
+      // Update appointment payment status
+      await supabase
+        .from('appointments')
+        .update({ payment_status: 'paid', razorpay_payment_id })
+        .eq('id', appointment_id);
 
-    // Credit doctor wallet
-    const doctorId = appointment.doctor_id;
-    const amount = appointment.payment_amount || 0;
+      // Credit doctor wallet
+      const doctorId = appointment.doctor_id;
+      const amount = appointment.payment_amount || 0;
 
-    if (doctorId && amount > 0) {
-      const walletId = await supabase.rpc('get_or_create_wallet', {
-        _user_id: doctorId, _owner_type: 'doctor', _owner_id: doctorId,
-      });
-
-      if (walletId.data) {
-        await supabase.rpc('credit_wallet', {
-          _wallet_id: walletId.data, _order_id: null, _amount: amount,
-          _description: `Consultation fee - Appointment ${appointment_id.substring(0, 8)}`,
-          _category: 'consultation_fee',
+      if (doctorId && amount > 0) {
+        const walletId = await supabase.rpc('get_or_create_wallet', {
+          _user_id: doctorId, _owner_type: 'doctor', _owner_id: doctorId,
         });
+
+        if (walletId.data) {
+          await supabase.rpc('credit_wallet', {
+            _wallet_id: walletId.data, _order_id: null, _amount: amount,
+            _description: `Consultation fee - Appointment ${appointment_id.substring(0, 8)}`,
+            _category: 'consultation_fee',
+          });
+        }
       }
     }
 
+    // Payment signature verified successfully
     return new Response(JSON.stringify({ success: true, verified: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

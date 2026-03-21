@@ -29,12 +29,12 @@ export interface RazorpayOrderResponse {
 
 export const createRazorpayOrder = async (
   amount: number,
-  appointmentId: string,
   doctorId: string,
-  userId: string
+  userId: string,
+  appointmentId?: string
 ): Promise<RazorpayOrderResponse> => {
   const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
-    body: { amount, appointment_id: appointmentId, doctor_id: doctorId, user_id: userId },
+    body: { amount, doctor_id: doctorId, user_id: userId, appointment_id: appointmentId },
   });
 
   if (error) throw new Error(error.message || 'Failed to create order');
@@ -45,19 +45,19 @@ export const verifyRazorpayPayment = async (
   razorpayOrderId: string,
   razorpayPaymentId: string,
   razorpaySignature: string,
-  appointmentId: string
-): Promise<boolean> => {
+  appointmentId?: string
+): Promise<{ verified: boolean }> => {
   const { data, error } = await supabase.functions.invoke('verify-razorpay-payment', {
     body: {
       razorpay_order_id: razorpayOrderId,
       razorpay_payment_id: razorpayPaymentId,
       razorpay_signature: razorpaySignature,
-      appointment_id: appointmentId,
+      ...(appointmentId ? { appointment_id: appointmentId } : {}),
     },
   });
 
   if (error) throw new Error(error.message || 'Payment verification failed');
-  return data?.verified || false;
+  return { verified: data?.verified || false };
 };
 
 export interface QRCodeResponse {
