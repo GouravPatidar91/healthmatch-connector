@@ -37,7 +37,7 @@ serve(async (req) => {
       body: JSON.stringify({
         amount: Math.round(amount * 100), // Convert to paise
         currency,
-        receipt: `appt_${appointment_id}`,
+        receipt: `appt_${appointment_id.substring(0, 35)}`,
         notes: {
           appointment_id,
           doctor_id: doctor_id || '',

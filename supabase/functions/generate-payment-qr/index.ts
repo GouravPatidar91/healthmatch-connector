@@ -22,12 +22,15 @@ serve(async (req) => {
 
     const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID');
     const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
       throw new Error('Razorpay credentials not configured');
     }
 
-    // Create Razorpay Payment Link
+    const webhookUrl = `${SUPABASE_URL}/functions/v1/razorpay-webhook`;
+
+    // Create Razorpay Payment Link with UPI deep link enabled
     const response = await fetch('https://api.razorpay.com/v1/payment_links', {
       method: 'POST',
       headers: {
@@ -41,12 +44,13 @@ serve(async (req) => {
         customer: {
           name: patient_name || 'Patient',
         },
+        upi_link: true,
         notes: {
           appointment_id,
           type: 'clinic_qr_payment',
         },
-        callback_url: '',
-        callback_method: '',
+        callback_url: webhookUrl,
+        callback_method: 'get',
       }),
     });
 
@@ -58,9 +62,8 @@ serve(async (req) => {
     }
 
     // Store the payment link ID for webhook reference
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(SUPABASE_URL, supabaseKey);
 
     await supabase
       .from('appointments')
