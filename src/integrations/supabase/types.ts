@@ -112,6 +112,7 @@ export type Database = {
       }
       appointment_slots: {
         Row: {
+          consultation_fee: number | null
           created_at: string
           date: string
           doctor_id: string
@@ -127,6 +128,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          consultation_fee?: number | null
           created_at?: string
           date: string
           doctor_id: string
@@ -142,6 +144,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          consultation_fee?: number | null
           created_at?: string
           date?: string
           doctor_id?: string
@@ -182,6 +185,11 @@ export type Database = {
           doctor_specialty: string | null
           id: string
           notes: string | null
+          payment_amount: number | null
+          payment_mode: string | null
+          payment_status: string | null
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
           reason: string | null
           status: string | null
           time: string
@@ -196,6 +204,11 @@ export type Database = {
           doctor_specialty?: string | null
           id?: string
           notes?: string | null
+          payment_amount?: number | null
+          payment_mode?: string | null
+          payment_status?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
           reason?: string | null
           status?: string | null
           time: string
@@ -210,6 +223,11 @@ export type Database = {
           doctor_specialty?: string | null
           id?: string
           notes?: string | null
+          payment_amount?: number | null
+          payment_mode?: string | null
+          payment_status?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
           reason?: string | null
           status?: string | null
           time?: string
@@ -822,6 +840,7 @@ export type Database = {
           clinic_address: string | null
           clinic_latitude: number | null
           clinic_longitude: number | null
+          consultation_fee: number | null
           created_at: string
           degree_verification_photo: string | null
           degrees: string
@@ -844,6 +863,7 @@ export type Database = {
           clinic_address?: string | null
           clinic_latitude?: number | null
           clinic_longitude?: number | null
+          consultation_fee?: number | null
           created_at?: string
           degree_verification_photo?: string | null
           degrees: string
@@ -866,6 +886,7 @@ export type Database = {
           clinic_address?: string | null
           clinic_latitude?: number | null
           clinic_longitude?: number | null
+          consultation_fee?: number | null
           created_at?: string
           degree_verification_photo?: string | null
           degrees?: string
@@ -2410,6 +2431,7 @@ export type Database = {
           clinic_address: string | null
           clinic_latitude: number | null
           clinic_longitude: number | null
+          consultation_fee: number | null
           created_at: string
           degree_verification_photo: string | null
           degrees: string
