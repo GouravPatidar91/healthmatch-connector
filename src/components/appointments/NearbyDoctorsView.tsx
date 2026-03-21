@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, Clock, Calendar, Loader2, Stethoscope, Navigation, MapPinIcon, User, CalendarDays } from "lucide-react";
+import { MapPin, Star, Clock, Loader2, Stethoscope, Navigation, MapPinIcon, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDoctors } from "@/services/doctorService";
 import { BookAppointmentDialog } from "./BookAppointmentDialog";
-import DoctorSlots from "./DoctorSlots";
 
 export const NearbyDoctorsView = () => {
   const { toast } = useToast();

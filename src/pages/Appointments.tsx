@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAppointmentBooking } from "@/services/appointmentService";
 import { useDoctors } from "@/services/doctorService";
 import PatientAppointments from "@/components/appointments/PatientAppointments";
-import DoctorSlots from "@/components/appointments/DoctorSlots";
+
 import { BookAppointmentDialog } from "@/components/appointments/BookAppointmentDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { NearbyDoctorsView } from "@/components/appointments/NearbyDoctorsView";
