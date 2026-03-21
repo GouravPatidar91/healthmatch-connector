@@ -260,7 +260,7 @@ const AppointmentCalendar = () => {
                               variant="ghost" 
                               size="icon"
                               disabled={appointment.status === 'completed' || appointment.status === 'cancelled'}
-                              onClick={() => handleStatusChange(appointment.id, 'cancelled', appointment.type)}
+                              onClick={() => handleStatusChange(appointment.id, 'cancelled', appointment.type, appointment)}
                               title="Cancel appointment"
                               className="h-8 w-8 hover:bg-sage-100"
                             >
