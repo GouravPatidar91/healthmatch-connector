@@ -80,6 +80,7 @@ const DoctorPaymentCollectionDialog = ({
     try {
       const success = await doctorWalletService.collectCashPayment(appointmentId, doctorId, amount);
       if (success) {
+        await supabase.from('appointments').update({ status: 'completed' }).eq('id', appointmentId);
         setCashCollected(true);
         toast({ title: 'Cash Collected', description: `₹${amount} credited to your wallet` });
         setTimeout(() => { onPaymentCollected(); onOpenChange(false); setCashCollected(false); }, 1500);
