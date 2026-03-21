@@ -88,6 +88,7 @@ const DoctorPaymentCollectionDialog = ({
     try {
       const result = await generatePaymentQR(amount, appointmentId, doctorName, patientName);
       setQrImageUrl(result.image_url);
+      setQrContent(result.qr_content || null);
       toast({ title: 'QR Generated', description: 'Ask the patient to scan and pay via any UPI app' });
     } catch (error) {
       console.error('QR generation error:', error);
