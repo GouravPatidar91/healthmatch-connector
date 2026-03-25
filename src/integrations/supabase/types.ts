@@ -118,9 +118,13 @@ export type Database = {
           doctor_id: string
           duration: number
           end_time: string
+          held_by: string | null
+          held_until: string | null
           id: string
           max_patients: number
           patient_name: string | null
+          payment_mode: string | null
+          payment_status: string | null
           reason: string | null
           start_time: string
           status: string
@@ -134,9 +138,13 @@ export type Database = {
           doctor_id: string
           duration: number
           end_time: string
+          held_by?: string | null
+          held_until?: string | null
           id?: string
           max_patients?: number
           patient_name?: string | null
+          payment_mode?: string | null
+          payment_status?: string | null
           reason?: string | null
           start_time: string
           status?: string
@@ -150,9 +158,13 @@ export type Database = {
           doctor_id?: string
           duration?: number
           end_time?: string
+          held_by?: string | null
+          held_until?: string | null
           id?: string
           max_patients?: number
           patient_name?: string | null
+          payment_mode?: string | null
+          payment_status?: string | null
           reason?: string | null
           start_time?: string
           status?: string
@@ -318,10 +330,13 @@ export type Database = {
           broadcast_round: number | null
           created_at: string | null
           current_phase: string | null
+          current_radius_index: number | null
           current_vendor_index: number | null
           customer_phone: string
           delivery_address: string
+          expansion_radii: Json | null
           id: string
+          last_escalation_at: string | null
           notified_vendor_ids: string[] | null
           order_data: Json
           order_id: string | null
@@ -339,10 +354,13 @@ export type Database = {
           broadcast_round?: number | null
           created_at?: string | null
           current_phase?: string | null
+          current_radius_index?: number | null
           current_vendor_index?: number | null
           customer_phone: string
           delivery_address: string
+          expansion_radii?: Json | null
           id?: string
+          last_escalation_at?: string | null
           notified_vendor_ids?: string[] | null
           order_data: Json
           order_id?: string | null
@@ -360,10 +378,13 @@ export type Database = {
           broadcast_round?: number | null
           created_at?: string | null
           current_phase?: string | null
+          current_radius_index?: number | null
           current_vendor_index?: number | null
           customer_phone?: string
           delivery_address?: string
+          expansion_radii?: Json | null
           id?: string
+          last_escalation_at?: string | null
           notified_vendor_ids?: string[] | null
           order_data?: Json
           order_id?: string | null
@@ -1984,6 +2005,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_addresses: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          building_landmark: string | null
+          city: string | null
+          country: string
+          created_at: string
+          house_flat_no: string | null
+          id: string
+          is_primary: boolean
+          label: string
+          latitude: number | null
+          longitude: number | null
+          postal_code: string | null
+          state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          building_landmark?: string | null
+          city?: string | null
+          country?: string
+          created_at?: string
+          house_flat_no?: string | null
+          id?: string
+          is_primary?: boolean
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          postal_code?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          building_landmark?: string | null
+          city?: string | null
+          country?: string
+          created_at?: string
+          house_flat_no?: string | null
+          id?: string
+          is_primary?: boolean
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          postal_code?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           granted_at: string | null
@@ -2360,13 +2438,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_broadcast_health: {
+        Row: {
+          acceptance_rate_pct: number | null
+          accepted: number | null
+          avg_accept_seconds: number | null
+          avg_radius_index_on_accept: number | null
+          failed: number | null
+          hour: string | null
+          still_searching: number | null
+          total_broadcasts: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_delivery_partner_accept_order: {
         Args: { _order_id: string; _user_id: string }
         Returns: boolean
       }
+      cleanup_expired_slot_holds: { Args: never; Returns: number }
       credit_wallet: {
         Args: {
           _amount: number
@@ -2466,6 +2557,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      hold_slot: {
+        Args: { p_slot_id: string; p_user_id: string }
+        Returns: string
+      }
       is_delivery_partner_owner: {
         Args: { _partner_id: string; _user_id: string }
         Returns: boolean
@@ -2480,6 +2575,10 @@ export type Database = {
       }
       process_withdrawal: {
         Args: { _admin_notes: string; _approved: boolean; _request_id: string }
+        Returns: undefined
+      }
+      release_slot_hold: {
+        Args: { p_slot_id: string; p_user_id: string }
         Returns: undefined
       }
     }
