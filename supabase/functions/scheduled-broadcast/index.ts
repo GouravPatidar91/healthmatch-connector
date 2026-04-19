@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +29,6 @@ const NOON_MARKETING = [
 ];
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -45,10 +45,9 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Get day of week (0 = Sunday, 1 = Monday, etc.)
     const dayOfWeek = new Date().getDay();
-
     let topic: string;
     let tone: string;
     let notificationType: string;
@@ -57,65 +56,106 @@ serve(async (req) => {
       topic = MORNING_TOPICS[dayOfWeek];
       tone = 'friendly';
       notificationType = 'health_tip';
-      console.log(`Morning health notification - Day ${dayOfWeek}, Topic: ${topic}`);
     } else {
       const config = NOON_MARKETING[dayOfWeek];
       topic = config.topic;
       tone = config.tone;
       notificationType = 'marketing';
-      console.log(`Noon marketing notification - Day ${dayOfWeek}, Topic: ${topic}, Tone: ${tone}`);
     }
+    console.log(`[scheduled-broadcast] ${scheduleType} - Day ${dayOfWeek}, Topic: ${topic}, Tone: ${tone}`);
 
-    // Step 1: Generate AI content using the generate-marketing-notification function
-    console.log('Generating AI content...');
+    // Step 1: Generate AI content
     const aiResponse = await fetch(`${supabaseUrl}/functions/v1/generate-marketing-notification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${supabaseAnonKey}`,
+        'apikey': supabaseAnonKey,
       },
-      body: JSON.stringify({
-        topic,
-        tone,
-        includeBranding: true,
-      }),
+      body: JSON.stringify({ topic, tone, includeBranding: true }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI generation failed:', errorText);
-      throw new Error(`AI generation failed: ${aiResponse.status}`);
+      throw new Error(`AI generation failed: ${aiResponse.status} ${errorText}`);
     }
 
-    const { title, message } = await aiResponse.json();
+    const aiJson = await aiResponse.json();
+    const title = aiJson.title;
+    const message = aiJson.message;
+    if (!title || !message) {
+      throw new Error('AI response missing title or message');
+    }
     console.log('AI generated content:', { title, message });
 
-    // Step 2: Broadcast to all users using the broadcast-notification function
-    console.log('Broadcasting to all users...');
-    const broadcastResponse = await fetch(`${supabaseUrl}/functions/v1/broadcast-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-      },
-      body: JSON.stringify({
+    // Step 2: Broadcast directly (avoid extra HTTP hop that can cause gateway 502)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: broadcast, error: broadcastError } = await supabaseAdmin
+      .from('admin_broadcast_notifications')
+      .insert({
         title,
         message,
         type: notificationType,
-        targetAudience: 'all',
-        isAiGenerated: true,
-        aiPrompt: `[Scheduled ${scheduleType}] ${topic}`,
-      }),
-    });
+        target_audience: 'all',
+        is_ai_generated: true,
+        ai_prompt: `[Scheduled ${scheduleType}] ${topic}`,
+        status: 'sending',
+      })
+      .select()
+      .single();
 
-    if (!broadcastResponse.ok) {
-      const errorText = await broadcastResponse.text();
-      console.error('Broadcast failed:', errorText);
-      throw new Error(`Broadcast failed: ${broadcastResponse.status}`);
+    if (broadcastError) {
+      console.error('Failed to create broadcast record:', broadcastError);
+      throw broadcastError;
     }
 
-    const broadcastResult = await broadcastResponse.json();
-    console.log('Broadcast result:', broadcastResult);
+    const { data: allUsers, error: usersError } = await supabaseAdmin
+      .from('profiles')
+      .select('id');
+
+    if (usersError) {
+      console.error('Failed to fetch users:', usersError);
+      throw usersError;
+    }
+
+    const userIds = allUsers?.map((u) => u.id) || [];
+    console.log(`Notifying ${userIds.length} users`);
+
+    if (userIds.length > 0) {
+      const notifications = userIds.map((userId) => ({
+        user_id: userId,
+        type: notificationType,
+        title,
+        message,
+        notification_category: notificationType,
+        priority: 'normal',
+        broadcast_id: broadcast.id,
+        metadata: { broadcast_id: broadcast.id, ai_generated: true },
+      }));
+
+      const chunkSize = 200;
+      for (let i = 0; i < notifications.length; i += chunkSize) {
+        const chunk = notifications.slice(i, i + chunkSize);
+        const { error: insertError } = await supabaseAdmin
+          .from('customer_notifications')
+          .insert(chunk);
+        if (insertError) {
+          console.error('Notification insert error:', insertError);
+          throw insertError;
+        }
+      }
+    }
+
+    await supabaseAdmin
+      .from('admin_broadcast_notifications')
+      .update({
+        status: 'sent',
+        sent_at: new Date().toISOString(),
+        recipients_count: userIds.length,
+      })
+      .eq('id', broadcast.id);
 
     return new Response(
       JSON.stringify({
@@ -125,8 +165,8 @@ serve(async (req) => {
         tone,
         title,
         message,
-        recipientsCount: broadcastResult.recipientsCount,
-        broadcastId: broadcastResult.broadcastId,
+        recipientsCount: userIds.length,
+        broadcastId: broadcast.id,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -134,7 +174,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in scheduled-broadcast:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
