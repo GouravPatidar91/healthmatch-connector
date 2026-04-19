@@ -404,30 +404,37 @@ export const OrderTrackingDetail: React.FC<OrderTrackingDetailProps> = ({
             </Card>
 
             {/* Pharmacy Info */}
-            <Card className="p-4">
-              <h3 className="font-semibold mb-3">Pharmacy Information</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{order.vendor.pharmacy_name}</p>
-                      <p className="text-sm text-muted-foreground">{order.vendor.address}</p>
+            {order.vendor ? (
+              <Card className="p-4">
+                <h3 className="font-semibold mb-3">Pharmacy Information</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{order.vendor.pharmacy_name}</p>
+                        <p className="text-sm text-muted-foreground">{order.vendor.address}</p>
+                      </div>
                     </div>
+                    {order.vendor.average_rating && order.vendor.average_rating > 0 && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        {order.vendor.average_rating.toFixed(1)} ({order.vendor.total_ratings || 0})
+                      </Badge>
+                    )}
                   </div>
-                  {order.vendor.average_rating && order.vendor.average_rating > 0 && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      {order.vendor.average_rating.toFixed(1)} ({order.vendor.total_ratings || 0})
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <p>{order.vendor.phone}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <p>{order.vendor.phone}</p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            ) : (
+              <Card className="p-4 border-dashed">
+                <h3 className="font-semibold mb-1">Pharmacy Information</h3>
+                <p className="text-sm text-muted-foreground">Waiting for a pharmacy to accept this order...</p>
+              </Card>
+            )}
 
             {/* Delivery Partner Info */}
             {order.delivery_partner && (
