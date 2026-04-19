@@ -112,7 +112,10 @@ export type Database = {
       }
       appointment_slots: {
         Row: {
+          consultation_completed_at: string | null
+          consultation_duration: number | null
           consultation_fee: number | null
+          consultation_started_at: string | null
           created_at: string
           date: string
           doctor_id: string
@@ -132,7 +135,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          consultation_completed_at?: string | null
+          consultation_duration?: number | null
           consultation_fee?: number | null
+          consultation_started_at?: string | null
           created_at?: string
           date: string
           doctor_id: string
@@ -152,7 +158,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          consultation_completed_at?: string | null
+          consultation_duration?: number | null
           consultation_fee?: number | null
+          consultation_started_at?: string | null
           created_at?: string
           date?: string
           doctor_id?: string
@@ -190,6 +199,9 @@ export type Database = {
       }
       appointments: {
         Row: {
+          consultation_completed_at: string | null
+          consultation_duration: number | null
+          consultation_started_at: string | null
           created_at: string
           date: string
           doctor_id: string
@@ -209,6 +221,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          consultation_completed_at?: string | null
+          consultation_duration?: number | null
+          consultation_started_at?: string | null
           created_at?: string
           date: string
           doctor_id: string
@@ -228,6 +243,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          consultation_completed_at?: string | null
+          consultation_duration?: number | null
+          consultation_started_at?: string | null
           created_at?: string
           date?: string
           doctor_id?: string
@@ -256,6 +274,50 @@ export type Database = {
           },
           {
             foreignKeyName: "appointments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessments: {
+        Row: {
+          age: number | null
+          created_at: string | null
+          diagnosis_mock: Json | null
+          duration: string | null
+          id: string
+          image_url: string | null
+          status: string | null
+          symptoms: Json
+          user_id: string | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string | null
+          diagnosis_mock?: Json | null
+          duration?: string | null
+          id?: string
+          image_url?: string | null
+          status?: string | null
+          symptoms: Json
+          user_id?: string | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string | null
+          diagnosis_mock?: Json | null
+          duration?: string | null
+          id?: string
+          image_url?: string | null
+          status?: string | null
+          symptoms?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -789,6 +851,56 @@ export type Database = {
           },
         ]
       }
+      doctor_documents: {
+        Row: {
+          created_at: string | null
+          doctor_id: string
+          document_label: string
+          document_type: string
+          file_url: string
+          id: string
+          rejection_reason: string | null
+          status: string
+          updated_at: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          doctor_id: string
+          document_label: string
+          document_type: string
+          file_url: string
+          id?: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          doctor_id?: string
+          document_label?: string
+          document_type?: string
+          file_url?: string
+          id?: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_documents_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_notifications: {
         Row: {
           appointment_id: string
@@ -858,22 +970,29 @@ export type Database = {
         Row: {
           address: string
           available: boolean
+          city: string | null
           clinic_address: string | null
           clinic_latitude: number | null
           clinic_longitude: number | null
           consultation_fee: number | null
           created_at: string
+          degree_photo_url: string | null
           degree_verification_photo: string | null
           degrees: string
           email: string | null
           experience: number
+          govt_id_url: string | null
           hospital: string
           id: string
           latitude: number | null
           longitude: number | null
           name: string
+          onboarding_status: string | null
+          pan_card_url: string | null
+          phone: string | null
           rating: number | null
           region: string
+          registration_cert_url: string | null
           registration_number: string
           specialization: string
           verified: boolean | null
@@ -881,22 +1000,29 @@ export type Database = {
         Insert: {
           address: string
           available?: boolean
+          city?: string | null
           clinic_address?: string | null
           clinic_latitude?: number | null
           clinic_longitude?: number | null
           consultation_fee?: number | null
           created_at?: string
+          degree_photo_url?: string | null
           degree_verification_photo?: string | null
           degrees: string
           email?: string | null
           experience: number
+          govt_id_url?: string | null
           hospital: string
           id?: string
           latitude?: number | null
           longitude?: number | null
           name: string
+          onboarding_status?: string | null
+          pan_card_url?: string | null
+          phone?: string | null
           rating?: number | null
           region: string
+          registration_cert_url?: string | null
           registration_number: string
           specialization: string
           verified?: boolean | null
@@ -904,22 +1030,29 @@ export type Database = {
         Update: {
           address?: string
           available?: boolean
+          city?: string | null
           clinic_address?: string | null
           clinic_latitude?: number | null
           clinic_longitude?: number | null
           consultation_fee?: number | null
           created_at?: string
+          degree_photo_url?: string | null
           degree_verification_photo?: string | null
           degrees?: string
           email?: string | null
           experience?: number
+          govt_id_url?: string | null
           hospital?: string
           id?: string
           latitude?: number | null
           longitude?: number | null
           name?: string
+          onboarding_status?: string | null
+          pan_card_url?: string | null
+          phone?: string | null
           rating?: number | null
           region?: string
+          registration_cert_url?: string | null
           registration_number?: string
           specialization?: string
           verified?: boolean | null
@@ -1289,7 +1422,7 @@ export type Database = {
           total_amount: number
           updated_at: string
           user_id: string
-          vendor_id: string
+          vendor_id: string | null
           vendor_notes: string | null
         }
         Insert: {
@@ -1323,7 +1456,7 @@ export type Database = {
           total_amount: number
           updated_at?: string
           user_id: string
-          vendor_id: string
+          vendor_id?: string | null
           vendor_notes?: string | null
         }
         Update: {
@@ -1357,7 +1490,7 @@ export type Database = {
           total_amount?: number
           updated_at?: string
           user_id?: string
-          vendor_id?: string
+          vendor_id?: string | null
           vendor_notes?: string | null
         }
         Relationships: [
@@ -1603,6 +1736,54 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "medicine_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          assessment_id: string | null
+          created_at: string | null
+          delivery_status: string | null
+          id: string
+          medicines: Json
+          payment_status: string | null
+          total_amount: number | null
+          user_id: string | null
+        }
+        Insert: {
+          assessment_id?: string | null
+          created_at?: string | null
+          delivery_status?: string | null
+          id?: string
+          medicines: Json
+          payment_status?: string | null
+          total_amount?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          assessment_id?: string | null
+          created_at?: string | null
+          delivery_status?: string | null
+          id?: string
+          medicines?: Json
+          payment_status?: string | null
+          total_amount?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2005,6 +2186,48 @@ export type Database = {
         }
         Relationships: []
       }
+      serviceable_hubs: {
+        Row: {
+          center_lat: number
+          center_lng: number
+          city_name: string
+          created_at: string | null
+          doctor_active: boolean | null
+          hub_name: string
+          id: string
+          is_active: boolean | null
+          medicine_active: boolean | null
+          radius_km: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          center_lat: number
+          center_lng: number
+          city_name: string
+          created_at?: string | null
+          doctor_active?: boolean | null
+          hub_name: string
+          id?: string
+          is_active?: boolean | null
+          medicine_active?: boolean | null
+          radius_km?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          center_lat?: number
+          center_lng?: number
+          city_name?: string
+          created_at?: string | null
+          doctor_active?: boolean | null
+          hub_name?: string
+          id?: string
+          is_active?: boolean | null
+          medicine_active?: boolean | null
+          radius_km?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_addresses: {
         Row: {
           address_line1: string | null
@@ -2302,6 +2525,7 @@ export type Database = {
       wallet_transactions: {
         Row: {
           amount: number
+          appointment_id: string | null
           balance_after: number
           category: string | null
           created_at: string
@@ -2313,6 +2537,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          appointment_id?: string | null
           balance_after: number
           category?: string | null
           created_at?: string
@@ -2324,6 +2549,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          appointment_id?: string | null
           balance_after?: number
           category?: string | null
           created_at?: string
@@ -2334,6 +2560,13 @@ export type Database = {
           wallet_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wallet_transactions_order_id_fkey"
             columns: ["order_id"]
@@ -2438,34 +2671,56 @@ export type Database = {
       }
     }
     Views: {
-      v_broadcast_health: {
-        Row: {
-          acceptance_rate_pct: number | null
-          accepted: number | null
-          avg_accept_seconds: number | null
-          avg_radius_index_on_accept: number | null
-          failed: number | null
-          hour: string | null
-          still_searching: number | null
-          total_broadcasts: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      calculate_distance: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
       can_delivery_partner_accept_order: {
         Args: { _order_id: string; _user_id: string }
         Returns: boolean
       }
+      check_hub_serviceability: {
+        Args: { user_lat: number; user_lng: number }
+        Returns: {
+          distance_km: number
+          doctor_active: boolean
+          hub_id: string
+          hub_name: string
+          medicine_active: boolean
+        }[]
+      }
+      check_is_doctor_of_patient: {
+        Args: { d_id: string; p_id: string }
+        Returns: boolean
+      }
       cleanup_expired_slot_holds: { Args: never; Returns: number }
-      credit_wallet: {
-        Args: {
-          _amount: number
-          _category: string
-          _description: string
-          _order_id: string
-          _wallet_id: string
-        }
+      credit_wallet:
+        | {
+            Args: {
+              _amount?: number
+              _appointment_id?: string
+              _category?: string
+              _description?: string
+              _order_id?: string
+              _wallet_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _amount: number
+              _category: string
+              _description: string
+              _order_id: string
+              _wallet_id: string
+            }
+            Returns: undefined
+          }
+      decrement_stock: {
+        Args: { p_quantity: number; p_vendor_medicine_id: string }
         Returns: undefined
       }
       find_nearby_medicine_vendors: {
@@ -2505,6 +2760,14 @@ export type Database = {
         }[]
       }
       generate_order_number: { Args: never; Returns: string }
+      get_location_onboarding_stats: {
+        Args: never
+        Returns: {
+          city: string
+          doctor_count: number
+          pharmacy_count: number
+        }[]
+      }
       get_or_create_wallet: {
         Args: { _owner_id: string; _owner_type: string; _user_id: string }
         Returns: string
@@ -2519,22 +2782,29 @@ export type Database = {
         Returns: {
           address: string
           available: boolean
+          city: string | null
           clinic_address: string | null
           clinic_latitude: number | null
           clinic_longitude: number | null
           consultation_fee: number | null
           created_at: string
+          degree_photo_url: string | null
           degree_verification_photo: string | null
           degrees: string
           email: string | null
           experience: number
+          govt_id_url: string | null
           hospital: string
           id: string
           latitude: number | null
           longitude: number | null
           name: string
+          onboarding_status: string | null
+          pan_card_url: string | null
+          phone: string | null
           rating: number | null
           region: string
+          registration_cert_url: string | null
           registration_number: string
           specialization: string
           verified: boolean | null
