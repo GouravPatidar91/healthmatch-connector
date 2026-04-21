@@ -24,9 +24,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Curezy Android APK download URL (hosted in Supabase Storage public bucket)
-const APK_DOWNLOAD_URL =
-  "https://bpflebtklgnivcanhlbp.supabase.co/storage/v1/object/public/app-downloads/curezy.apk";
+// Curezy Android APK download URL — file lives in /public so it ships with the site
+const APK_DOWNLOAD_URL = "/downloads/curezy.apk";
 
 const Homepage = () => {
   return (
@@ -432,33 +431,61 @@ const MOCKUPS = [appMockup1, appMockup2, appMockup3, appMockup4];
 
 const MockupCarousel = () => {
   const [index, setIndex] = useState(0);
+  const [loaded, setLoaded] = useState<boolean[]>(() => MOCKUPS.map(() => false));
 
+  // Preload every mockup once so swaps are instant
   useEffect(() => {
+    MOCKUPS.forEach((src, i) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        setLoaded((prev) => {
+          if (prev[i]) return prev;
+          const next = [...prev];
+          next[i] = true;
+          return next;
+        });
+      };
+    });
+  }, []);
+
+  // Auto-advance — only after the first image is loaded
+  useEffect(() => {
+    if (!loaded[0]) return;
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % MOCKUPS.length);
     }, 3500);
     return () => clearInterval(interval);
-  }, []);
+  }, [loaded]);
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
       {/* Glow */}
       <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full pointer-events-none" />
 
-      {/* Sliding image stage — fills available height */}
+      {/* Stacked image stage — all images mounted, only one visible */}
       <div className="relative w-full flex-1 min-h-[420px] max-h-[640px] overflow-hidden">
-        <AnimatePresence mode="wait">
+        {!loaded[0] && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          </div>
+        )}
+        {MOCKUPS.map((src, i) => (
           <motion.img
-            key={index}
-            src={MOCKUPS[index]}
-            alt={`Curezy app screen ${index + 1}`}
+            key={i}
+            src={src}
+            alt={`Curezy app screen ${i + 1}`}
             className="absolute inset-0 w-full h-full object-contain"
-            initial={{ opacity: 0, x: 60, scale: 0.96 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -60, scale: 0.96 }}
+            initial={false}
+            animate={{
+              opacity: i === index ? 1 : 0,
+              x: i === index ? 0 : i < index ? -40 : 40,
+              scale: i === index ? 1 : 0.97,
+            }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            draggable={false}
           />
-        </AnimatePresence>
+        ))}
       </div>
 
       {/* Dots */}
