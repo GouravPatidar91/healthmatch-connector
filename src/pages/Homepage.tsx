@@ -15,8 +15,14 @@ import {
   Pill,
   Truck,
   Headphones,
+  Smartphone,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Curezy Android APK download URL (hosted in Supabase Storage public bucket)
+const APK_DOWNLOAD_URL =
+  "https://bpflebtklgnivcanhlbp.supabase.co/storage/v1/object/public/app-downloads/curezy.apk";
 
 const Homepage = () => {
   return (
@@ -29,7 +35,9 @@ const Homepage = () => {
       <div id="partners">
         <Network />
       </div>
-      <Stats />
+      <div id="download-app">
+        <DownloadApp />
+      </div>
       <CTA />
       <div id="contact">
         <Footer />
