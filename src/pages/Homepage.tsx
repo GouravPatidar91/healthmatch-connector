@@ -15,8 +15,14 @@ import {
   Pill,
   Truck,
   Headphones,
+  Smartphone,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Curezy Android APK download URL (hosted in Supabase Storage public bucket)
+const APK_DOWNLOAD_URL =
+  "https://bpflebtklgnivcanhlbp.supabase.co/storage/v1/object/public/app-downloads/curezy.apk";
 
 const Homepage = () => {
   return (
@@ -29,7 +35,9 @@ const Homepage = () => {
       <div id="partners">
         <Network />
       </div>
-      <Stats />
+      <div id="download-app">
+        <DownloadApp />
+      </div>
       <CTA />
       <div id="contact">
         <Footer />
@@ -415,34 +423,102 @@ const Network = () => {
   );
 };
 
-// --- Stats ---
-const Stats = () => {
-  const stats = [
-    { label: "Happy Patients", val: "50K+" },
-    { label: "Healthcare Providers", val: "1K+" },
-    { label: "AI Assistant", val: "24/7" },
-    { label: "Uptime Guarantee", val: "99.9%" },
-  ];
-
+// --- Download App ---
+const DownloadApp = () => {
   return (
-    <section className="py-16 bg-gray-50 border-b border-gray-200">
+    <section className="py-24 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 border-y border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-gray-200/50">
-          {stats.map((stat, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
-              className="p-4"
-            >
-              <div className="text-4xl md:text-5xl font-bold text-blue-600 mb-2">
-                {stat.val}
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left: Text + CTA */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-6">
+              <Smartphone className="w-4 h-4" />
+              Mobile App Available
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+              Get Curezy on Your Phone
+            </h2>
+            <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+              Download the Curezy Android app for the fastest access to AI symptom
+              checks, doctor appointments, medicine delivery, and emergency services
+              — right from your pocket.
+            </p>
+
+            <ul className="space-y-3 mb-10">
+              {[
+                "Instant push notifications for orders & appointments",
+                "Faster, native experience on your device",
+                "Offline access to your medical records",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3 text-gray-700">
+                  <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <a
+                href={APK_DOWNLOAD_URL}
+                download="curezy.apk"
+                className="inline-flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-4 rounded-2xl font-bold shadow-xl shadow-blue-600/30 hover:scale-105 transition-transform"
+              >
+                <Download className="w-5 h-5" />
+                Download for Android
+              </a>
+              <span className="text-sm text-gray-500">APK • Android 7.0+</span>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-6 max-w-md">
+              You may need to enable "Install from unknown sources" in your phone's
+              settings. iOS coming soon.
+            </p>
+          </motion.div>
+
+          {/* Right: Phone mockup */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="flex justify-center"
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+              <div className="relative w-72 h-[560px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl border-4 border-gray-800">
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 via-blue-600 to-blue-800 rounded-[2.3rem] overflow-hidden flex flex-col items-center justify-center text-white p-6">
+                  <div className="bg-white/15 backdrop-blur-md p-5 rounded-3xl mb-6">
+                    <Heart className="w-14 h-14" />
+                  </div>
+                  <h3 className="text-3xl font-bold mb-2">Curezy</h3>
+                  <p className="text-blue-100 text-center text-sm mb-8">
+                    Your AI-powered health companion
+                  </p>
+                  <div className="space-y-3 w-full">
+                    {[
+                      { icon: Stethoscope, label: "Find a Doctor" },
+                      { icon: Pill, label: "Order Medicine" },
+                      { icon: Activity, label: "Health Check" },
+                    ].map(({ icon: Icon, label }) => (
+                      <div
+                        key={label}
+                        className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl"
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span className="font-medium text-sm">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-gray-900 rounded-b-2xl" />
               </div>
-              <div className="text-gray-600 font-medium">{stat.label}</div>
-            </motion.div>
-          ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>
