@@ -441,12 +441,12 @@ const MockupCarousel = () => {
   }, []);
 
   return (
-    <div className="relative w-full max-w-[340px]">
+    <div className="relative w-full h-full flex flex-col items-center justify-center">
       {/* Glow */}
-      <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+      <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full pointer-events-none" />
 
-      {/* Sliding image stage */}
-      <div className="relative aspect-[9/19] overflow-hidden rounded-[2rem]">
+      {/* Sliding image stage — fills available height */}
+      <div className="relative w-full flex-1 min-h-[420px] max-h-[640px] overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.img
             key={index}
@@ -457,13 +457,12 @@ const MockupCarousel = () => {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: -60, scale: 0.96 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            loading="lazy"
           />
         </AnimatePresence>
       </div>
 
       {/* Dots */}
-      <div className="flex justify-center gap-2 mt-6">
+      <div className="relative flex justify-center gap-2 mt-6">
         {MOCKUPS.map((_, i) => (
           <button
             key={i}
@@ -484,13 +483,14 @@ const DownloadApp = () => {
   return (
     <section className="py-24 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 border-y border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-12 items-stretch">
           {/* Left: Text + CTA */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="flex flex-col justify-center"
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-6">
               <Smartphone className="w-4 h-4" />
@@ -542,7 +542,7 @@ const DownloadApp = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="flex justify-center"
+            className="flex justify-center items-stretch w-full max-w-[360px] mx-auto"
           >
             <MockupCarousel />
           </motion.div>
