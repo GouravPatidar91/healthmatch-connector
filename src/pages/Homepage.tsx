@@ -25,7 +25,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 // Curezy Android APK download URL — file lives in /public so it ships with the site
-const APK_DOWNLOAD_URL = "/downloads/curezy.apk";
+// Curezy Android APK download URL — hosted on GitHub Releases due to 125MB file size
+const APK_DOWNLOAD_URL = "https://github.com/GouravPatidar91/healthmatch-connector/releases/download/v1.0.0/curezy.apk";
 
 const Homepage = () => {
   return (
@@ -545,17 +546,19 @@ const DownloadApp = () => {
               ))}
             </ul>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-              <a
-                href={APK_DOWNLOAD_URL}
-                download="curezy.apk"
-                className="inline-flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-4 rounded-2xl font-bold shadow-xl shadow-blue-600/30 hover:scale-105 transition-transform"
-              >
-                <Download className="w-5 h-5" />
-                Download for Android
-              </a>
-              <span className="text-sm text-gray-500">APK • Android 7.0+</span>
-            </div>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <a
+                  href={APK_DOWNLOAD_URL}
+                  download="curezy.apk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-4 rounded-2xl font-bold shadow-xl shadow-blue-600/30 hover:scale-105 transition-transform"
+                >
+                  <Download className="w-5 h-5" />
+                  Download for Android
+                </a>
+                <span className="text-sm text-gray-500">APK • Android 7.0+</span>
+              </div>
 
             <p className="text-xs text-gray-500 mt-6 max-w-md">
               You may need to enable "Install from unknown sources" in your phone's
