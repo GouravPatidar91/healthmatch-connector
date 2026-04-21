@@ -427,6 +427,58 @@ const Network = () => {
   );
 };
 
+// --- Mockup Carousel ---
+const MOCKUPS = [appMockup1, appMockup2, appMockup3, appMockup4];
+
+const MockupCarousel = () => {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % MOCKUPS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative w-full max-w-[340px]">
+      {/* Glow */}
+      <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+
+      {/* Sliding image stage */}
+      <div className="relative aspect-[9/19] overflow-hidden rounded-[2rem]">
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={index}
+            src={MOCKUPS[index]}
+            alt={`Curezy app screen ${index + 1}`}
+            className="absolute inset-0 w-full h-full object-contain"
+            initial={{ opacity: 0, x: 60, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -60, scale: 0.96 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            loading="lazy"
+          />
+        </AnimatePresence>
+      </div>
+
+      {/* Dots */}
+      <div className="flex justify-center gap-2 mt-6">
+        {MOCKUPS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIndex(i)}
+            aria-label={`Show screen ${i + 1}`}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              i === index ? "w-8 bg-blue-600" : "w-2 bg-gray-300 hover:bg-gray-400"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // --- Download App ---
 const DownloadApp = () => {
   return (
