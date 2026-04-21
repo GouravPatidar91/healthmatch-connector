@@ -484,7 +484,7 @@ const DownloadApp = () => {
             </p>
           </motion.div>
 
-          {/* Right: Phone mockup */}
+          {/* Right: Sliding mockup carousel */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -492,36 +492,7 @@ const DownloadApp = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="flex justify-center"
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
-              <div className="relative w-72 h-[560px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl border-4 border-gray-800">
-                <div className="w-full h-full bg-gradient-to-br from-blue-500 via-blue-600 to-blue-800 rounded-[2.3rem] overflow-hidden flex flex-col items-center justify-center text-white p-6">
-                  <div className="bg-white/15 backdrop-blur-md p-5 rounded-3xl mb-6">
-                    <Heart className="w-14 h-14" />
-                  </div>
-                  <h3 className="text-3xl font-bold mb-2">Curezy</h3>
-                  <p className="text-blue-100 text-center text-sm mb-8">
-                    Your AI-powered health companion
-                  </p>
-                  <div className="space-y-3 w-full">
-                    {[
-                      { icon: Stethoscope, label: "Find a Doctor" },
-                      { icon: Pill, label: "Order Medicine" },
-                      { icon: Activity, label: "Health Check" },
-                    ].map(({ icon: Icon, label }) => (
-                      <div
-                        key={label}
-                        className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl"
-                      >
-                        <Icon className="w-5 h-5" />
-                        <span className="font-medium text-sm">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-gray-900 rounded-b-2xl" />
-              </div>
-            </div>
+            <MockupCarousel />
           </motion.div>
         </div>
       </div>
