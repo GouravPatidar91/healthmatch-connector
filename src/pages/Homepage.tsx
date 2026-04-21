@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import appMockup1 from "@/assets/app-mockup-1.png";
+import appMockup2 from "@/assets/app-mockup-2.png";
+import appMockup3 from "@/assets/app-mockup-3.png";
+import appMockup4 from "@/assets/app-mockup-4.png";
 import {
   Heart,
   Menu,
