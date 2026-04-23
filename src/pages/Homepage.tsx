@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 
 // Curezy Android APK download URL — file lives in /public so it ships with the site
 // Curezy Android APK download URL — hosted on GitHub Releases due to 125MB file size
-const APK_DOWNLOAD_URL = "https://github.com/GouravPatidar91/healthmatch-connector/releases/download/v1.0.0/curezy.apk";
+const APK_DOWNLOAD_URL = "https://bpflebtklgnivcanhlbp.supabase.co/storage/v1/object/public/app-downloads/curezy.apk";
 
 const Homepage = () => {
   return (
