@@ -91,6 +91,11 @@ const Footer = () => {
                   Contact Us
                 </Link>
               </li>
+              <li>
+                <Link to="/delete-account" className="text-slate-400 hover:text-white transition-colors text-xs">
+                  Delete Account
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -2773,6 +2773,7 @@ export type Database = {
         Returns: string
       }
       get_patient_display_name: { Args: { user_uuid: string }; Returns: string }
+      get_user_by_phone: { Args: { search_phone: string }; Returns: string }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
@@ -2851,6 +2852,7 @@ export type Database = {
         Args: { p_slot_id: string; p_user_id: string }
         Returns: undefined
       }
+      update_last_sign_in_at: { Args: { user_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "patient" | "pharmacy" | "admin" | "delivery_partner" | "doctor"
