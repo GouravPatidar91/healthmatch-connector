@@ -64,6 +64,7 @@ const App = () => (
             <Route path="/shipping-policy" element={<ShippingPolicy />} />
             <Route path="/about-us" element={<AboutUs />} />
             <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
+            <Route path="/delete-account" element={<DeleteAccount />} />
 
             {/* Protected routes with auth check */}
             <Route
