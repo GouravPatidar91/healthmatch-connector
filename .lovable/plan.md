@@ -1,25 +1,54 @@
+# Account Deletion Request Page (Play Store Compliance)
 
+Google Play requires a **public URL** (no login required) where users can request deletion of their Curezy account and associated data. The page must clearly state: app name, deletion steps, what data is deleted vs. retained, and retention period.
 
-# Remove Book Appointment Button, Make Doctor Card Clickable
+## What I'll Build
 
-## What Changes
+### 1. New page: `src/pages/DeleteAccount.tsx`
+A public, mobile-friendly page (Curezy branding, plain text — no logo) containing:
 
-**Goal**: Remove the standalone "Book Appointment" button from each doctor card. Instead, clicking anywhere on the card opens the `BookAppointmentDialog`, where users pick from Available Slots or Manual Booking tabs.
+- **Heading**: "Delete Your Curezy Account"
+- **Intro**: Explains this page lets Curezy app users request deletion of their account and associated data.
+- **Two request methods** (users can pick either):
+  1. **In-app**: Settings → Account → Delete Account (instructions for logged-in users)
+  2. **Email request form** on this page — for users who can't access the app
+- **Request form** with zod validation:
+  - Full name (required, max 100)
+  - Registered email (required, valid email)
+  - Registered phone (optional, 10 digits)
+  - Reason (optional textarea, max 500)
+  - Confirmation checkbox: "I understand this will permanently delete my account"
+  - Submit button → opens user's email client with a pre-filled mail to `admin@curezy.in` (subject: "Account Deletion Request – Curezy", body: form contents). Fallback: shows the email address to copy.
+- **What gets deleted** (clear list):
+  - Profile (name, phone, address, DOB, health profile)
+  - Appointment history & prescriptions uploaded
+  - Cart, orders, wallet balance (after settlement)
+  - Saved medical records & AI symptom check history
+  - Authentication credentials
+- **What is retained & why** (legal/regulatory):
+  - Order invoices & payment records — **retained 7 years** (Indian tax/GST law)
+  - Anonymized prescription data (vendor compliance) — retained as required by Drugs & Cosmetics Act
+  - Aggregated anonymous analytics — retained indefinitely (no PII)
+- **Timeline**: Requests processed within **7 business days**; full deletion completed within **30 days**.
+- **Contact**: admin@curezy.in · +91-9165043258 · Curezy LLP, Indore, MP
 
-## Changes
+### 2. Routing
+- Add route `/delete-account` in `src/App.tsx` (public — outside `RequireAuth`).
+- Add footer link "Delete Account" in `src/components/layout/Footer.tsx` so it's discoverable and indexable.
 
-### 1. `src/pages/Appointments.tsx` (Browse Doctors tab)
-- Remove the `<Button>` with "Book Appointment" from each doctor card
-- Remove the `<DoctorSlots>` component from inside the card (slots will be shown in the dialog)
-- Make the entire `<Card>` clickable with `onClick={() => handleBookAppointment(doctor)}` and add `cursor-pointer hover:shadow-lg` styles
+### 3. SEO
+- Add `<title>` and meta description via a small head update inside the page (using a `useEffect` to set `document.title`), so Google indexes it as "Delete Your Curezy Account".
 
-### 2. `src/components/appointments/NearbyDoctorsView.tsx` (Nearby tab)
-- Same changes: remove the "Book Now" button and `<DoctorSlots>` from each card
-- Make the `<Card>` clickable to open `BookAppointmentDialog`
+## URL to submit to Play Console
+After deploy, paste this into Play Console → "Delete account URL":
+```
+https://healthmatch-connector.lovable.app/delete-account
+```
+(Or your custom domain once attached.)
 
-### 3. No changes to `BookAppointmentDialog.tsx`
-- It already has both "Available Slots" and "Manual Booking" tabs built in — those will remain the slot selection UI once a card is clicked.
+## Files Touched
+- **New**: `src/pages/DeleteAccount.tsx`
+- **Edit**: `src/App.tsx` (add public route)
+- **Edit**: `src/components/layout/Footer.tsx` (add link)
 
-## Result
-User sees doctor cards with info only → clicks a card → dialog opens with Available Slots / Manual Booking tabs → selects slot → books appointment.
-
+No database changes, no backend — requests come in via email, which keeps it simple and Play-compliant.
