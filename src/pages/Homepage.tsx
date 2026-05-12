@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import appMockup1 from "@/assets/app-mockup-1.png";
-import appMockup2 from "@/assets/app-mockup-2.png";
-import appMockup3 from "@/assets/app-mockup-3.png";
-import appMockup4 from "@/assets/app-mockup-4.png";
 import {
   Heart,
   Menu,
@@ -19,14 +15,8 @@ import {
   Pill,
   Truck,
   Headphones,
-  Smartphone,
-  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-// Curezy Android APK download URL — file lives in /public so it ships with the site
-// Curezy Android APK download URL — hosted on GitHub Releases due to 125MB file size
-const APK_DOWNLOAD_URL = "https://bpflebtklgnivcanhlbp.supabase.co/storage/v1/object/public/app-downloads/curezy.apk";
 
 const Homepage = () => {
   return (
@@ -427,156 +417,57 @@ const Network = () => {
   );
 };
 
-// --- Mockup Carousel ---
-const MOCKUPS = [appMockup1, appMockup2, appMockup3, appMockup4];
-
-const MockupCarousel = () => {
-  const [index, setIndex] = useState(0);
-  const [loaded, setLoaded] = useState<boolean[]>(() => MOCKUPS.map(() => false));
-
-  // Preload every mockup once so swaps are instant
-  useEffect(() => {
-    MOCKUPS.forEach((src, i) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => {
-        setLoaded((prev) => {
-          if (prev[i]) return prev;
-          const next = [...prev];
-          next[i] = true;
-          return next;
-        });
-      };
-    });
-  }, []);
-
-  // Auto-advance — only after the first image is loaded
-  useEffect(() => {
-    if (!loaded[0]) return;
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % MOCKUPS.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [loaded]);
-
-  return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center">
-      {/* Glow */}
-      <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full pointer-events-none" />
-
-      {/* Stacked image stage — all images mounted, only one visible */}
-      <div className="relative w-full flex-1 min-h-[420px] max-h-[640px] overflow-hidden">
-        {!loaded[0] && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-          </div>
-        )}
-        {MOCKUPS.map((src, i) => (
-          <motion.img
-            key={i}
-            src={src}
-            alt={`Curezy app screen ${i + 1}`}
-            className="absolute inset-0 w-full h-full object-contain"
-            initial={false}
-            animate={{
-              opacity: i === index ? 1 : 0,
-              x: i === index ? 0 : i < index ? -40 : 40,
-              scale: i === index ? 1 : 0.97,
-            }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            draggable={false}
-          />
-        ))}
-      </div>
-
-      {/* Dots */}
-      <div className="relative flex justify-center gap-2 mt-6">
-        {MOCKUPS.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIndex(i)}
-            aria-label={`Show screen ${i + 1}`}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              i === index ? "w-8 bg-blue-600" : "w-2 bg-gray-300 hover:bg-gray-400"
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // --- Download App ---
 const DownloadApp = () => {
   return (
-    <section className="py-24 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 border-y border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-stretch">
-          {/* Left: Text + CTA */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col justify-center"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-6">
-              <Smartphone className="w-4 h-4" />
-              Mobile App Available
-            </div>
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              Get Curezy on Your Phone
-            </h2>
-            <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-              Download the Curezy Android app for the fastest access to AI symptom
-              checks, doctor appointments, medicine delivery, and emergency services
-              — right from your pocket.
-            </p>
-
-            <ul className="space-y-3 mb-10">
-              {[
-                "Instant push notifications for orders & appointments",
-                "Faster, native experience on your device",
-                "Offline access to your medical records",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3 text-gray-700">
-                  <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <a
-                  href={APK_DOWNLOAD_URL}
-                  download="curezy.apk"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-4 rounded-2xl font-bold shadow-xl shadow-blue-600/30 hover:scale-105 transition-transform"
-                >
-                  <Download className="w-5 h-5" />
-                  Download for Android
-                </a>
-                <span className="text-sm text-gray-500">APK • Android 7.0+</span>
-              </div>
-
-            <p className="text-xs text-gray-500 mt-6 max-w-md">
-              You may need to enable "Install from unknown sources" in your phone's
-              settings. iOS coming soon.
-            </p>
-          </motion.div>
-
-          {/* Right: Sliding mockup carousel */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="flex justify-center items-stretch w-full max-w-[360px] mx-auto"
-          >
-            <MockupCarousel />
-          </motion.div>
-        </div>
+    <section className="py-24 bg-white border-y border-gray-100">
+      <div className="max-w-3xl mx-auto px-6 text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4 }}
+          className="text-xs font-semibold tracking-[0.2em] text-blue-600 uppercase mb-4"
+        >
+          Available on Android
+        </motion.p>
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.05 }}
+          className="text-4xl lg:text-5xl font-bold text-gray-900 mb-5"
+        >
+          Download the Curezy App
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-gray-600 text-lg mb-10"
+        >
+          AI symptom checks, doctor consultations, medicine delivery, and 24/7
+          emergency support — right in your pocket.
+        </motion.p>
+        <motion.a
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          href="https://curezy.en.uptodown.com/android"
+          title="Download Curezy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block transition-transform hover:scale-105"
+        >
+          <img
+            src="https://stc.utdstc.com/img/mediakit/download-gio-big-b.png"
+            alt="Download Curezy on Uptodown"
+            loading="lazy"
+            className="h-16 w-auto mx-auto"
+          />
+        </motion.a>
       </div>
     </section>
   );
