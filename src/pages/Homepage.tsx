@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import appMockup1 from "@/assets/app-mockup-1.png";
-import appMockup2 from "@/assets/app-mockup-2.png";
-import appMockup3 from "@/assets/app-mockup-3.png";
-import appMockup4 from "@/assets/app-mockup-4.png";
 import {
   Heart,
   Menu,
@@ -19,14 +15,8 @@ import {
   Pill,
   Truck,
   Headphones,
-  Smartphone,
-  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-// Curezy Android APK download URL — file lives in /public so it ships with the site
-// Curezy Android APK download URL — hosted on GitHub Releases due to 125MB file size
-const APK_DOWNLOAD_URL = "https://bpflebtklgnivcanhlbp.supabase.co/storage/v1/object/public/app-downloads/curezy.apk";
 
 const Homepage = () => {
   return (
