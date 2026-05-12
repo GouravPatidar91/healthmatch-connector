@@ -26,6 +26,20 @@ const Footer = () => {
               <Shield className="h-3 w-3 text-green-400" />
               <span className="text-slate-400">HIPAA Compliant</span>
             </div>
+            <a
+              href="https://curezy.en.uptodown.com/android"
+              title="Download Curezy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-2 transition-transform hover:scale-105"
+            >
+              <img
+                src="https://stc.utdstc.com/img/mediakit/download-gio-big-b.png"
+                alt="Download Curezy on Uptodown"
+                loading="lazy"
+                className="h-12 w-auto"
+              />
+            </a>
           </div>
 
           {/* Quick Links */}
