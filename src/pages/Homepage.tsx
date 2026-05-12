@@ -406,7 +406,16 @@ const Network = () => {
               <button
                 onClick={() => navigate(partner.route)}
                 className="w-full py-2 bg-transparent border-2 border-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all"
-              >
+                Register Now
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // --- Download App ---
 const DownloadApp = () => {
   return (
