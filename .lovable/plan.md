@@ -1,54 +1,120 @@
-# Account Deletion Request Page (Play Store Compliance)
+## Goal
 
-Google Play requires a **public URL** (no login required) where users can request deletion of their Curezy account and associated data. The page must clearly state: app name, deletion steps, what data is deleted vs. retained, and retention period.
+Replace the current mobile-app section on the landing page (text + bullets + sliding mockup carousel + APK link) with a clean, minimalist section that uses the official Uptodown media-kit badge linking to `https://curezy.en.uptodown.com/android`. Add the same badge to the global footer. Update SEO so the Curezy app download surfaces on Google when users search "Curezy".
 
-## What I'll Build
+---
 
-### 1. New page: `src/pages/DeleteAccount.tsx`
-A public, mobile-friendly page (Curezy branding, plain text — no logo) containing:
+### 1. Landing page — replace `DownloadApp` section (`src/pages/Homepage.tsx`)
 
-- **Heading**: "Delete Your Curezy Account"
-- **Intro**: Explains this page lets Curezy app users request deletion of their account and associated data.
-- **Two request methods** (users can pick either):
-  1. **In-app**: Settings → Account → Delete Account (instructions for logged-in users)
-  2. **Email request form** on this page — for users who can't access the app
-- **Request form** with zod validation:
-  - Full name (required, max 100)
-  - Registered email (required, valid email)
-  - Registered phone (optional, 10 digits)
-  - Reason (optional textarea, max 500)
-  - Confirmation checkbox: "I understand this will permanently delete my account"
-  - Submit button → opens user's email client with a pre-filled mail to `admin@curezy.in` (subject: "Account Deletion Request – Curezy", body: form contents). Fallback: shows the email address to copy.
-- **What gets deleted** (clear list):
-  - Profile (name, phone, address, DOB, health profile)
-  - Appointment history & prescriptions uploaded
-  - Cart, orders, wallet balance (after settlement)
-  - Saved medical records & AI symptom check history
-  - Authentication credentials
-- **What is retained & why** (legal/regulatory):
-  - Order invoices & payment records — **retained 7 years** (Indian tax/GST law)
-  - Anonymized prescription data (vendor compliance) — retained as required by Drugs & Cosmetics Act
-  - Aggregated anonymous analytics — retained indefinitely (no PII)
-- **Timeline**: Requests processed within **7 business days**; full deletion completed within **30 days**.
-- **Contact**: admin@curezy.in · +91-9165043258 · Curezy LLP, Indore, MP
+Remove:
+- Mockup imports (`appMockup1..4`) and `MockupCarousel` usage
+- Two-column grid, headline, bullet list, custom APK button, Android version note
+- The `APK_DOWNLOAD_URL` constant (no longer used)
 
-### 2. Routing
-- Add route `/delete-account` in `src/App.tsx` (public — outside `RequireAuth`).
-- Add footer link "Delete Account" in `src/components/layout/Footer.tsx` so it's discoverable and indexable.
+Replace with a clean, minimalist centered section:
 
-### 3. SEO
-- Add `<title>` and meta description via a small head update inside the page (using a `useEffect` to set `document.title`), so Google indexes it as "Delete Your Curezy Account".
-
-## URL to submit to Play Console
-After deploy, paste this into Play Console → "Delete account URL":
+```text
+┌─────────────────────────────────────────┐
+│           Available on Android          │   ← small uppercase eyebrow
+│                                         │
+│        Download the Curezy App          │   ← single bold headline
+│   AI symptom checks, doctor visits,     │   ← one short subline
+│   medicines, and SOS — in your pocket.  │
+│                                         │
+│        [ Uptodown download badge ]      │   ← official media-kit image, links to Uptodown
+│                                         │
+└─────────────────────────────────────────┘
 ```
-https://healthmatch-connector.lovable.app/delete-account
+
+Markup outline:
+
+```tsx
+<section id="download-app" className="py-24 bg-white border-y border-gray-100">
+  <div className="max-w-3xl mx-auto px-6 text-center">
+    <p className="text-xs font-semibold tracking-[0.2em] text-blue-600 uppercase mb-4">
+      Available on Android
+    </p>
+    <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-5">
+      Download the Curezy App
+    </h2>
+    <p className="text-gray-600 text-lg mb-10">
+      AI symptom checks, doctor consultations, medicine delivery, and 24/7
+      emergency support — right in your pocket.
+    </p>
+    <a
+      href="https://curezy.en.uptodown.com/android"
+      title="Download Curezy"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-block transition-transform hover:scale-105"
+    >
+      <img
+        src="https://stc.utdstc.com/img/mediakit/download-gio-big-b.png"
+        alt="Download Curezy on Uptodown"
+        loading="lazy"
+        className="h-16 w-auto mx-auto"
+      />
+    </a>
+  </div>
+</section>
 ```
-(Or your custom domain once attached.)
 
-## Files Touched
-- **New**: `src/pages/DeleteAccount.tsx`
-- **Edit**: `src/App.tsx` (add public route)
-- **Edit**: `src/components/layout/Footer.tsx` (add link)
+Also remove the now-unused `Smartphone`, `CheckCircle2`, `Download` icon imports and the mockup `<img>` preloading code if it's no longer referenced.
 
-No database changes, no backend — requests come in via email, which keeps it simple and Play-compliant.
+The mockup PNG asset files (`src/assets/app-mockup-1..4.png`) will be left in place to keep the change minimal; they can be deleted later if desired.
+
+---
+
+### 2. Global footer — `src/components/layout/Footer.tsx`
+
+Add the Uptodown badge in the brand column (under the HIPAA badge):
+
+```tsx
+<a
+  href="https://curezy.en.uptodown.com/android"
+  title="Download Curezy"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="inline-block mt-3"
+>
+  <img
+    src="https://stc.utdstc.com/img/mediakit/download-gio-big-b.png"
+    alt="Download Curezy on Uptodown"
+    loading="lazy"
+    className="h-12 w-auto"
+  />
+</a>
+```
+
+---
+
+### 3. SEO — `index.html`
+
+Update the `MobileApplication` JSON-LD so Google can surface the download in search results pointing to the live Uptodown listing (the GitHub releases URL is replaced):
+
+- `downloadUrl` → `https://curezy.en.uptodown.com/android`
+- `installUrl` → `https://curezy.en.uptodown.com/android`
+- `url` → `https://curezy.en.uptodown.com/android`
+- Add `"sameAs": ["https://curezy.en.uptodown.com/android"]` to the existing `Organization` schema so Google links the brand entity to the Uptodown listing.
+- Keep `Offer` (free) and `AggregateRating` so a rich download chip is eligible.
+
+Also tighten the discoverable copy:
+- `<meta name="description">` → include "Download the Curezy Android app" so Google has a download-oriented snippet for brand searches.
+- Add `<meta name="keywords" content="Curezy, Curezy app, Curezy download, Curezy Android, AI doctor app">` (low SEO weight but harmless for brand queries).
+- Add an `og:url` pointing to the canonical site URL.
+
+No code or routing changes beyond these three files.
+
+---
+
+### Files to change
+
+- `src/pages/Homepage.tsx` — replace `DownloadApp` section, drop unused imports/constants
+- `src/components/layout/Footer.tsx` — add Uptodown badge in brand column
+- `index.html` — update `MobileApplication` JSON-LD URLs, add Uptodown to `Organization.sameAs`, tighten meta description
+
+### Out of scope
+
+- Deleting the mockup PNG assets
+- Changes to other pages or routing
+- Any backend/Supabase changes
