@@ -231,7 +231,7 @@ const PrivacyPolicy = () => {
             <p>You can request permanent deletion of your account and personal data at any time:</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li><strong>In-app:</strong> Settings → Account → Delete Account</li>
-              <li><strong>Web:</strong> <Link to="/delete-account" className="text-blue-600 hover:underline font-medium">https://healthmatch-connector.lovable.app/delete-account</Link></li>
+              <li><strong>Web:</strong> <Link to="/delete-account" className="text-blue-600 hover:underline font-medium">https://www.curezy.in/delete-account</Link></li>
               <li><strong>Email:</strong> <a href="mailto:admin@curezy.in" className="text-blue-600 hover:underline">admin@curezy.in</a></li>
             </ul>
             <p className="text-sm">Deletion is completed within <strong>30 days</strong>, except for data we are legally required to retain (see Section 5).</p>
