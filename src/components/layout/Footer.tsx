@@ -74,13 +74,13 @@ const Footer = () => {
             <h3 className="font-semibold text-white text-sm">Policies</h3>
             <ul className="space-y-1">
               <li>
-                <Link to="/Privacy Policy" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
+                <Link to="/privacy-policy" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
                   <Shield className="h-2.5 w-2.5" />
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/Terms of Service" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
+                <Link to="/terms-of-service" className="text-slate-400 hover:text-white transition-colors text-xs flex items-center gap-1">
                   <FileText className="h-2.5 w-2.5" />
                   Terms of Service
                 </Link>
@@ -143,10 +143,10 @@ const Footer = () => {
               © {new Date().getFullYear()} Curezy. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-xs">
-              <Link to="/Privacy Policy" className="text-slate-400 hover:text-white transition-colors">
+              <Link to="/privacy-policy" className="text-slate-400 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
-              <Link to="/Terms of Service" className="text-slate-400 hover:text-white transition-colors">
+              <Link to="/terms-of-service" className="text-slate-400 hover:text-white transition-colors">
                 Terms of Service
               </Link>
             </div>

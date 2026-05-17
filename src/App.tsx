@@ -56,8 +56,11 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/Privacy Policy" element={<PrivacyPolicy />} />
-            <Route path="/Terms of Service" element={<TermsOfService />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
+            {/* Legacy URLs with spaces — redirect for backwards compatibility */}
+            <Route path="/Privacy Policy" element={<Navigate to="/privacy-policy" replace />} />
+            <Route path="/Terms of Service" element={<Navigate to="/terms-of-service" replace />} />
             <Route path="/internship-terms" element={<InternshipTerms />} />
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />

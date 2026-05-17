@@ -18,7 +18,10 @@ const ShippingPolicy = () => {
             <h1 className="text-4xl font-bold text-slate-900">Shipping & Delivery Policy</h1>
           </div>
           <p className="text-lg text-slate-600">Everything you need to know about our delivery services</p>
-          <p className="text-sm text-slate-500 mt-2">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="text-sm text-slate-500 mt-2">Last updated: May 1, 2026</p>
+          <div className="mt-4 inline-block px-4 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            <strong>Note:</strong> Medicine delivery is currently being rolled out city by city and may be temporarily unavailable in your area. The policy below applies wherever the service is live.
+          </div>
         </div>
 
         <Card className="modern-card mb-8">

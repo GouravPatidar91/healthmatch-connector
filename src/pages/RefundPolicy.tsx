@@ -18,7 +18,7 @@ const RefundPolicy = () => {
             <h1 className="text-4xl font-bold text-slate-900">Refund & Cancellation Policy</h1>
           </div>
           <p className="text-lg text-slate-600">Clear and transparent policies for order cancellations and refunds</p>
-          <p className="text-sm text-slate-500 mt-2">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="text-sm text-slate-500 mt-2">Last updated: May 1, 2026</p>
         </div>
 
         <Card className="modern-card mb-8">

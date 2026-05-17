@@ -1,120 +1,76 @@
-## Goal
+# Google Play Compliance Pass
 
-Replace the current mobile-app section on the landing page (text + bullets + sliding mockup carousel + APK link) with a clean, minimalist section that uses the official Uptodown media-kit badge linking to `https://curezy.en.uptodown.com/android`. Add the same badge to the global footer. Update SEO so the Curezy app download surfaces on Google when users search "Curezy".
+Google rejected the app because the Privacy Policy does **not state how long user data is retained**. While fixing that, I'll also patch every other gap Play reviewers commonly flag (data sharing, security, children, account deletion link, broken legal URLs) so the listing isn't rejected again on the next review cycle.
 
 ---
 
-### 1. Landing page — replace `DownloadApp` section (`src/pages/Homepage.tsx`)
+## 1. Rewrite `src/pages/PrivacyPolicy.tsx` (root cause fix)
 
-Remove:
-- Mockup imports (`appMockup1..4`) and `MockupCarousel` usage
-- Two-column grid, headline, bullet list, custom APK button, Android version note
-- The `APK_DOWNLOAD_URL` constant (no longer used)
+Add the sections Play's User Data policy explicitly requires. New structure:
 
-Replace with a clean, minimalist centered section:
+1. **Introduction** — name the legal entity (Curezy LLP), app name (Curezy), effective date.
+2. **Data we collect** — keep current 3 buckets, but explicitly list: account, health, device/technical, **location (precise + approximate)**, **camera/photos** (prescription uploads), **contacts** (emergency contact only, with consent).
+3. **How we use it** — current list, refined.
+4. **How we share it** — name each third-party processor (Supabase, Razorpay, Twilio, Google Maps/Mapbox, Uptodown, FCM, Gemini/Groq AI, OSRM). Required by Play.
+5. **Data retention (NEW — fixes the rejection)** — explicit table:
+   - Account profile, health profile, AI symptom history, medical records, push tokens → **deleted within 30 days of account deletion**.
+   - Order invoices & payment records → **7 years** (Indian Income Tax & GST Act).
+   - Anonymised prescription dispensing records → as required by Drugs & Cosmetics Act, 1940.
+   - Aggregated anonymised analytics → indefinitely (no personal identifiers).
+   - Inactive accounts → auto-flagged after 24 months; deleted after 36 months unless legally required to retain.
+6. **Security** — encryption in transit (TLS), at rest, RLS, access controls, breach notification within 72 hours.
+7. **Your rights** — access, correct, delete, export, withdraw consent. **Link directly to `/delete-account`** (Play requires the deletion path to be obvious from the policy).
+8. **Children** — service not directed at users under 18; we do not knowingly collect data from minors.
+9. **International transfers** — data stored in Supabase (EU/US regions).
+10. **Changes to this policy** — notification mechanism.
+11. **Contact** — `admin@curezy.in`, `privacy@curezy.in`, phone, postal address (Curezy LLP, Indore).
 
-```text
-┌─────────────────────────────────────────┐
-│           Available on Android          │   ← small uppercase eyebrow
-│                                         │
-│        Download the Curezy App          │   ← single bold headline
-│   AI symptom checks, doctor visits,     │   ← one short subline
-│   medicines, and SOS — in your pocket.  │
-│                                         │
-│        [ Uptodown download badge ]      │   ← official media-kit image, links to Uptodown
-│                                         │
-└─────────────────────────────────────────┘
+Also: change "Last updated" from `new Date().toLocaleDateString()` (which changes every visit and looks fake to reviewers) to a hard-coded date.
+
+## 2. Fix broken legal-page routes in `src/App.tsx`
+
+Current routes have **spaces**:
 ```
-
-Markup outline:
+/Privacy Policy
+/Terms of Service
+```
+These URLs (`/Privacy%20Policy`) look broken to Play reviewers and crawlers. Replace with clean slugs, keep the old paths as redirects so existing Play Console / footer links keep working:
 
 ```tsx
-<section id="download-app" className="py-24 bg-white border-y border-gray-100">
-  <div className="max-w-3xl mx-auto px-6 text-center">
-    <p className="text-xs font-semibold tracking-[0.2em] text-blue-600 uppercase mb-4">
-      Available on Android
-    </p>
-    <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-5">
-      Download the Curezy App
-    </h2>
-    <p className="text-gray-600 text-lg mb-10">
-      AI symptom checks, doctor consultations, medicine delivery, and 24/7
-      emergency support — right in your pocket.
-    </p>
-    <a
-      href="https://curezy.en.uptodown.com/android"
-      title="Download Curezy"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-block transition-transform hover:scale-105"
-    >
-      <img
-        src="https://stc.utdstc.com/img/mediakit/download-gio-big-b.png"
-        alt="Download Curezy on Uptodown"
-        loading="lazy"
-        className="h-16 w-auto mx-auto"
-      />
-    </a>
-  </div>
-</section>
+<Route path="/privacy-policy" element={<PrivacyPolicy />} />
+<Route path="/terms-of-service" element={<TermsOfService />} />
+<Route path="/Privacy Policy" element={<Navigate to="/privacy-policy" replace />} />
+<Route path="/Terms of Service" element={<Navigate to="/terms-of-service" replace />} />
 ```
 
-Also remove the now-unused `Smartphone`, `CheckCircle2`, `Download` icon imports and the mockup `<img>` preloading code if it's no longer referenced.
+Update every `<Link to="/Privacy Policy">` / `<Link to="/Terms of Service">` across the codebase (Footer, TermsOfService, any auth screens) to the new slugs.
 
-The mockup PNG asset files (`src/assets/app-mockup-1..4.png`) will be left in place to keep the change minimal; they can be deleted later if desired.
+## 3. Tighten `src/pages/TermsOfService.tsx`
 
----
+- Add explicit **"Account termination & data deletion"** clause that links to `/delete-account`.
+- Add **age requirement = 18+** confirmation at signup (already stated, but emphasise — Play checks).
+- Add **prohibited content** clause (no sale of restricted/Schedule X drugs without valid prescription) — pharmacy apps get rejected without this.
+- Add **governing law = India, jurisdiction = Indore** (currently missing).
+- Replace `new Date().toLocaleDateString()` with hard-coded date.
 
-### 2. Global footer — `src/components/layout/Footer.tsx`
+## 4. Tighten `src/pages/RefundPolicy.tsx` and `src/pages/ShippingPolicy.tsx`
 
-Add the Uptodown badge in the brand column (under the HIPAA badge):
+- Replace dynamic dates with hard-coded "Last updated".
+- Add explicit **refund timeline guarantee** (already 5–7 business days — keep).
+- Shipping: add line that **delivery is currently disabled / coming soon** to match the in-app `MedicineComingSoon` state, so reviewers don't flag mismatch between policy and live app.
 
-```tsx
-<a
-  href="https://curezy.en.uptodown.com/android"
-  title="Download Curezy"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="inline-block mt-3"
->
-  <img
-    src="https://stc.utdstc.com/img/mediakit/download-gio-big-b.png"
-    alt="Download Curezy on Uptodown"
-    loading="lazy"
-    className="h-12 w-auto"
-  />
-</a>
-```
+## 5. Footer & SEO
+
+- `src/components/layout/Footer.tsx` — update Privacy/Terms hrefs to new slugs.
+- `index.html` — if any JSON-LD references `/Privacy Policy`, update to `/privacy-policy`.
 
 ---
 
-### 3. SEO — `index.html`
+## Technical notes
 
-Update the `MobileApplication` JSON-LD so Google can surface the download in search results pointing to the live Uptodown listing (the GitHub releases URL is replaced):
+- No DB or business-logic changes — pure content + routing.
+- No new dependencies.
+- All copy will be written in plain English, neutral tone, with concrete numbers (30 days, 7 years, 72 hours) — Play reviewers reject vague language like "as long as necessary".
+- Total files touched: 5 (`PrivacyPolicy.tsx`, `TermsOfService.tsx`, `RefundPolicy.tsx`, `ShippingPolicy.tsx`, `App.tsx`, `Footer.tsx`, `index.html` if needed).
 
-- `downloadUrl` → `https://curezy.en.uptodown.com/android`
-- `installUrl` → `https://curezy.en.uptodown.com/android`
-- `url` → `https://curezy.en.uptodown.com/android`
-- Add `"sameAs": ["https://curezy.en.uptodown.com/android"]` to the existing `Organization` schema so Google links the brand entity to the Uptodown listing.
-- Keep `Offer` (free) and `AggregateRating` so a rich download chip is eligible.
-
-Also tighten the discoverable copy:
-- `<meta name="description">` → include "Download the Curezy Android app" so Google has a download-oriented snippet for brand searches.
-- Add `<meta name="keywords" content="Curezy, Curezy app, Curezy download, Curezy Android, AI doctor app">` (low SEO weight but harmless for brand queries).
-- Add an `og:url` pointing to the canonical site URL.
-
-No code or routing changes beyond these three files.
-
----
-
-### Files to change
-
-- `src/pages/Homepage.tsx` — replace `DownloadApp` section, drop unused imports/constants
-- `src/components/layout/Footer.tsx` — add Uptodown badge in brand column
-- `index.html` — update `MobileApplication` JSON-LD URLs, add Uptodown to `Organization.sameAs`, tighten meta description
-
-### Out of scope
-
-- Deleting the mockup PNG assets
-- Changes to other pages or routing
-- Any backend/Supabase changes
+After approval I'll implement all of this in one pass.
