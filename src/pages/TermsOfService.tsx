@@ -367,8 +367,16 @@ const TermsOfService = () => {
               <li>Discontinuation or modification of the Services</li>
             </ul>
             <p className="text-slate-600 mt-4">
-              You may terminate your account at any time by contacting us. Upon termination, your right 
-              to use the Services will immediately cease.
+              You may terminate your account at any time by visiting our{" "}
+              <Link to="/delete-account" className="text-blue-600 hover:underline font-medium">Delete Account page</Link>{" "}
+              or via Settings → Account → Delete Account in the app. Upon termination, your right to use the
+              Services will immediately cease and your data will be erased in accordance with our{" "}
+              <Link to="/privacy-policy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+            </p>
+            <p className="text-slate-600 mt-2 text-sm">
+              <strong>Prohibited content:</strong> You may not use Curezy to obtain Schedule X drugs, narcotics,
+              or any restricted substances without a valid prescription from a registered medical practitioner.
+              Violations will result in immediate account termination and may be reported to law enforcement.
             </p>
           </CardContent>
         </Card>
