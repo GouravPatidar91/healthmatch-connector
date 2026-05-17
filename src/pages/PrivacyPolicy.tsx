@@ -47,7 +47,7 @@ const PrivacyPolicy = () => {
             <p>
               This Privacy Policy describes how <strong>Curezy LLP</strong> ("Curezy", "we", "our", "us") — the developer
               of the <strong>Curezy</strong> Android application and the website at{" "}
-              <a href="https://healthmatch-connector.lovable.app" className="text-blue-600 hover:underline">healthmatch-connector.lovable.app</a>{" "}
+              <a href="https://curezy.in" className="text-blue-600 hover:underline">Curezy</a>{" "}
               — collects, uses, shares, and retains your personal data.
             </p>
             <p>
