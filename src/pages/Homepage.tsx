@@ -461,6 +461,26 @@ const Footer = () => {
           <p className="text-gray-400 text-sm">
             Your trusted partner in healthcare management and wellness.
           </p>
+          <a
+            href="https://play.google.com/store/apps/details?id=com.curezy.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get Curezy on Google Play"
+            className="inline-block transition-transform hover:scale-105"
+          >
+            <img
+              src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+              alt="Get it on Google Play"
+              loading="lazy"
+              className="h-14 w-auto"
+            />
+          </a>
+          <button
+            onClick={() => navigate("/download")}
+            className="block text-xs text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            View app details →
+          </button>
         </div>
 
         <div>
