@@ -69,6 +69,9 @@ const App = () => (
             <Route path="/about-us" element={<AboutUs />} />
             <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
             <Route path="/delete-account" element={<DeleteAccount />} />
+            <Route path="/download" element={<DownloadApp />} />
+            <Route path="/download-app" element={<Navigate to="/download" replace />} />
+            <Route path="/app" element={<Navigate to="/download" replace />} />
 
             {/* Protected routes with auth check */}
             <Route
