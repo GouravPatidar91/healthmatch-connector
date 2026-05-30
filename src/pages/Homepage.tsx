@@ -29,9 +29,6 @@ const Homepage = () => {
       <div id="partners">
         <Network />
       </div>
-      <div id="download-app">
-        <DownloadApp />
-      </div>
       <CTA />
       <div id="contact">
         <Footer />
@@ -417,61 +414,8 @@ const Network = () => {
   );
 };
 
-// --- Download App ---
-const DownloadApp = () => {
-  return (
-    <section className="py-24 bg-white border-y border-gray-100">
-      <div className="max-w-3xl mx-auto px-6 text-center">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
-          className="text-xs font-semibold tracking-[0.2em] text-blue-600 uppercase mb-4"
-        >
-          Available on Android
-        </motion.p>
-        <motion.h2
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="text-4xl lg:text-5xl font-bold text-gray-900 mb-5"
-        >
-          Download the Curezy App
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-gray-600 text-lg mb-10"
-        >
-          AI symptom checks, doctor consultations, medicine delivery, and 24/7
-          emergency support — right in your pocket.
-        </motion.p>
-        <motion.a
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          href="https://curezy.en.uptodown.com/android"
-          title="Download Curezy"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block transition-transform hover:scale-105"
-        >
-          <img
-            src="https://stc.utdstc.com/img/mediakit/download-gio-big-b.png"
-            alt="Download Curezy on Uptodown"
-            loading="lazy"
-            className="h-16 w-auto mx-auto"
-          />
-        </motion.a>
-      </div>
-    </section>
-  );
-};
+// --- Download App section removed; dedicated page at /download ---
+
 
 // --- CTA ---
 const CTA = () => {
@@ -517,6 +461,26 @@ const Footer = () => {
           <p className="text-gray-400 text-sm">
             Your trusted partner in healthcare management and wellness.
           </p>
+          <a
+            href="https://play.google.com/store/apps/details?id=com.curezy.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get Curezy on Google Play"
+            className="inline-block transition-transform hover:scale-105"
+          >
+            <img
+              src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+              alt="Get it on Google Play"
+              loading="lazy"
+              className="h-14 w-auto"
+            />
+          </a>
+          <button
+            onClick={() => navigate("/download")}
+            className="block text-xs text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            View app details →
+          </button>
         </div>
 
         <div>

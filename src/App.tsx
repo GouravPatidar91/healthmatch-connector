@@ -29,6 +29,7 @@ import RefundPolicy from "./pages/RefundPolicy";
 import ShippingPolicy from "./pages/ShippingPolicy";
 import AboutUs from "./pages/AboutUs";
 import DeleteAccount from "./pages/DeleteAccount";
+import DownloadApp from "./pages/DownloadApp";
 import NotFound from "./pages/NotFound";
 import DoctorRegistration from "./pages/DoctorRegistration";
 import DoctorDashboard from "./pages/DoctorDashboard";
@@ -68,6 +69,9 @@ const App = () => (
             <Route path="/about-us" element={<AboutUs />} />
             <Route path="/delivery-partner-registration" element={<DeliveryPartnerRegistration />} />
             <Route path="/delete-account" element={<DeleteAccount />} />
+            <Route path="/download" element={<DownloadApp />} />
+            <Route path="/download-app" element={<Navigate to="/download" replace />} />
+            <Route path="/app" element={<Navigate to="/download" replace />} />
 
             {/* Protected routes with auth check */}
             <Route

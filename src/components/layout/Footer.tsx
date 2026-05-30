@@ -27,17 +27,32 @@ const Footer = () => {
               <span className="text-slate-400">HIPAA Compliant</span>
             </div>
             <a
-              href="https://curezy.en.uptodown.com/android"
-              title="Download Curezy"
+              href="https://play.google.com/store/apps/details?id=com.curezy.app"
+              title="Get Curezy on Google Play"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Get Curezy on Google Play"
               className="inline-block mt-2 transition-transform hover:scale-105"
+            >
+              <img
+                src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                alt="Get it on Google Play"
+                loading="lazy"
+                className="h-12 w-auto"
+              />
+            </a>
+            <a
+              href="https://curezy.en.uptodown.com/android"
+              title="Download Curezy on Uptodown"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-1 transition-transform hover:scale-105"
             >
               <img
                 src="https://stc.utdstc.com/img/mediakit/download-gio-big-b.png"
                 alt="Download Curezy on Uptodown"
                 loading="lazy"
-                className="h-12 w-auto"
+                className="h-10 w-auto"
               />
             </a>
           </div>
@@ -64,6 +79,11 @@ const Footer = () => {
               <li>
                 <Link to="/medical-reports" className="text-slate-400 hover:text-white transition-colors text-xs">
                   Medical Reports
+                </Link>
+              </li>
+              <li>
+                <Link to="/download" className="text-slate-400 hover:text-white transition-colors text-xs">
+                  Download App
                 </Link>
               </li>
             </ul>
