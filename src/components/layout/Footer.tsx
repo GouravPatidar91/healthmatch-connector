@@ -81,6 +81,11 @@ const Footer = () => {
                   Medical Reports
                 </Link>
               </li>
+              <li>
+                <Link to="/download" className="text-slate-400 hover:text-white transition-colors text-xs">
+                  Download App
+                </Link>
+              </li>
             </ul>
           </div>
 
