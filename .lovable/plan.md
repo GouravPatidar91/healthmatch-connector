@@ -1,76 +1,68 @@
-# Google Play Compliance Pass
 
-Google rejected the app because the Privacy Policy does **not state how long user data is retained**. While fixing that, I'll also patch every other gap Play reviewers commonly flag (data sharing, security, children, account deletion link, broken legal URLs) so the listing isn't rejected again on the next review cycle.
+## Goal
 
----
+Replace the inline "Download App" section on the landing page with a dedicated, public, shareable download page that promotes the Curezy Android app on Google Play, and surface a Play Store badge in the footer.
 
-## 1. Rewrite `src/pages/PrivacyPolicy.tsx` (root cause fix)
+Play Store URL: `https://play.google.com/store/apps/details?id=com.curezy.app`
 
-Add the sections Play's User Data policy explicitly requires. New structure:
+## Changes
 
-1. **Introduction** — name the legal entity (Curezy LLP), app name (Curezy), effective date.
-2. **Data we collect** — keep current 3 buckets, but explicitly list: account, health, device/technical, **location (precise + approximate)**, **camera/photos** (prescription uploads), **contacts** (emergency contact only, with consent).
-3. **How we use it** — current list, refined.
-4. **How we share it** — name each third-party processor (Supabase, Razorpay, Twilio, Google Maps/Mapbox, Uptodown, FCM, Gemini/Groq AI, OSRM). Required by Play.
-5. **Data retention (NEW — fixes the rejection)** — explicit table:
-   - Account profile, health profile, AI symptom history, medical records, push tokens → **deleted within 30 days of account deletion**.
-   - Order invoices & payment records → **7 years** (Indian Income Tax & GST Act).
-   - Anonymised prescription dispensing records → as required by Drugs & Cosmetics Act, 1940.
-   - Aggregated anonymised analytics → indefinitely (no personal identifiers).
-   - Inactive accounts → auto-flagged after 24 months; deleted after 36 months unless legally required to retain.
-6. **Security** — encryption in transit (TLS), at rest, RLS, access controls, breach notification within 72 hours.
-7. **Your rights** — access, correct, delete, export, withdraw consent. **Link directly to `/delete-account`** (Play requires the deletion path to be obvious from the policy).
-8. **Children** — service not directed at users under 18; we do not knowingly collect data from minors.
-9. **International transfers** — data stored in Supabase (EU/US regions).
-10. **Changes to this policy** — notification mechanism.
-11. **Contact** — `admin@curezy.in`, `privacy@curezy.in`, phone, postal address (Curezy LLP, Indore).
+### 1. New page: `src/pages/DownloadApp.tsx`
 
-Also: change "Last updated" from `new Date().toLocaleDateString()` (which changes every visit and looks fake to reviewers) to a hard-coded date.
+A production-grade, public marketing page (no auth required) that matches the existing Curezy theme (blue primary, slate text, soft gradient background, `modern-card` / `gradient-text` utilities from `index.css`).
 
-## 2. Fix broken legal-page routes in `src/App.tsx`
+Sections:
+- **Hero** — "Curezy is now on Google Play", subline, large official Google Play badge button linking to the Play Store URL (opens in new tab, `rel="noopener noreferrer"`), small "Free • Android 7.0+" meta line. Secondary link to Uptodown for users who can't access Play Store.
+- **Key features grid** — 6 cards using lucide icons already in the project: AI Symptom Checker, Online Doctor Consultations, Instant Medicine Delivery, 24/7 Emergency Assistance, Medical Records Vault, Secure Payments. Icons + short copy.
+- **Why Curezy** — 3–4 trust points (HIPAA-aligned, DPDP Act compliant, verified pharmacies & doctors, India-wide rollout).
+- **How it works** — 3 numbered steps (Install → Sign up → Get care).
+- **Screenshots strip** — reuse existing `appMockup1-4` assets in a responsive row.
+- **FAQ** — 4–5 items (Is it free? Which devices? Data safety? Prescription needed? Support contact) using existing `Accordion` component.
+- **Final CTA** — repeats Play Store badge + Uptodown link.
+- **SEO via `react-helmet-async`**: per-route title, description, canonical (`/download`), og:* tags, and `MobileApplication` JSON-LD pointing to the Play Store URL.
 
-Current routes have **spaces**:
-```
-/Privacy Policy
-/Terms of Service
-```
-These URLs (`/Privacy%20Policy`) look broken to Play reviewers and crawlers. Replace with clean slugs, keep the old paths as redirects so existing Play Console / footer links keep working:
+Play Store badge: use the official Google badge image
+`https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png`
+wrapped in an `<a target="_blank">`.
 
+### 2. Route + public access — `src/App.tsx`
+
+Add a public route (outside `RequireAuth`) so the link is shareable without login:
 ```tsx
-<Route path="/privacy-policy" element={<PrivacyPolicy />} />
-<Route path="/terms-of-service" element={<TermsOfService />} />
-<Route path="/Privacy Policy" element={<Navigate to="/privacy-policy" replace />} />
-<Route path="/Terms of Service" element={<Navigate to="/terms-of-service" replace />} />
+<Route path="/download" element={<DownloadApp />} />
+<Route path="/download-app" element={<Navigate to="/download" replace />} />
 ```
 
-Update every `<Link to="/Privacy Policy">` / `<Link to="/Terms of Service">` across the codebase (Footer, TermsOfService, any auth screens) to the new slugs.
+### 3. Landing page cleanup — `src/pages/Homepage.tsx`
 
-## 3. Tighten `src/pages/TermsOfService.tsx`
+Remove the current "Download the Curezy App" section (Uptodown badge block). Replace its CTA spot with a single compact line/button: "Get the Curezy app" → links to `/download` (internal route, not external). Keeps the landing minimal.
 
-- Add explicit **"Account termination & data deletion"** clause that links to `/delete-account`.
-- Add **age requirement = 18+** confirmation at signup (already stated, but emphasise — Play checks).
-- Add **prohibited content** clause (no sale of restricted/Schedule X drugs without valid prescription) — pharmacy apps get rejected without this.
-- Add **governing law = India, jurisdiction = Indore** (currently missing).
-- Replace `new Date().toLocaleDateString()` with hard-coded date.
+### 4. Footer — `src/components/layout/Footer.tsx`
 
-## 4. Tighten `src/pages/RefundPolicy.tsx` and `src/pages/ShippingPolicy.tsx`
+In the brand column, add an official Google Play badge image next to (above) the existing Uptodown badge, linking directly to the Play Store URL in a new tab. Both badges remain — Play Store primary, Uptodown secondary. Also add a "Download App" link in the Quick Links list pointing to `/download`.
 
-- Replace dynamic dates with hard-coded "Last updated".
-- Add explicit **refund timeline guarantee** (already 5–7 business days — keep).
-- Shipping: add line that **delivery is currently disabled / coming soon** to match the in-app `MedicineComingSoon` state, so reviewers don't flag mismatch between policy and live app.
+### 5. SEO
 
-## 5. Footer & SEO
+- `index.html`: update `MobileApplication` JSON-LD `downloadUrl` / `installUrl` to the Play Store URL (keep Uptodown in `sameAs`). Update sitewide meta description to mention Google Play.
+- `public/robots.txt` / `public/sitemap.xml`: ensure `/download` is allowed and listed.
+- New page uses `react-helmet-async` for per-route SEO (install if not present).
 
-- `src/components/layout/Footer.tsx` — update Privacy/Terms hrefs to new slugs.
-- `index.html` — if any JSON-LD references `/Privacy Policy`, update to `/privacy-policy`.
+### 6. Auth
 
----
+The `/download` route is registered outside `RequireAuth`, so anyone with the link reaches it directly — no login wall, fully shareable for Play Store listing, social posts, QR codes, etc.
 
-## Technical notes
+## Files touched
 
-- No DB or business-logic changes — pure content + routing.
-- No new dependencies.
-- All copy will be written in plain English, neutral tone, with concrete numbers (30 days, 7 years, 72 hours) — Play reviewers reject vague language like "as long as necessary".
-- Total files touched: 5 (`PrivacyPolicy.tsx`, `TermsOfService.tsx`, `RefundPolicy.tsx`, `ShippingPolicy.tsx`, `App.tsx`, `Footer.tsx`, `index.html` if needed).
+- create `src/pages/DownloadApp.tsx`
+- edit `src/App.tsx` (add public route + redirect alias)
+- edit `src/pages/Homepage.tsx` (remove download section, add small link to `/download`)
+- edit `src/components/layout/Footer.tsx` (Play Store badge + Quick Link)
+- edit `index.html` (JSON-LD + meta description)
+- edit `public/sitemap.xml` (add `/download`)
+- edit `src/main.tsx` only if `HelmetProvider` is not yet wrapping the app
 
-After approval I'll implement all of this in one pass.
+## Out of scope
+
+- No backend / DB changes.
+- No changes to existing legal pages.
+- No changes to authenticated app flows.
