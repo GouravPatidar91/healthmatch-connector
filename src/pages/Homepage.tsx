@@ -29,9 +29,6 @@ const Homepage = () => {
       <div id="partners">
         <Network />
       </div>
-      <div id="download-app">
-        <DownloadApp />
-      </div>
       <CTA />
       <div id="contact">
         <Footer />
