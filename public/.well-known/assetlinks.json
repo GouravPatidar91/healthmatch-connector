@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.curezy.app",
+      "sha256_cert_fingerprints": [
+        "3C:CC:30:68:AB:FA:F3:1A:13:68:97:55:79:8A:CB:70:38:BC:42:1D:7A:43:1F:B9:DF:C8:D3:2F:F1:4A:68:ED"
+      ]
+    }
+  }
+]

@@ -1,68 +1,83 @@
+## Objective
+Host the Digital Asset Links JSON file on the Curezy website to enable verified Android App Links (deep linking), so shared links open directly in the Curezy Android app instead of a web browser.
 
-## Goal
+## What We're Building
+1. The `assetlinks.json` file at `/.well-known/assetlinks.json`
+2. Vercel configuration to serve it correctly (bypass SPA rewrite)
+3. Companion files for iOS Universal Links (`apple-app-site-association`)
+4. Verification that everything is reachable and correctly formatted
 
-Replace the inline "Download App" section on the landing page with a dedicated, public, shareable download page that promotes the Curezy Android app on Google Play, and surface a Play Store badge in the footer.
+## Files to Create
 
-Play Store URL: `https://play.google.com/store/apps/details?id=com.curezy.app`
+### 1. `public/.well-known/assetlinks.json`
+Place the user-provided Digital Asset Links JSON in the `public/` folder so Vite copies it to the build output verbatim.
 
-## Changes
-
-### 1. New page: `src/pages/DownloadApp.tsx`
-
-A production-grade, public marketing page (no auth required) that matches the existing Curezy theme (blue primary, slate text, soft gradient background, `modern-card` / `gradient-text` utilities from `index.css`).
-
-Sections:
-- **Hero** — "Curezy is now on Google Play", subline, large official Google Play badge button linking to the Play Store URL (opens in new tab, `rel="noopener noreferrer"`), small "Free • Android 7.0+" meta line. Secondary link to Uptodown for users who can't access Play Store.
-- **Key features grid** — 6 cards using lucide icons already in the project: AI Symptom Checker, Online Doctor Consultations, Instant Medicine Delivery, 24/7 Emergency Assistance, Medical Records Vault, Secure Payments. Icons + short copy.
-- **Why Curezy** — 3–4 trust points (HIPAA-aligned, DPDP Act compliant, verified pharmacies & doctors, India-wide rollout).
-- **How it works** — 3 numbered steps (Install → Sign up → Get care).
-- **Screenshots strip** — reuse existing `appMockup1-4` assets in a responsive row.
-- **FAQ** — 4–5 items (Is it free? Which devices? Data safety? Prescription needed? Support contact) using existing `Accordion` component.
-- **Final CTA** — repeats Play Store badge + Uptodown link.
-- **SEO via `react-helmet-async`**: per-route title, description, canonical (`/download`), og:* tags, and `MobileApplication` JSON-LD pointing to the Play Store URL.
-
-Play Store badge: use the official Google badge image
-`https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png`
-wrapped in an `<a target="_blank">`.
-
-### 2. Route + public access — `src/App.tsx`
-
-Add a public route (outside `RequireAuth`) so the link is shareable without login:
-```tsx
-<Route path="/download" element={<DownloadApp />} />
-<Route path="/download-app" element={<Navigate to="/download" replace />} />
+```json
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.curezy.app",
+      "sha256_cert_fingerprints": [
+        "3C:CC:30:68:AB:FA:F3:1A:13:68:97:55:79:8A:CB:70:38:BC:42:1D:7A:43:1F:B9:DF:C8:D3:2F:F1:4A:68:ED"
+      ]
+    }
+  }
+]
 ```
 
-### 3. Landing page cleanup — `src/pages/Homepage.tsx`
+### 2. `public/.well-known/apple-app-site-association` (bonus — iOS)
+Since we're doing deep linking, adding iOS Universal Links support is trivial and future-proofs the feature for when an iOS app ships.
 
-Remove the current "Download the Curezy App" section (Uptodown badge block). Replace its CTA spot with a single compact line/button: "Get the Curezy app" → links to `/download` (internal route, not external). Keeps the landing minimal.
+```json
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.curezy.app",
+        "paths": ["*"]
+      }
+    ]
+  }
+}
+```
+> Note: Replace `TEAM_ID` with the actual Apple Developer Team ID when available. Until then, the file is harmless and doesn't break anything.
 
-### 4. Footer — `src/components/layout/Footer.tsx`
+### 3. Update `vercel.json`
+The current `vercel.json` rewrites **all** paths to `index.html`. We must add `headers` for the `.well-known/` directory and ensure these files are served as static assets, not routed through the SPA.
 
-In the brand column, add an official Google Play badge image next to (above) the existing Uptodown badge, linking directly to the Play Store URL in a new tab. Both badges remain — Play Store primary, Uptodown secondary. Also add a "Download App" link in the Quick Links list pointing to `/download`.
+Changes:
+- Add `headers` rule for `/.well-known/*` → `Content-Type: application/json` (and `application/pkccs12` for the Apple file)
+- Add explicit `routes`/`rewrites` ordering so `/.well-known/` paths are served before the catch-all SPA rewrite
+- Keep the existing `robots.txt` and `ads.txt` behavior intact
 
-### 5. SEO
+### 4. Update `index.html` (SEO metadata)
+Add a `<link rel="alternate">` tag hinting at the Android app, which helps Google index the app-to-web association:
 
-- `index.html`: update `MobileApplication` JSON-LD `downloadUrl` / `installUrl` to the Play Store URL (keep Uptodown in `sameAs`). Update sitewide meta description to mention Google Play.
-- `public/robots.txt` / `public/sitemap.xml`: ensure `/download` is allowed and listed.
-- New page uses `react-helmet-async` for per-route SEO (install if not present).
+```html
+<link rel="alternate" href="android-app://com.curezy.app/" />
+```
 
-### 6. Auth
+## Verification Steps
+After deployment:
+1. `curl -I https://healthmatch-connector.lovable.app/.well-known/assetlinks.json` → should return `HTTP 200`, `Content-Type: application/json`, no redirect
+2. `curl https://healthmatch-connector.lovable.app/.well-known/assetlinks.json | jq` → should return valid JSON matching the fingerprint
+3. Google Play Console → `Setup > App integrity > Asset links` → paste the URL and verify it passes
+4. Test a deep link on an Android device: `adb shell am start -W -a android.intent.action.VIEW -d "https://healthmatch-connector.lovable.app/doctor/123" com.curezy.app`
 
-The `/download` route is registered outside `RequireAuth`, so anyone with the link reaches it directly — no login wall, fully shareable for Play Store listing, social posts, QR codes, etc.
+## Security Notes
+- The SHA256 fingerprint must match the **app signing certificate** (not the upload certificate). Verify in Google Play Console.
+- If you rotate signing keys in the future, append the new fingerprint to the `sha256_cert_fingerprints` array — don't replace the old one immediately, as it can break existing installs.
+- Do NOT expose debug/developer fingerprints in production.
 
-## Files touched
+## Scope
+- No changes to React components, routes, or auth logic.
+- Only static file hosting + Vercel config + minor HTML metadata.
+- No backend code required.
 
-- create `src/pages/DownloadApp.tsx`
-- edit `src/App.tsx` (add public route + redirect alias)
-- edit `src/pages/Homepage.tsx` (remove download section, add small link to `/download`)
-- edit `src/components/layout/Footer.tsx` (Play Store badge + Quick Link)
-- edit `index.html` (JSON-LD + meta description)
-- edit `public/sitemap.xml` (add `/download`)
-- edit `src/main.tsx` only if `HelmetProvider` is not yet wrapping the app
-
-## Out of scope
-
-- No backend / DB changes.
-- No changes to existing legal pages.
-- No changes to authenticated app flows.
+## Out of Scope (but recommended for later)
+- Adding AndroidManifest.xml `intent-filter` autoVerify — this is Android-native code, not website code.
+- iOS Team ID configuration — blocked until an iOS app exists.
+- Deep link routing logic inside the React app — the app currently handles routing client-side, but native deep link paths (e.g., `/doctor/:id`) would need matching `intent-filter` entries in Android.
