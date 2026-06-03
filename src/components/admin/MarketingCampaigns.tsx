@@ -22,8 +22,8 @@ interface ProfileRow {
 
 const personalize = (text: string, p: ProfileRow) =>
   text
-    .replaceAll("{first_name}", p.first_name?.trim() || "there")
-    .replaceAll("{last_name}", p.last_name?.trim() || "");
+    .split("{first_name}").join(p.first_name?.trim() || "there")
+    .split("{last_name}").join(p.last_name?.trim() || "");
 
 export const MarketingCampaigns = () => {
   const { toast } = useToast();
