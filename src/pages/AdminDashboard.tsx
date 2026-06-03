@@ -621,6 +621,10 @@ const AdminDashboard = () => {
           <TabsContent value="notifications">
             <AdminNotificationCenter />
           </TabsContent>
+
+          <TabsContent value="campaigns">
+            <MarketingCampaigns />
+          </TabsContent>
           
           <TabsContent value="wallets" className="space-y-6">
             <AdminWalletStats stats={walletStats} loading={walletLoading} />
