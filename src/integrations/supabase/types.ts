@@ -110,6 +110,30 @@ export type Database = {
         }
         Relationships: []
       }
+      app_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          rating: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          rating: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          rating?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       appointment_slots: {
         Row: {
           consultation_completed_at: string | null
