@@ -9,9 +9,10 @@ import { useNavigate } from "react-router-dom";
 import { grantDoctorAccess, revokeDoctorAccess } from "@/services/doctorService";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Eye, Pill, Store, CheckCircle, XCircle, Bell } from "lucide-react";
+import { ExternalLink, Eye, Pill, Store, CheckCircle, XCircle, Bell, Megaphone } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import AdminNotificationCenter from "@/components/admin/AdminNotificationCenter";
+import MarketingCampaigns from "@/components/admin/MarketingCampaigns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AdminWalletStats } from "@/components/admin/AdminWalletStats";
@@ -355,7 +356,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-7xl grid-cols-7">
+          <TabsList className="grid w-full max-w-7xl grid-cols-8">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="doctors">Doctor Applications</TabsTrigger>
             <TabsTrigger value="pharmacies" className="flex items-center gap-2">
@@ -374,6 +375,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               Notifications
+            </TabsTrigger>
+            <TabsTrigger value="campaigns" className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              Campaigns
             </TabsTrigger>
             <TabsTrigger value="wallets">
               💰 Wallets
