@@ -151,7 +151,8 @@ serve(async (req) => {
         broadcast_id: broadcast.id,
         metadata: { 
           broadcast_id: broadcast.id, 
-          ai_generated: isAiGenerated 
+          ai_generated: isAiGenerated,
+          ...(imageUrl ? { image_url: imageUrl, big_picture: imageUrl, ios_attachment: imageUrl } : {}),
         },
       };
     });
