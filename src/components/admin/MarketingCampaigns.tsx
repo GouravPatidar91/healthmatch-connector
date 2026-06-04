@@ -83,35 +83,39 @@ export const MarketingCampaigns = () => {
 
     setSending(true);
     setProgress({ done: 0, total: recipients.length });
-    let success = 0;
-    let failed = 0;
 
-    for (const p of recipients) {
-      try {
-        await notificationService.createNotification({
-          user_id: p.id,
-          type: "marketing",
-          title: personalize(title, p),
-          message: personalize(message, p),
-          notification_category: "marketing",
-          priority: "normal",
-          metadata: { campaign: true, sent_at: new Date().toISOString() },
-        });
-        success++;
-      } catch {
-        failed++;
-      }
-      setProgress((s) => ({ ...s, done: s.done + 1 }));
+    try {
+      const { data, error } = await supabase.functions.invoke('broadcast-notification', {
+        body: {
+          title,
+          message,
+          type: 'marketing',
+          targetAudience: sendToAll ? 'all' : 'custom',
+          userIds: sendToAll ? null : recipients.map((p) => p.id),
+          personalize: true,
+        },
+      });
+
+      if (error) throw error;
+
+      const count = (data as any)?.recipientsCount ?? recipients.length;
+      toast({
+        title: "Campaign sent",
+        description: `Delivered to ${count} user${count !== 1 ? "s" : ""}.`,
+      });
+      setTitle("");
+      setMessage("");
+      setSelected(new Set());
+    } catch (err: any) {
+      toast({
+        title: "Failed to send campaign",
+        description: err?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setSending(false);
+      setProgress({ done: 0, total: 0 });
     }
-
-    setSending(false);
-    toast({
-      title: "Campaign sent",
-      description: `Delivered to ${success} user${success !== 1 ? "s" : ""}${failed ? `, ${failed} failed` : ""}.`,
-    });
-    setTitle("");
-    setMessage("");
-    setSelected(new Set());
   };
 
   return (

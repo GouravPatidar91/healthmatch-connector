@@ -20,7 +20,9 @@ serve(async (req) => {
       targetAudience = 'all',
       isAiGenerated = false,
       aiPrompt = null,
-      createdBy = null
+      createdBy = null,
+      userIds: userIdsInput = null,
+      personalize = false,
     } = await req.json();
 
     console.log('Broadcasting notification:', { title, type, targetAudience, isAiGenerated });
@@ -64,8 +66,10 @@ serve(async (req) => {
     // Get user IDs based on target audience - using service role bypasses RLS
     let userIds: string[] = [];
 
-    if (targetAudience === 'active_users') {
-      // Get users who have been active in last 30 days (health checks)
+    if (Array.isArray(userIdsInput) && userIdsInput.length > 0) {
+      userIds = [...new Set(userIdsInput.filter((id: any) => typeof id === 'string'))];
+      console.log(`Using ${userIds.length} explicit user IDs`);
+    } else if (targetAudience === 'active_users') {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -82,7 +86,6 @@ serve(async (req) => {
       userIds = [...new Set(activeUsers?.map(u => u.user_id) || [])];
       console.log(`Found ${userIds.length} active users`);
     } else {
-      // Get ALL users - service role bypasses RLS
       const { data: allUsers, error: usersError } = await supabaseAdmin
         .from('profiles')
         .select('id');
@@ -120,20 +123,37 @@ serve(async (req) => {
       );
     }
 
-    // Create notifications for all users
-    const notifications = userIds.map(userId => ({
-      user_id: userId,
-      type,
-      title,
-      message,
-      notification_category: type,
-      priority: 'normal',
-      broadcast_id: broadcast.id,
-      metadata: { 
-        broadcast_id: broadcast.id, 
-        ai_generated: isAiGenerated 
-      },
-    }));
+    // Optionally fetch profiles for personalization
+    let profileMap = new Map<string, { first_name: string | null; last_name: string | null }>();
+    if (personalize) {
+      const { data: profs } = await supabaseAdmin
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+      (profs || []).forEach((p: any) => profileMap.set(p.id, { first_name: p.first_name, last_name: p.last_name }));
+    }
+
+    const applyTokens = (text: string, p?: { first_name: string | null; last_name: string | null }) =>
+      text
+        .split('{first_name}').join(p?.first_name?.trim() || 'there')
+        .split('{last_name}').join(p?.last_name?.trim() || '');
+
+    const notifications = userIds.map(userId => {
+      const p = profileMap.get(userId);
+      return {
+        user_id: userId,
+        type,
+        title: personalize ? applyTokens(title, p) : title,
+        message: personalize ? applyTokens(message, p) : message,
+        notification_category: type,
+        priority: 'normal',
+        broadcast_id: broadcast.id,
+        metadata: { 
+          broadcast_id: broadcast.id, 
+          ai_generated: isAiGenerated 
+        },
+      };
+    });
 
     console.log(`Creating ${notifications.length} notifications...`);
 
