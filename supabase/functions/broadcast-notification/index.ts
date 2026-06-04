@@ -20,7 +20,9 @@ serve(async (req) => {
       targetAudience = 'all',
       isAiGenerated = false,
       aiPrompt = null,
-      createdBy = null
+      createdBy = null,
+      userIds: userIdsInput = null,
+      personalize = false,
     } = await req.json();
 
     console.log('Broadcasting notification:', { title, type, targetAudience, isAiGenerated });
