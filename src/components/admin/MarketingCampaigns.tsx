@@ -34,8 +34,37 @@ export const MarketingCampaigns = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image too large", description: "Max 5 MB.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `campaigns/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("marketing-images")
+        .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("marketing-images").getPublicUrl(path);
+      setImageUrl(data.publicUrl);
+      toast({ title: "Image uploaded" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e?.message || "Try again.", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
