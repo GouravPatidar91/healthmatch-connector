@@ -123,20 +123,37 @@ serve(async (req) => {
       );
     }
 
-    // Create notifications for all users
-    const notifications = userIds.map(userId => ({
-      user_id: userId,
-      type,
-      title,
-      message,
-      notification_category: type,
-      priority: 'normal',
-      broadcast_id: broadcast.id,
-      metadata: { 
-        broadcast_id: broadcast.id, 
-        ai_generated: isAiGenerated 
-      },
-    }));
+    // Optionally fetch profiles for personalization
+    let profileMap = new Map<string, { first_name: string | null; last_name: string | null }>();
+    if (personalize) {
+      const { data: profs } = await supabaseAdmin
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+      (profs || []).forEach((p: any) => profileMap.set(p.id, { first_name: p.first_name, last_name: p.last_name }));
+    }
+
+    const applyTokens = (text: string, p?: { first_name: string | null; last_name: string | null }) =>
+      text
+        .split('{first_name}').join(p?.first_name?.trim() || 'there')
+        .split('{last_name}').join(p?.last_name?.trim() || '');
+
+    const notifications = userIds.map(userId => {
+      const p = profileMap.get(userId);
+      return {
+        user_id: userId,
+        type,
+        title: personalize ? applyTokens(title, p) : title,
+        message: personalize ? applyTokens(message, p) : message,
+        notification_category: type,
+        priority: 'normal',
+        broadcast_id: broadcast.id,
+        metadata: { 
+          broadcast_id: broadcast.id, 
+          ai_generated: isAiGenerated 
+        },
+      };
+    });
 
     console.log(`Creating ${notifications.length} notifications...`);
 
