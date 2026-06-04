@@ -66,8 +66,10 @@ serve(async (req) => {
     // Get user IDs based on target audience - using service role bypasses RLS
     let userIds: string[] = [];
 
-    if (targetAudience === 'active_users') {
-      // Get users who have been active in last 30 days (health checks)
+    if (Array.isArray(userIdsInput) && userIdsInput.length > 0) {
+      userIds = [...new Set(userIdsInput.filter((id: any) => typeof id === 'string'))];
+      console.log(`Using ${userIds.length} explicit user IDs`);
+    } else if (targetAudience === 'active_users') {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -84,7 +86,6 @@ serve(async (req) => {
       userIds = [...new Set(activeUsers?.map(u => u.user_id) || [])];
       console.log(`Found ${userIds.length} active users`);
     } else {
-      // Get ALL users - service role bypasses RLS
       const { data: allUsers, error: usersError } = await supabaseAdmin
         .from('profiles')
         .select('id');
