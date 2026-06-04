@@ -212,6 +212,14 @@ export const NotificationBell: React.FC = () => {
                       <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">
                         {notification.message}
                       </p>
+                      {(notification.metadata as any)?.image_url && (
+                        <img
+                          src={(notification.metadata as any).image_url}
+                          alt=""
+                          className="mt-2 w-full max-h-40 object-cover rounded-lg border border-gray-100"
+                          loading="lazy"
+                        />
+                      )}
                       <p className="text-xs text-gray-400 mt-1">
                         {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                       </p>
