@@ -122,6 +122,7 @@ export const MarketingCampaigns = () => {
           targetAudience: sendToAll ? 'all' : 'custom',
           userIds: sendToAll ? null : recipients.map((p) => p.id),
           personalize: true,
+          imageUrl,
         },
       });
 
@@ -134,6 +135,7 @@ export const MarketingCampaigns = () => {
       });
       setTitle("");
       setMessage("");
+      setImageUrl(null);
       setSelected(new Set());
     } catch (err: any) {
       toast({
