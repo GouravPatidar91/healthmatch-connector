@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { notificationService } from "@/services/notificationService";
-import { Megaphone, Send, Sparkles, Users, Search, Loader2 } from "lucide-react";
+import { Megaphone, Send, Sparkles, Users, Search, Loader2, ImagePlus, X } from "lucide-react";
 
 interface ProfileRow {
   id: string;
