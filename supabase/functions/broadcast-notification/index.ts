@@ -23,6 +23,7 @@ serve(async (req) => {
       createdBy = null,
       userIds: userIdsInput = null,
       personalize = false,
+      imageUrl = null,
     } = await req.json();
 
     console.log('Broadcasting notification:', { title, type, targetAudience, isAiGenerated });
