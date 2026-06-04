@@ -23,6 +23,7 @@ serve(async (req) => {
       createdBy = null,
       userIds: userIdsInput = null,
       personalize = false,
+      imageUrl = null,
     } = await req.json();
 
     console.log('Broadcasting notification:', { title, type, targetAudience, isAiGenerated });
@@ -150,7 +151,8 @@ serve(async (req) => {
         broadcast_id: broadcast.id,
         metadata: { 
           broadcast_id: broadcast.id, 
-          ai_generated: isAiGenerated 
+          ai_generated: isAiGenerated,
+          ...(imageUrl ? { image_url: imageUrl, big_picture: imageUrl, ios_attachment: imageUrl } : {}),
         },
       };
     });

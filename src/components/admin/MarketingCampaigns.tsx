@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { notificationService } from "@/services/notificationService";
-import { Megaphone, Send, Sparkles, Users, Search, Loader2 } from "lucide-react";
+import { Megaphone, Send, Sparkles, Users, Search, Loader2, ImagePlus, X } from "lucide-react";
 
 interface ProfileRow {
   id: string;
@@ -34,8 +34,37 @@ export const MarketingCampaigns = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image too large", description: "Max 5 MB.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `campaigns/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("marketing-images")
+        .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("marketing-images").getPublicUrl(path);
+      setImageUrl(data.publicUrl);
+      toast({ title: "Image uploaded" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e?.message || "Try again.", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -93,6 +122,7 @@ export const MarketingCampaigns = () => {
           targetAudience: sendToAll ? 'all' : 'custom',
           userIds: sendToAll ? null : recipients.map((p) => p.id),
           personalize: true,
+          imageUrl,
         },
       });
 
@@ -105,6 +135,7 @@ export const MarketingCampaigns = () => {
       });
       setTitle("");
       setMessage("");
+      setImageUrl(null);
       setSelected(new Set());
     } catch (err: any) {
       toast({
@@ -171,15 +202,55 @@ export const MarketingCampaigns = () => {
             <div className="text-xs text-muted-foreground text-right">{message.length}/500</div>
           </div>
 
+          {/* Image upload */}
+          <div className="space-y-2">
+            <Label>Image (optional)</Label>
+            {imageUrl ? (
+              <div className="relative rounded-xl overflow-hidden border bg-muted/30">
+                <img src={imageUrl} alt="Campaign" className="w-full max-h-56 object-cover" />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full shadow"
+                  onClick={() => setImageUrl(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/20 bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer p-6 text-center">
+                {uploading ? (
+                  <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                ) : (
+                  <ImagePlus className="h-6 w-6 text-primary" />
+                )}
+                <div className="text-sm font-medium">{uploading ? "Uploading…" : "Add a campaign image"}</div>
+                <div className="text-xs text-muted-foreground">Shown in the in-app inbox and the mobile push tray. PNG or JPG, up to 5 MB.</div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleImageUpload(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+          </div>
+
           {/* Preview */}
           <div className="rounded-xl border bg-muted/30 p-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Live Preview</div>
-            <div className="rounded-lg bg-background border p-3 shadow-sm">
-              <div className="flex items-start gap-2">
+            <div className="rounded-lg bg-background border overflow-hidden shadow-sm">
+              <div className="flex items-start gap-2 p-3">
                 <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                   <Megaphone className="h-4 w-4 text-primary" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="font-semibold text-sm truncate">
                     {personalize(title || "Your title goes here", profiles[0] ?? { id: "", first_name: "Alex", last_name: "Doe", phone: null })}
                   </div>
@@ -188,12 +259,15 @@ export const MarketingCampaigns = () => {
                   </div>
                 </div>
               </div>
+              {imageUrl && (
+                <img src={imageUrl} alt="Preview" className="w-full max-h-48 object-cover border-t" />
+              )}
             </div>
           </div>
 
           <Button
             onClick={handleSend}
-            disabled={sending || !title.trim() || !message.trim() || recipients.length === 0}
+            disabled={sending || uploading || !title.trim() || !message.trim() || recipients.length === 0}
             size="lg"
             className="w-full"
           >
