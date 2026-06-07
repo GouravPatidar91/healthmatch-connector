@@ -34,6 +34,7 @@ import NotFound from "./pages/NotFound";
 import DoctorRegistration from "./pages/DoctorRegistration";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import MarketingDashboard from "./pages/MarketingDashboard";
 import AdminMedicineCatalog from "./pages/AdminMedicineCatalog";
 import OrderSuccess from "./pages/OrderSuccess";
 import MyOrders from "./pages/MyOrders";
