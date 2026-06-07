@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard, Shield, FileText, Pill, FolderHeart } from "lucide-react";
+import { Heart, User, Calendar, BarChart, Settings, LogOut, Menu, X, PhoneCall, UserPlus, LayoutDashboard, Shield, FileText, Pill, FolderHeart, Sparkles } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +17,7 @@ const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const { isAdmin, isPharmacy, isDoctor, loading: rolesLoading } = useUserRole();
+  const { isAdmin, isPharmacy, isDoctor, isMarketing, loading: rolesLoading } = useUserRole();
   const { profile } = useUserProfile();
   
   const userInitials = profile?.first_name && profile?.last_name 
@@ -29,8 +29,8 @@ const MainLayout = () => {
   // Check if footer should be shown (only on homepage for signed-in users)
   const shouldShowFooter = location.pathname === "/" && user;
   
-  // Check if we're on admin dashboard (hide sidebar)
-  const isAdminDashboard = location.pathname === "/admin-dashboard";
+  // Check if we're on a full-screen dashboard (hide sidebar)
+  const isFullScreenDashboard = location.pathname === "/admin-dashboard" || location.pathname === "/marketing-dashboard";
   
   // Check for pending doctor application
   useEffect(() => {
@@ -58,34 +58,45 @@ const MainLayout = () => {
     }
   }, [user, rolesLoading]);
   
-  const navigationItems = [
-    { name: "Dashboard", path: "/dashboard", icon: BarChart },
-    { name: "Health Check", path: "/health-check", icon: Heart },
-    { name: "Medical Reports", path: "/medical-reports", icon: FileText },
-    { name: "My Records", path: "/my-medical-records", icon: FolderHeart },
-    { name: "Appointments", path: "/appointments", icon: Calendar },
-    { name: "Medicine", path: "/medicine", icon: Pill },
-    { name: "Emergency", path: "/emergency", icon: PhoneCall },
-    { name: "Profile", path: "/profile", icon: User },
-    { name: "Settings", path: "/settings", icon: Settings },
-  ];
-  
-  // Add role-specific navigation items
-  if (isDoctor) {
-    navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
-  } else if (hasPendingDoctorApplication) {
-    // Show a disabled version or an indicator that application is pending
-    navigationItems.push({ name: "Doctor Application Pending", path: "/dashboard", icon: UserPlus });
-  }
-  
-  // Add Vendor Dashboard for pharmacies
-  if (isPharmacy) {
-    navigationItems.push({ name: "Vendor Dashboard", path: "/vendor-dashboard", icon: LayoutDashboard });
-  }
-  
-  // Add admin dashboard for admins
-  if (isAdmin) {
-    navigationItems.push({ name: "Admin Dashboard", path: "/admin-dashboard", icon: Shield });
+  // Marketing-only users see a stripped-down nav
+  const isMarketingOnly = isMarketing && !isAdmin && !isDoctor && !isPharmacy;
+
+  const navigationItems = isMarketingOnly
+    ? [
+        { name: "Marketing Dashboard", path: "/marketing-dashboard", icon: Sparkles },
+        { name: "Profile", path: "/profile", icon: User },
+        { name: "Settings", path: "/settings", icon: Settings },
+      ]
+    : [
+        { name: "Dashboard", path: "/dashboard", icon: BarChart },
+        { name: "Health Check", path: "/health-check", icon: Heart },
+        { name: "Medical Reports", path: "/medical-reports", icon: FileText },
+        { name: "My Records", path: "/my-medical-records", icon: FolderHeart },
+        { name: "Appointments", path: "/appointments", icon: Calendar },
+        { name: "Medicine", path: "/medicine", icon: Pill },
+        { name: "Emergency", path: "/emergency", icon: PhoneCall },
+        { name: "Profile", path: "/profile", icon: User },
+        { name: "Settings", path: "/settings", icon: Settings },
+      ];
+
+  if (!isMarketingOnly) {
+    // Add role-specific navigation items
+    if (isDoctor) {
+      navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
+    } else if (hasPendingDoctorApplication) {
+      navigationItems.push({ name: "Doctor Application Pending", path: "/dashboard", icon: UserPlus });
+    }
+
+    if (isPharmacy) {
+      navigationItems.push({ name: "Vendor Dashboard", path: "/vendor-dashboard", icon: LayoutDashboard });
+    }
+
+    if (isAdmin) {
+      navigationItems.push({ name: "Admin Dashboard", path: "/admin-dashboard", icon: Shield });
+      navigationItems.push({ name: "Marketing Dashboard", path: "/marketing-dashboard", icon: Sparkles });
+    } else if (isMarketing) {
+      navigationItems.push({ name: "Marketing Dashboard", path: "/marketing-dashboard", icon: Sparkles });
+    }
   }
   
   const handleLogout = async () => {
@@ -209,7 +220,7 @@ const MainLayout = () => {
       {/* Modern Layout with Floating Sidebar */}
       <div className="flex flex-1">
         {/* Floating Sidebar for desktop - hidden on admin dashboard */}
-        {!isAdminDashboard && (
+        {!isFullScreenDashboard && (
           <aside className="hidden md:block w-72 p-4">
             <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-blue-100/50 shadow-lg p-4 sticky top-24">
               <nav className="space-y-2">

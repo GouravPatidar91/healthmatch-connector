@@ -9,10 +9,11 @@ import { useNavigate } from "react-router-dom";
 import { grantDoctorAccess, revokeDoctorAccess } from "@/services/doctorService";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Eye, Pill, Store, CheckCircle, XCircle, Bell, Megaphone } from "lucide-react";
+import { ExternalLink, Eye, Pill, Store, CheckCircle, XCircle, Bell, Megaphone, Users as UsersIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import AdminNotificationCenter from "@/components/admin/AdminNotificationCenter";
 import MarketingCampaigns from "@/components/admin/MarketingCampaigns";
+import TeamAccessManagement from "@/components/admin/TeamAccessManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AdminWalletStats } from "@/components/admin/AdminWalletStats";
@@ -356,7 +357,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-7xl grid-cols-8">
+          <TabsList className="grid w-full max-w-7xl grid-cols-9">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="doctors">Doctor Applications</TabsTrigger>
             <TabsTrigger value="pharmacies" className="flex items-center gap-2">
@@ -379,6 +380,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="campaigns" className="flex items-center gap-2">
               <Megaphone className="h-4 w-4" />
               Campaigns
+            </TabsTrigger>
+            <TabsTrigger value="team-access" className="flex items-center gap-2">
+              <UsersIcon className="h-4 w-4" />
+              Team Access
             </TabsTrigger>
             <TabsTrigger value="wallets">
               💰 Wallets
@@ -625,6 +630,11 @@ const AdminDashboard = () => {
           <TabsContent value="campaigns">
             <MarketingCampaigns />
           </TabsContent>
+
+          <TabsContent value="team-access">
+            <TeamAccessManagement />
+          </TabsContent>
+          
           
           <TabsContent value="wallets" className="space-y-6">
             <AdminWalletStats stats={walletStats} loading={walletLoading} />

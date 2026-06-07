@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export type UserRole = 'patient' | 'pharmacy' | 'admin' | 'delivery_partner' | 'doctor';
+export type UserRole = 'patient' | 'pharmacy' | 'admin' | 'delivery_partner' | 'doctor' | 'marketing';
 
 export const useUserRole = () => {
   const [roles, setRoles] = useState<UserRole[]>([]);
@@ -51,6 +51,7 @@ export const useUserRole = () => {
     isPharmacy: roles.includes('pharmacy'),
     isDoctor: roles.includes('doctor'),
     isDeliveryPartner: roles.includes('delivery_partner'),
+    isMarketing: roles.includes('marketing'),
     isPatient: roles.includes('patient') || roles.length === 0, // Default to patient
   };
 };
