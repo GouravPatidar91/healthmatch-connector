@@ -630,6 +630,11 @@ const AdminDashboard = () => {
           <TabsContent value="campaigns">
             <MarketingCampaigns />
           </TabsContent>
+
+          <TabsContent value="team-access">
+            <TeamAccessManagement />
+          </TabsContent>
+          
           
           <TabsContent value="wallets" className="space-y-6">
             <AdminWalletStats stats={walletStats} loading={walletLoading} />
