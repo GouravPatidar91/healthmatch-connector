@@ -209,7 +209,7 @@ const MainLayout = () => {
       {/* Modern Layout with Floating Sidebar */}
       <div className="flex flex-1">
         {/* Floating Sidebar for desktop - hidden on admin dashboard */}
-        {!isAdminDashboard && (
+        {!isFullScreenDashboard && (
           <aside className="hidden md:block w-72 p-4">
             <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-blue-100/50 shadow-lg p-4 sticky top-24">
               <nav className="space-y-2">
