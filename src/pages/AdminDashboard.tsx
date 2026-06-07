@@ -357,7 +357,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-7xl grid-cols-8">
+          <TabsList className="grid w-full max-w-7xl grid-cols-9">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="doctors">Doctor Applications</TabsTrigger>
             <TabsTrigger value="pharmacies" className="flex items-center gap-2">
@@ -380,6 +380,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="campaigns" className="flex items-center gap-2">
               <Megaphone className="h-4 w-4" />
               Campaigns
+            </TabsTrigger>
+            <TabsTrigger value="team-access" className="flex items-center gap-2">
+              <UsersIcon className="h-4 w-4" />
+              Team Access
             </TabsTrigger>
             <TabsTrigger value="wallets">
               💰 Wallets
