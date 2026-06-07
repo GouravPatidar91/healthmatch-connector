@@ -17,7 +17,7 @@ const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const { isAdmin, isPharmacy, isDoctor, loading: rolesLoading } = useUserRole();
+  const { isAdmin, isPharmacy, isDoctor, isMarketing, loading: rolesLoading } = useUserRole();
   const { profile } = useUserProfile();
   
   const userInitials = profile?.first_name && profile?.last_name 
