@@ -113,7 +113,7 @@ export const TeamAccessManagement = () => {
         .from("user_roles")
         .delete()
         .eq("user_id", userId)
-        .eq("role", "marketing");
+        .eq("role", "marketing" as any);
       if (error) throw error;
       toast({ title: "Access revoked" });
       await loadMembers();
