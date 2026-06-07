@@ -33,7 +33,7 @@ export const TeamAccessManagement = () => {
       const { data: roleRows, error } = await supabase
         .from("user_roles")
         .select("user_id, created_at")
-        .eq("role", "marketing");
+        .eq("role", "marketing" as any);
       if (error) throw error;
       const ids = (roleRows || []).map((r: any) => r.user_id);
       if (ids.length === 0) {
