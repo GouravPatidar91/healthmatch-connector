@@ -58,34 +58,45 @@ const MainLayout = () => {
     }
   }, [user, rolesLoading]);
   
-  const navigationItems = [
-    { name: "Dashboard", path: "/dashboard", icon: BarChart },
-    { name: "Health Check", path: "/health-check", icon: Heart },
-    { name: "Medical Reports", path: "/medical-reports", icon: FileText },
-    { name: "My Records", path: "/my-medical-records", icon: FolderHeart },
-    { name: "Appointments", path: "/appointments", icon: Calendar },
-    { name: "Medicine", path: "/medicine", icon: Pill },
-    { name: "Emergency", path: "/emergency", icon: PhoneCall },
-    { name: "Profile", path: "/profile", icon: User },
-    { name: "Settings", path: "/settings", icon: Settings },
-  ];
-  
-  // Add role-specific navigation items
-  if (isDoctor) {
-    navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
-  } else if (hasPendingDoctorApplication) {
-    // Show a disabled version or an indicator that application is pending
-    navigationItems.push({ name: "Doctor Application Pending", path: "/dashboard", icon: UserPlus });
-  }
-  
-  // Add Vendor Dashboard for pharmacies
-  if (isPharmacy) {
-    navigationItems.push({ name: "Vendor Dashboard", path: "/vendor-dashboard", icon: LayoutDashboard });
-  }
-  
-  // Add admin dashboard for admins
-  if (isAdmin) {
-    navigationItems.push({ name: "Admin Dashboard", path: "/admin-dashboard", icon: Shield });
+  // Marketing-only users see a stripped-down nav
+  const isMarketingOnly = isMarketing && !isAdmin && !isDoctor && !isPharmacy;
+
+  const navigationItems = isMarketingOnly
+    ? [
+        { name: "Marketing Dashboard", path: "/marketing-dashboard", icon: Sparkles },
+        { name: "Profile", path: "/profile", icon: User },
+        { name: "Settings", path: "/settings", icon: Settings },
+      ]
+    : [
+        { name: "Dashboard", path: "/dashboard", icon: BarChart },
+        { name: "Health Check", path: "/health-check", icon: Heart },
+        { name: "Medical Reports", path: "/medical-reports", icon: FileText },
+        { name: "My Records", path: "/my-medical-records", icon: FolderHeart },
+        { name: "Appointments", path: "/appointments", icon: Calendar },
+        { name: "Medicine", path: "/medicine", icon: Pill },
+        { name: "Emergency", path: "/emergency", icon: PhoneCall },
+        { name: "Profile", path: "/profile", icon: User },
+        { name: "Settings", path: "/settings", icon: Settings },
+      ];
+
+  if (!isMarketingOnly) {
+    // Add role-specific navigation items
+    if (isDoctor) {
+      navigationItems.push({ name: "Doctor Dashboard", path: "/doctor-dashboard", icon: LayoutDashboard });
+    } else if (hasPendingDoctorApplication) {
+      navigationItems.push({ name: "Doctor Application Pending", path: "/dashboard", icon: UserPlus });
+    }
+
+    if (isPharmacy) {
+      navigationItems.push({ name: "Vendor Dashboard", path: "/vendor-dashboard", icon: LayoutDashboard });
+    }
+
+    if (isAdmin) {
+      navigationItems.push({ name: "Admin Dashboard", path: "/admin-dashboard", icon: Shield });
+      navigationItems.push({ name: "Marketing Dashboard", path: "/marketing-dashboard", icon: Sparkles });
+    } else if (isMarketing) {
+      navigationItems.push({ name: "Marketing Dashboard", path: "/marketing-dashboard", icon: Sparkles });
+    }
   }
   
   const handleLogout = async () => {
