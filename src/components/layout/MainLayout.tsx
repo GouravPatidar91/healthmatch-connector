@@ -29,8 +29,8 @@ const MainLayout = () => {
   // Check if footer should be shown (only on homepage for signed-in users)
   const shouldShowFooter = location.pathname === "/" && user;
   
-  // Check if we're on admin dashboard (hide sidebar)
-  const isAdminDashboard = location.pathname === "/admin-dashboard";
+  // Check if we're on a full-screen dashboard (hide sidebar)
+  const isFullScreenDashboard = location.pathname === "/admin-dashboard" || location.pathname === "/marketing-dashboard";
   
   // Check for pending doctor application
   useEffect(() => {
