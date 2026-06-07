@@ -51,6 +51,7 @@ export const useUserRole = () => {
     isPharmacy: roles.includes('pharmacy'),
     isDoctor: roles.includes('doctor'),
     isDeliveryPartner: roles.includes('delivery_partner'),
+    isMarketing: roles.includes('marketing'),
     isPatient: roles.includes('patient') || roles.length === 0, // Default to patient
   };
 };
