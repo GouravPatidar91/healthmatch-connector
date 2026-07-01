@@ -182,6 +182,20 @@ export default {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
         'medium': '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 20px 25px -5px rgba(0, 0, 0, 0.06)',
         'large': '0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.1)',
+        'glass': 'var(--shadow-glass)',
+        'elevated': 'var(--shadow-elevated)',
+        'glow-cyan': 'var(--shadow-glow)',
+      },
+      backgroundImage: {
+        'gradient-hero': 'var(--gradient-hero)',
+        'gradient-cyan': 'var(--gradient-cyan)',
+        'gradient-navy': 'var(--gradient-navy)',
+        'gradient-text-ai': 'var(--gradient-text)',
+      },
+      fontFamily: {
+        display: ['"Inter Tight"', 'Inter', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
+        serif: ['"Instrument Serif"', 'serif'],
       }
     }
   },
