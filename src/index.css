@@ -1,4 +1,3 @@
-
 @import 'leaflet/dist/leaflet.css';
 @tailwind base;
 @tailwind components;
@@ -6,269 +5,203 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 15%;
+    --background: 0 0% 100%;
+    --foreground: 222 47% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
+    --card-foreground: 222 47% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 15%;
+    --popover-foreground: 222 47% 8%;
 
-    --primary: 220 70% 50%;
+    --primary: 222 47% 8%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 95%;
-    --secondary-foreground: 0 0% 15%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 8%;
 
-    --muted: 210 40% 98%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 210 40% 97%;
+    --muted-foreground: 215 16% 40%;
 
-    --accent: 220 70% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 190 100% 50%;
+    --accent-foreground: 222 47% 8%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 220 70% 50%;
+    --border: 220 15% 92%;
+    --input: 220 15% 92%;
+    --ring: 190 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
+
+    /* Curezy AI Care OS tokens */
+    --navy: 222 60% 8%;
+    --navy-soft: 222 40% 18%;
+    --ai-cyan: 190 100% 50%;
+    --ai-cyan-glow: 195 100% 60%;
+    --ai-blue: 210 100% 55%;
+    --ai-violet: 250 90% 72%;
+    --surface: 220 20% 99%;
+    --surface-glass: 0 0% 100%;
+    --hairline: 220 15% 92%;
+
+    --gradient-hero: radial-gradient(1200px 600px at 50% -10%, hsl(var(--ai-cyan) / 0.18), transparent 60%), radial-gradient(800px 500px at 90% 20%, hsl(var(--ai-violet) / 0.12), transparent 60%), linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
+    --gradient-cyan: linear-gradient(135deg, hsl(var(--ai-cyan)), hsl(var(--ai-blue)));
+    --gradient-text: linear-gradient(135deg, hsl(var(--ai-cyan)) 0%, hsl(var(--ai-blue)) 50%, hsl(var(--ai-violet)) 100%);
+    --gradient-navy: linear-gradient(180deg, hsl(var(--navy)) 0%, hsl(var(--navy-soft)) 100%);
+
+    --shadow-glass: 0 1px 0 0 hsl(0 0% 100% / 0.6) inset, 0 8px 30px -12px hsl(222 47% 8% / 0.08), 0 2px 8px -2px hsl(222 47% 8% / 0.04);
+    --shadow-elevated: 0 30px 80px -30px hsl(210 60% 30% / 0.25), 0 10px 30px -12px hsl(222 47% 8% / 0.08);
+    --shadow-glow: 0 0 60px -10px hsl(var(--ai-cyan) / 0.5);
   }
 
   .dark {
-    --background: 220 20% 8%;
-    --foreground: 0 0% 95%;
-
-    --card: 220 20% 10%;
-    --card-foreground: 0 0% 95%;
-
-    --popover: 220 20% 10%;
-    --popover-foreground: 0 0% 95%;
-
-    --primary: 220 70% 50%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 20% 15%;
-    --secondary-foreground: 0 0% 95%;
-
-    --muted: 220 20% 12%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 220 70% 50%;
-    --accent-foreground: 0 0% 100%;
-
+    --background: 222 47% 6%;
+    --foreground: 0 0% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 190 100% 50%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 222 30% 12%;
+    --muted-foreground: 215 16% 65%;
+    --accent: 190 100% 50%;
+    --accent-foreground: 222 47% 8%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 95%;
-
-    --border: 220 20% 15%;
-    --input: 220 20% 15%;
-    --ring: 220 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 222 30% 16%;
+    --input: 222 30% 16%;
+    --ring: 190 100% 50%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; }
   body {
-    @apply bg-gradient-to-br from-slate-50 to-blue-50/30 text-gray-900 antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    overflow-x: hidden;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
   }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight text-gray-900;
-    word-wrap: break-word;
-    hyphens: auto;
-  }
-
-  h1 {
-    @apply text-2xl sm:text-3xl md:text-4xl;
-  }
-
-  h2 {
-    @apply text-xl sm:text-2xl md:text-3xl;
-  }
-
-  h3 {
-    @apply text-lg sm:text-xl md:text-2xl;
-  }
-
-  p, span, div {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
+  h1, h2, h3, h4 {
+    font-family: 'Inter Tight', 'Inter', sans-serif;
+    letter-spacing: -0.03em;
+    @apply font-semibold text-foreground;
   }
 }
 
 @layer components {
-  .modern-card {
-    @apply bg-white/70 backdrop-blur-md border border-blue-100/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
-  }
-  
-  .dora-gradient {
-    @apply bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700;
-  }
-  
-  .glass-card {
-    @apply bg-white/60 backdrop-blur-md border border-blue-100/50 rounded-2xl shadow-lg;
-  }
-  
-  .btn-modern {
-    @apply bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl px-4 sm:px-6 py-2 sm:py-3 transition-all duration-200 shadow-lg hover:shadow-xl text-sm sm:text-base;
-  }
-  
-  .btn-outline-modern {
-    @apply border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 text-blue-600 font-medium rounded-xl px-4 sm:px-6 py-2 sm:py-3 transition-all duration-200 text-sm sm:text-base;
+  .font-display { font-family: 'Inter Tight', 'Inter', sans-serif; letter-spacing: -0.035em; }
+  .font-serif-accent { font-family: 'Instrument Serif', serif; font-style: italic; letter-spacing: -0.01em; }
+
+  .text-gradient-ai {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
-  .sidebar-modern {
-    @apply bg-white/60 backdrop-blur-md border border-blue-100/50 shadow-lg rounded-2xl;
+  .glass {
+    background: hsl(0 0% 100% / 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(var(--hairline));
+    box-shadow: var(--shadow-glass);
   }
 
-  .floating-header {
-    @apply bg-white/80 backdrop-blur-md border-b border-blue-100/50 shadow-sm;
+  .glass-dark {
+    background: hsl(var(--navy) / 0.6);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(0 0% 100% / 0.08);
   }
 
-  .gradient-text {
-    @apply bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent;
+  .hero-bg { background: var(--gradient-hero); }
+  .navy-bg { background: var(--gradient-navy); }
+
+  .btn-primary-ai {
+    @apply inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all;
+    background: hsl(var(--navy));
+    color: white;
+    box-shadow: 0 6px 20px -6px hsl(var(--navy) / 0.5);
+  }
+  .btn-primary-ai:hover { transform: translateY(-1px); box-shadow: 0 10px 30px -8px hsl(var(--navy) / 0.6); }
+
+  .btn-ghost-ai {
+    @apply inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all;
+    background: hsl(0 0% 100%);
+    color: hsl(var(--navy));
+    border: 1px solid hsl(var(--hairline));
+  }
+  .btn-ghost-ai:hover { border-color: hsl(var(--ai-cyan)); color: hsl(var(--ai-blue)); }
+
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium;
+    background: hsl(var(--ai-cyan) / 0.08);
+    color: hsl(var(--ai-blue));
+    border: 1px solid hsl(var(--ai-cyan) / 0.2);
   }
 
-  .health-card {
-    @apply bg-white/70 backdrop-blur-sm border border-green-100/50 rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300;
+  .hairline { border-color: hsl(var(--hairline)); }
+
+  .grid-bg {
+    background-image: linear-gradient(hsl(var(--hairline)) 1px, transparent 1px),
+                      linear-gradient(90deg, hsl(var(--hairline)) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 80%);
   }
 
-  .emergency-btn {
-    @apply bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl px-6 sm:px-8 py-3 sm:py-4 shadow-lg hover:shadow-xl transition-all duration-200 text-sm sm:text-base;
-  }
+  /* Legacy classes kept for other pages */
+  .modern-card { @apply bg-white/70 backdrop-blur-md border border-blue-100/50 rounded-2xl shadow-lg; }
+  .dora-gradient { @apply bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700; }
+  .glass-card { @apply bg-white/60 backdrop-blur-md border border-blue-100/50 rounded-2xl shadow-lg; }
+  .btn-modern { @apply bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-xl px-6 py-3; }
+  .btn-outline-modern { @apply border-2 border-blue-200 text-blue-600 font-medium rounded-xl px-6 py-3; }
+  .sidebar-modern { @apply bg-white/60 backdrop-blur-md border border-blue-100/50 shadow-lg rounded-2xl; }
+  .floating-header { @apply bg-white/80 backdrop-blur-md border-b border-blue-100/50 shadow-sm; }
+  .gradient-text { @apply bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent; }
+  .health-card { @apply bg-white/70 backdrop-blur-sm border border-green-100/50 rounded-2xl p-6 shadow-lg; }
+  .emergency-btn { @apply bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl px-8 py-4; }
+  .status-good { @apply text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full text-sm; }
+  .status-warning { @apply text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full text-sm; }
+  .status-danger { @apply text-red-500 bg-red-50 px-3 py-1 rounded-full text-sm; }
+  .mobile-responsive-text { @apply text-sm sm:text-base; }
+  .mobile-safe-container { @apply px-4 sm:px-6 lg:px-8; }
+  .mobile-card { @apply w-full max-w-none sm:max-w-md mx-auto; }
 
-  .status-good {
-    @apply text-emerald-500 bg-emerald-50 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
+  .leaflet-container { @apply rounded-lg overflow-hidden; font-family: inherit; }
+  .custom-mini-icon, .custom-icon, .custom-vehicle-icon, .delivery-partner-icon {
+    background: transparent !important; border: none !important;
   }
-
-  .status-warning {
-    @apply text-yellow-600 bg-yellow-50 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
-  }
-
-  .status-danger {
-    @apply text-red-500 bg-red-50 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
-  }
-
-  .mobile-responsive-text {
-    @apply text-sm sm:text-base leading-relaxed;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-  }
-
-  .mobile-safe-container {
-    @apply px-4 sm:px-6 lg:px-8 max-w-full overflow-x-hidden;
-  }
-
-  .mobile-card {
-    @apply w-full max-w-none sm:max-w-md mx-auto;
-  }
-
-  /* Leaflet map styles */
-  .leaflet-container {
-    @apply rounded-lg overflow-hidden;
-    font-family: inherit;
-  }
-
-  .leaflet-popup-content-wrapper {
-    @apply bg-white shadow-lg border border-gray-200;
-    border-radius: var(--radius);
-  }
-
-  .leaflet-popup-tip {
-    @apply bg-white;
-  }
-
-  .leaflet-control-zoom-in,
-  .leaflet-control-zoom-out {
-    @apply bg-white border border-gray-300 text-gray-700 hover:bg-gray-50;
-  }
-
-  .leaflet-control-attribution {
-    @apply bg-white/90 text-xs text-gray-600;
-  }
-
-  /* Custom Leaflet div icon styles - remove default background/border */
-  .custom-mini-icon,
-  .custom-icon,
-  .custom-vehicle-icon,
-  .delivery-partner-icon {
-    background: transparent !important;
-    border: none !important;
-  }
-
-  .leaflet-div-icon {
-    background: transparent !important;
-    border: none !important;
-    width: auto !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Custom Leaflet zoom control positioning for mobile-friendly access */
-  .leaflet-control-zoom {
-    position: absolute !important;
-    bottom: 20px !important;
-    right: 10px !important;
-    top: auto !important;
-    left: auto !important;
-  }
- }
-
-/* Mobile-specific fixes */
-@media (max-width: 640px) {
-  .container {
-    @apply px-4 max-w-full;
-  }
-  
-  * {
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-  
-  pre {
-    @apply text-xs overflow-x-auto;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
-  
-  code {
-    @apply text-xs;
-    word-wrap: break-word;
-  }
-  
-  .accordion-content {
-    @apply text-sm;
-  }
-  
-  .grid {
-    @apply gap-2 sm:gap-4;
-  }
-  
-  .space-y-4 > * + * {
-    @apply mt-2 sm:mt-4;
-  }
-  
-  .space-y-6 > * + * {
-    @apply mt-3 sm:mt-6;
-  }
-  
-  .rounded-2xl {
-    border-radius: 0.5rem;
-  }
-  
-  @media (min-width: 640px) {
-    .rounded-2xl {
-      border-radius: 1rem;
-    }
-  }
+  .leaflet-div-icon { background: transparent !important; border: none !important; }
 }
+
+@keyframes float-slow {
+  0%,100% { transform: translateY(0) }
+  50% { transform: translateY(-12px) }
+}
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(140px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(140px) rotate(-360deg); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.6 }
+  100% { transform: scale(1.6); opacity: 0 }
+}
+@keyframes gradient-shift {
+  0%,100% { background-position: 0% 50% }
+  50% { background-position: 100% 50% }
+}
+@keyframes marquee {
+  from { transform: translateX(0) }
+  to { transform: translateX(-50%) }
+}
+
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+.animate-pulse-ring { animation: pulse-ring 2.4s cubic-bezier(0.4,0,0.6,1) infinite; }
+.animate-gradient-shift { background-size: 200% 200%; animation: gradient-shift 8s ease infinite; }
+.animate-marquee { animation: marquee 30s linear infinite; }
