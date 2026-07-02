@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const links = [
-  { label: "Product", href: "#features" },
   { label: "How it Works", href: "#how" },
   { label: "Why Curezy", href: "#why" },
   { label: "Vision", href: "#vision" },
