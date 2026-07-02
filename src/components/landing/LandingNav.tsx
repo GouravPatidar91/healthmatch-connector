@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const links = [
-  { label: "Product", href: "#features" },
   { label: "How it Works", href: "#how" },
   { label: "Why Curezy", href: "#why" },
   { label: "Vision", href: "#vision" },
@@ -10,11 +9,11 @@ const links = [
 
 export default function LandingNav() {
   return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[min(1120px,calc(100%-2rem))]">
     <motion.header
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[min(1120px,calc(100%-2rem))]"
     >
       <div className="glass rounded-full grid grid-cols-[auto_1fr_auto] items-center gap-4 pl-5 pr-2 py-2">
         <Link to="/" className="flex items-center gap-2">
@@ -40,5 +39,6 @@ export default function LandingNav() {
         </div>
       </div>
     </motion.header>
+    </div>
   );
 }
