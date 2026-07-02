@@ -66,32 +66,6 @@ export default function Hero() {
 
           <div className="relative">
             <HealthTwinOrb />
-            {/* floating cards */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-              className="glass absolute top-6 -left-2 md:left-0 rounded-2xl p-3 pr-4 animate-float-slow"
-            >
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Prescription</div>
-              <div className="text-sm font-medium">Metformin 500mg · 2x daily</div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
-              className="glass absolute bottom-8 -right-2 md:right-0 rounded-2xl p-3 pr-4 animate-float-slow"
-              style={{ animationDelay: "1.5s" }}
-            >
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">WhatsApp Follow-up</div>
-              <div className="text-sm font-medium">"How are you feeling today?"</div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-              className="glass absolute top-1/2 -right-6 md:right-8 rounded-2xl px-3 py-2 animate-float-slow"
-              style={{ animationDelay: "0.7s" }}
-            >
-              <div className="text-xs font-medium flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Adherence 94%
-              </div>
-            </motion.div>
           </div>
         </div>
       </div>
