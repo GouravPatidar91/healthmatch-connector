@@ -3,9 +3,9 @@ import { FileText, Activity, Stethoscope, ShieldCheck } from "lucide-react";
 
 /**
  * Professional AI Care OS visualization.
- * - Central "AI Health Twin" core with orbiting rings
- * - Real brand marks (WhatsApp, AI Voice) plus clinical data nodes
- * - Static composed layout (no gimmicky rotation) with subtle motion
+ * Live motion-graphic feel: animated connection lines with traveling data pulses,
+ * reactive icons (WhatsApp tick pop, live voice waveform, ECG trace, prescription
+ * check-off), rotating orbit rings, and a breathing core.
  */
 
 function WhatsAppMark({ className = "w-4 h-4" }: { className?: string }) {
@@ -23,7 +23,15 @@ function WhatsAppMark({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-function VoiceAgentMark({ className = "w-4 h-4" }: { className?: string }) {
+/** Live animated voice waveform — bars pulse continuously. */
+function LiveVoiceMark({ className = "w-4 h-4" }: { className?: string }) {
+  const bars = [
+    { x: 2, base: 4, amp: 2, dur: 0.9 },
+    { x: 6, base: 10, amp: 5, dur: 0.7 },
+    { x: 10, base: 18, amp: 8, dur: 0.6 },
+    { x: 14, base: 10, amp: 5, dur: 0.75 },
+    { x: 18, base: 4, amp: 2, dur: 0.95 },
+  ];
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
       <defs>
@@ -32,68 +40,130 @@ function VoiceAgentMark({ className = "w-4 h-4" }: { className?: string }) {
           <stop offset="100%" stopColor="#7C5CFF" />
         </linearGradient>
       </defs>
-      <rect x="2" y="10" width="2" height="4" rx="1" fill="url(#voiceGrad)" />
-      <rect x="6" y="7" width="2" height="10" rx="1" fill="url(#voiceGrad)" />
-      <rect x="10" y="3" width="2" height="18" rx="1" fill="url(#voiceGrad)" />
-      <rect x="14" y="7" width="2" height="10" rx="1" fill="url(#voiceGrad)" />
-      <rect x="18" y="10" width="2" height="4" rx="1" fill="url(#voiceGrad)" />
+      {bars.map((b, i) => (
+        <rect
+          key={i}
+          x={b.x}
+          width={2}
+          rx={1}
+          fill="url(#voiceGrad)"
+          y={12 - b.base / 2}
+          height={b.base}
+        >
+          <animate
+            attributeName="height"
+            values={`${b.base};${b.base + b.amp};${b.base}`}
+            dur={`${b.dur}s`}
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="y"
+            values={`${12 - b.base / 2};${12 - (b.base + b.amp) / 2};${12 - b.base / 2}`}
+            dur={`${b.dur}s`}
+            repeatCount="indefinite"
+          />
+        </rect>
+      ))}
     </svg>
   );
 }
+
+/** Live ECG trace — a path scrolls across a small window. */
+function EcgMark({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 40 24" className={className} aria-hidden>
+      <defs>
+        <linearGradient id="ecgGrad" x1="0" x2="1">
+          <stop offset="0%" stopColor="#10b981" />
+          <stop offset="100%" stopColor="#059669" />
+        </linearGradient>
+      </defs>
+      <g>
+        <path
+          d="M0 12 L8 12 L10 6 L12 18 L14 4 L16 20 L18 12 L26 12 L28 6 L30 18 L32 4 L34 20 L36 12 L40 12"
+          fill="none"
+          stroke="url(#ecgGrad)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <animate
+            attributeName="stroke-dasharray"
+            values="0 120;120 0"
+            dur="1.6s"
+            repeatCount="indefinite"
+          />
+        </path>
+      </g>
+    </svg>
+  );
+}
+
+type NodePos = { xPct: number; yPct: number };
 
 type Node = {
   label: string;
   sub: string;
   icon: React.ReactNode;
-  x: string;
-  y: string;
+  pos: NodePos; // card position (top-left corner) in % of container
+  anchor: NodePos; // connection endpoint on card edge, in % of container
   delay: number;
+  accent: string; // rgb/hsl color for the connection glow
 };
 
+// Positions tuned around a 480px container (percentages).
 const nodes: Node[] = [
   {
     label: "WhatsApp",
     sub: "Follow-ups & Reminders",
     icon: <WhatsAppMark />,
-    x: "-6%",
-    y: "8%",
+    pos: { xPct: -6, yPct: 8 },
+    anchor: { xPct: 30, yPct: 22 },
     delay: 0.2,
+    accent: "#25D366",
   },
   {
     label: "AI Voice Agent",
     sub: "Post-visit calls",
-    icon: <VoiceAgentMark />,
-    x: "78%",
-    y: "12%",
+    icon: <LiveVoiceMark />,
+    pos: { xPct: 78, yPct: 12 },
+    anchor: { xPct: 78, yPct: 24 },
     delay: 0.35,
+    accent: "#7C5CFF",
   },
   {
     label: "Prescription",
     sub: "Metformin 500mg · 2x",
     icon: <FileText className="w-4 h-4 text-[hsl(var(--ai-blue))]" />,
-    x: "-10%",
-    y: "62%",
+    pos: { xPct: -10, yPct: 62 },
+    anchor: { xPct: 28, yPct: 70 },
     delay: 0.5,
+    accent: "#3B82F6",
   },
   {
     label: "Vitals",
     sub: "BP 118/76 · HR 72",
-    icon: <Activity className="w-4 h-4 text-emerald-500" />,
-    x: "82%",
-    y: "60%",
+    icon: <EcgMark />,
+    pos: { xPct: 82, yPct: 60 },
+    anchor: { xPct: 82, yPct: 70 },
     delay: 0.65,
+    accent: "#10B981",
   },
   {
     label: "Consult Notes",
     sub: "Dr. Sharma · Today",
     icon: <Stethoscope className="w-4 h-4 text-[hsl(var(--ai-violet))]" />,
-    x: "36%",
-    y: "92%",
+    pos: { xPct: 36, yPct: 92 },
+    anchor: { xPct: 50, yPct: 82 },
     delay: 0.8,
+    accent: "#8B5CF6",
   },
 ];
 
 export default function HealthTwinOrb({ size = 480 }: { size?: number }) {
+  const cx = 50; // % center
+  const cy = 50;
+
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
       {/* concentric rings */}
@@ -104,6 +174,81 @@ export default function HealthTwinOrb({ size = 480 }: { size?: number }) {
           style={{ width: size * s, height: size * s }}
         />
       ))}
+
+      {/* SVG: connection lines with live traveling pulses */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          {nodes.map((n, i) => (
+            <linearGradient
+              key={i}
+              id={`line-${i}`}
+              x1={`${n.anchor.xPct}%`}
+              y1={`${n.anchor.yPct}%`}
+              x2={`${cx}%`}
+              y2={`${cy}%`}
+            >
+              <stop offset="0%" stopColor={n.accent} stopOpacity="0.55" />
+              <stop offset="100%" stopColor={n.accent} stopOpacity="0.05" />
+            </linearGradient>
+          ))}
+        </defs>
+        {nodes.map((n, i) => {
+          const x1 = n.anchor.xPct;
+          const y1 = n.anchor.yPct;
+          // control point curves lines gracefully toward the core
+          const mx = (x1 + cx) / 2 + (y1 - cy) * 0.15;
+          const my = (y1 + cy) / 2 - (x1 - cx) * 0.15;
+          const d = `M ${x1} ${y1} Q ${mx} ${my} ${cx} ${cy}`;
+          return (
+            <g key={i}>
+              <path
+                d={d}
+                fill="none"
+                stroke={`url(#line-${i})`}
+                strokeWidth="0.3"
+                vectorEffect="non-scaling-stroke"
+                strokeDasharray="1.2 1.2"
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  values="0;-24"
+                  dur="6s"
+                  repeatCount="indefinite"
+                />
+              </path>
+              {/* Traveling data pulse along the same curve */}
+              <circle r="0.9" fill={n.accent}>
+                <animateMotion
+                  dur={`${2.4 + i * 0.35}s`}
+                  repeatCount="indefinite"
+                  path={d}
+                  rotate="auto"
+                  begin={`${n.delay}s`}
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0;1;1;0"
+                  dur={`${2.4 + i * 0.35}s`}
+                  repeatCount="indefinite"
+                  begin={`${n.delay}s`}
+                />
+              </circle>
+              <circle r="0.5" fill="#ffffff">
+                <animateMotion
+                  dur={`${2.4 + i * 0.35}s`}
+                  repeatCount="indefinite"
+                  path={d}
+                  begin={`${n.delay}s`}
+                />
+              </circle>
+            </g>
+          );
+        })}
+      </svg>
 
       {/* orbit dots */}
       <motion.div
@@ -135,8 +280,8 @@ export default function HealthTwinOrb({ size = 480 }: { size?: number }) {
 
       {/* core sphere */}
       <motion.div
-        animate={{ scale: [1, 1.03, 1] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ scale: [1, 1.035, 1] }}
+        transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
         className="absolute inset-0 m-auto rounded-full grid place-items-center"
         style={{
           width: size * 0.34,
@@ -147,6 +292,17 @@ export default function HealthTwinOrb({ size = 480 }: { size?: number }) {
             "0 20px 60px -20px hsl(var(--ai-blue) / 0.55), inset 0 -10px 30px hsl(var(--ai-violet) / 0.35), inset 0 10px 30px hsl(var(--ai-cyan) / 0.35)",
         }}
       >
+        {/* expanding pulse ring emitted from core */}
+        <motion.div
+          className="absolute inset-0 rounded-full border border-white/40"
+          animate={{ scale: [1, 1.6], opacity: [0.5, 0] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
+        />
+        <motion.div
+          className="absolute inset-0 rounded-full border border-white/30"
+          animate={{ scale: [1, 1.9], opacity: [0.35, 0] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut", delay: 1.2 }}
+        />
         {/* specular highlight */}
         <div
           className="absolute rounded-full bg-white/30 blur-md"
@@ -171,17 +327,38 @@ export default function HealthTwinOrb({ size = 480 }: { size?: number }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: n.delay }}
           className="absolute"
-          style={{ left: n.x, top: n.y }}
+          style={{ left: `${n.pos.xPct}%`, top: `${n.pos.yPct}%` }}
         >
-          <div className="glass rounded-2xl pl-2.5 pr-3.5 py-2 flex items-center gap-2.5 shadow-lg shadow-black/[0.04]">
-            <div className="w-7 h-7 rounded-lg bg-background/80 border border-border/60 grid place-items-center">
-              {n.icon}
+          <motion.div
+            animate={{ y: [0, -3, 0] }}
+            transition={{
+              duration: 4 + i * 0.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: i * 0.3,
+            }}
+            className="glass rounded-2xl pl-2.5 pr-3.5 py-2 flex items-center gap-2.5 shadow-lg shadow-black/[0.06]"
+          >
+            <div className="relative w-7 h-7 rounded-lg bg-background/80 border border-border/60 grid place-items-center overflow-hidden">
+              {/* subtle receive-flash when a pulse arrives */}
+              <motion.div
+                className="absolute inset-0 rounded-lg"
+                style={{ background: n.accent }}
+                animate={{ opacity: [0, 0.18, 0] }}
+                transition={{
+                  duration: 2.4 + i * 0.35,
+                  repeat: Infinity,
+                  ease: "easeOut",
+                  delay: n.delay,
+                }}
+              />
+              <div className="relative">{n.icon}</div>
             </div>
             <div className="leading-tight">
               <div className="text-[11px] font-semibold text-foreground">{n.label}</div>
               <div className="text-[10px] text-muted-foreground">{n.sub}</div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       ))}
     </div>
