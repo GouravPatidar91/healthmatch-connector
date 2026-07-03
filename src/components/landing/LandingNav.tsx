@@ -16,8 +16,8 @@ export default function LandingNav() {
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="glass rounded-full grid grid-cols-[auto_1fr_auto] items-center gap-4 pl-5 pr-2 py-2">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-cyan grid place-items-center text-white font-bold text-xs">C</div>
+        <Link to="/" className="flex items-center gap-2" aria-label="Curezy home">
+          <img src="/logo.png" alt="Curezy" className="h-7 w-auto object-contain" />
           <span className="font-display font-semibold tracking-tight text-[15px]">Curezy</span>
         </Link>
         <nav className="hidden md:flex items-center justify-center gap-1">
