@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { FileText, Activity, Stethoscope, ShieldCheck } from "lucide-react";
+import whatsappLoop from "@/assets/hero-whatsapp-loop.mp4.asset.json";
+import voiceLoop from "@/assets/hero-voice-loop.mp4.asset.json";
 
 /**
  * Professional AI Care OS visualization.
