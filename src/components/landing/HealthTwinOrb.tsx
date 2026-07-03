@@ -345,11 +345,23 @@ export default function HealthTwinOrb({ size = 480 }: { size?: number }) {
             className="glass rounded-2xl pl-2.5 pr-3.5 py-2 flex items-center gap-2.5 shadow-lg shadow-black/[0.06]"
           >
             <div className="relative w-7 h-7 rounded-lg bg-background/80 border border-border/60 grid place-items-center overflow-hidden">
+              {n.videoUrl && (
+                <video
+                  src={n.videoUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  aria-hidden
+                  className="absolute inset-0 w-full h-full object-cover opacity-90"
+                />
+              )}
               {/* subtle receive-flash when a pulse arrives */}
               <motion.div
-                className="absolute inset-0 rounded-lg"
+                className="absolute inset-0 rounded-lg mix-blend-overlay"
                 style={{ background: n.accent }}
-                animate={{ opacity: [0, 0.18, 0] }}
+                animate={{ opacity: [0, 0.22, 0] }}
                 transition={{
                   duration: 2.4 + i * 0.35,
                   repeat: Infinity,
@@ -357,7 +369,7 @@ export default function HealthTwinOrb({ size = 480 }: { size?: number }) {
                   delay: n.delay,
                 }}
               />
-              <div className="relative">{n.icon}</div>
+              <div className="relative drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">{n.icon}</div>
             </div>
             <div className="leading-tight">
               <div className="text-[11px] font-semibold text-foreground">{n.label}</div>
