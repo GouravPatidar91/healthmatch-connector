@@ -5,7 +5,7 @@ const stats = [
   { icon: TrendingUp, value: "3.2×", label: "Higher medication adherence", tint: "text-[hsl(var(--ai-blue))]" },
   { icon: Clock, value: "-68%", label: "Reduction in missed follow-ups", tint: "text-[hsl(var(--ai-violet))]" },
   { icon: HeartPulse, value: "24/7", label: "Continuous care coverage", tint: "text-[hsl(var(--ai-blue))]" },
-  { icon: Users, value: "10k+", label: "Patients onboarded to Health Twin", tint: "text-[hsl(var(--ai-violet))]" },
+  { icon: Users, value: "175+", label: "Patients onboarded to Health Twin", tint: "text-[hsl(var(--ai-violet))]" },
 ];
 
 export default function ImpactStats() {
