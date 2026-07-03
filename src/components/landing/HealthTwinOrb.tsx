@@ -111,6 +111,7 @@ type Node = {
   anchor: NodePos; // connection endpoint on card edge, in % of container
   delay: number;
   accent: string; // rgb/hsl color for the connection glow
+  videoUrl?: string; // optional looping motion-graphic behind the icon
 };
 
 // Positions tuned around a 480px container (percentages).
@@ -123,6 +124,7 @@ const nodes: Node[] = [
     anchor: { xPct: 30, yPct: 22 },
     delay: 0.2,
     accent: "#25D366",
+    videoUrl: whatsappLoop.url,
   },
   {
     label: "AI Voice Agent",
@@ -132,6 +134,7 @@ const nodes: Node[] = [
     anchor: { xPct: 78, yPct: 24 },
     delay: 0.35,
     accent: "#7C5CFF",
+    videoUrl: voiceLoop.url,
   },
   {
     label: "Prescription",
