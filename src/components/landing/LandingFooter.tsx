@@ -44,7 +44,7 @@ export default function LandingFooter() {
         <div className="grid md:grid-cols-6 gap-10">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-cyan grid place-items-center text-white font-bold text-sm">C</div>
+              <img src="/curezy logo.png" alt="Curezy" className="h-9 w-auto object-contain" />
               <span className="font-display font-semibold text-lg">Curezy</span>
             </div>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">

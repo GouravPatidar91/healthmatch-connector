@@ -11,9 +11,7 @@ const Footer = () => {
           {/* Brand Section */}
           <div className="space-y-3">
             <Link to="/dashboard" className="flex items-center space-x-2 group">
-              <div className="p-1.5 bg-blue-600 rounded-lg group-hover:bg-blue-700 transition-colors">
-                <Heart className="text-white h-4 w-4" />
-              </div>
+              <img src="/curezy logo.png" alt="Curezy" className="h-8 w-auto object-contain" />
               <span className="font-bold text-lg text-white">
                 Curezy
               </span>
