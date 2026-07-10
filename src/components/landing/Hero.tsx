@@ -17,7 +17,7 @@ export default function Hero() {
               className="pill mb-6"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Introducing the AI Care Operating System
+              Enterprise Patient Engagement & Care Automation
             </motion.div>
 
             <motion.h1
@@ -26,9 +26,9 @@ export default function Hero() {
               transition={{ duration: 0.6, delay: 0.05 }}
               className="font-display text-[44px] sm:text-5xl md:text-6xl lg:text-[64px] leading-[1.02] font-semibold tracking-tight"
             >
-              Building the{" "}
-              <span className="text-gradient-ai animate-gradient-shift">AI Care Operating System</span>{" "}
-              <span className="font-serif-accent text-muted-foreground">for</span> Continuous Healthcare.
+              <span className="text-gradient-ai animate-gradient-shift">Automate Patient Engagement.</span>{" "}
+              <br className="hidden md:block" />
+              <span className="font-serif-accent text-muted-foreground">Recover</span> Lost Clinic Revenue.
             </motion.h1>
 
             <motion.p
@@ -37,8 +37,7 @@ export default function Hero() {
               transition={{ duration: 0.6, delay: 0.15 }}
               className="mt-6 text-lg text-muted-foreground max-w-xl leading-relaxed"
             >
-              Curezy creates an AI Health Twin for every patient, helping healthcare providers
-              deliver personalized care before, during, and after every consultation.
+              Curezy is the AI-powered care automation platform that drives medication adherence, reschedules missed follow-ups, and manages routine queries entirely through WhatsApp and Voice.
             </motion.p>
 
             <motion.div
@@ -47,20 +46,20 @@ export default function Hero() {
               transition={{ duration: 0.6, delay: 0.25 }}
               className="mt-8 flex flex-wrap items-center gap-3"
             >
-              <a href="#cta" className="btn-primary-ai">
-                Get Early Access
+              <a href="#demo" className="btn-primary-ai">
+                Book a Demo
                 <ArrowRight className="w-4 h-4" />
               </a>
-              <a href="mailto:admin@curezy.in?subject=Book%20a%20Demo" className="btn-ghost-ai">
+              <a href="#roi" className="btn-ghost-ai">
                 <PlayCircle className="w-4 h-4" />
-                Book a Demo
+                Calculate ROI
               </a>
             </motion.div>
 
-            <div className="mt-8 flex items-center gap-5 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> DPDP-aligned</div>
-              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ai-cyan))]" /> Enterprise-ready</div>
-              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ai-violet))]" /> AI-first</div>
+            <div className="mt-8 flex items-center gap-5 text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> HIPAA & DPDP Compliant</div>
+              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ai-cyan))]" /> EMR Integration</div>
+              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ai-violet))]" /> Zero App Downloads</div>
             </div>
           </div>
 

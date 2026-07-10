@@ -2,24 +2,24 @@ import { motion } from "framer-motion";
 import { AlertCircle, ArrowRight, Clock, EyeOff, PillBottle, Unlink } from "lucide-react";
 
 const steps = [
-  { icon: PillBottle, title: "Patient receives prescription", tone: "neutral" },
-  { icon: ArrowRight, title: "Leaves the clinic", tone: "neutral" },
-  { icon: Clock, title: "Misses medicines & follow-ups", tone: "warn" },
-  { icon: EyeOff, title: "Doctor loses visibility", tone: "warn" },
-  { icon: Unlink, title: "Healthcare becomes fragmented", tone: "warn" },
+  { icon: PillBottle, title: "Consultation ends", tone: "neutral" },
+  { icon: ArrowRight, title: "Patient leaves the clinic", tone: "neutral" },
+  { icon: Clock, title: "Patient misses follow-up", tone: "warn" },
+  { icon: EyeOff, title: "Clinic loses 30% LTV", tone: "warn" },
+  { icon: Unlink, title: "Admin staff overwhelmed", tone: "warn" },
 ];
 
 export default function ProblemSection() {
   return (
     <section className="py-24 md:py-32">
       <div className="container">
-        <div className="max-w-2xl mx-auto text-center mb-16">
-          <div className="pill mb-4"><AlertCircle className="w-3.5 h-3.5" /> The problem</div>
-          <h2 className="font-display text-4xl md:text-5xl leading-[1.05] font-semibold">
-            Healthcare doesn't end <br /> after the consultation.
+        <div className="max-w-3xl mx-auto text-center mb-16">
+          <div className="pill mb-4"><AlertCircle className="w-3.5 h-3.5" /> The Clinic Leakage Problem</div>
+          <h2 className="font-display text-4xl md:text-5xl leading-[1.05] font-semibold tracking-tight">
+            Providers lose up to 40% of revenue <br /> to missed follow-ups.
           </h2>
           <p className="mt-5 text-muted-foreground text-lg">
-            Traditional care stops the moment the patient walks out — leaving outcomes to chance.
+            Manual patient communication is unscalable. Front-desk staff are overwhelmed making reminder calls, and patients still slip through the cracks.
           </p>
         </div>
 
@@ -55,9 +55,9 @@ export default function ProblemSection() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="mt-8 mx-auto max-w-xl text-center glass rounded-2xl p-6 border-[hsl(var(--ai-cyan)/0.3)]"
           >
-            <div className="pill mb-3 mx-auto">Curezy</div>
-            <p className="text-base">
-              Curezy <span className="text-gradient-ai font-semibold">keeps the patient connected</span> — every day, not just consultation day.
+            <div className="pill mb-3 mx-auto">The Curezy Solution</div>
+            <p className="text-base text-muted-foreground">
+              Curezy acts as an <span className="text-foreground font-semibold">intelligent patient engagement layer</span>, automatically recovering lost revenue without increasing staff headcount.
             </p>
           </motion.div>
         </div>

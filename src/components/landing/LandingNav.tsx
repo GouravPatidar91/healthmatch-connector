@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const links = [
-  { label: "How it Works", href: "#how" },
-  { label: "Why Curezy", href: "#why" },
-  { label: "Vision", href: "#vision" },
+  { label: "Solutions", href: "#solutions" },
+  { label: "Platform", href: "#platform" },
+  { label: "ROI Calculator", href: "#roi" },
 ];
 
 export default function LandingNav() {
@@ -25,17 +25,17 @@ export default function LandingNav() {
             <a
               key={l.href}
               href={l.href}
-              className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-full transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-full transition-colors whitespace-nowrap"
             >
               {l.label}
             </a>
           ))}
         </nav>
         <div className="flex items-center gap-2 justify-self-end">
-          <Link to="/login" className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground px-3 whitespace-nowrap">
-            Sign in
+          <Link to="/login" className="hidden sm:inline text-sm font-medium text-muted-foreground hover:text-foreground px-3 whitespace-nowrap">
+            Clinic Login
           </Link>
-          <a href="#cta" className="btn-primary-ai !py-2 !px-4 text-[13px] whitespace-nowrap">Get Early Access</a>
+          <a href="#demo" className="btn-primary-ai !py-2 !px-4 text-[13px] whitespace-nowrap">Book Demo</a>
         </div>
       </div>
     </motion.header>

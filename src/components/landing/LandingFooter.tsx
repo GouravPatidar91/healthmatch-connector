@@ -3,36 +3,35 @@ import { Github, Linkedin, Mail } from "lucide-react";
 
 const cols = [
   {
-    title: "Product",
+    title: "Platform",
     links: [
-      { label: "Features", href: "#features" },
-      { label: "How it Works", href: "#how" },
-      { label: "Why Curezy", href: "#why" },
-      { label: "Download App", href: "/download-app" },
+      { label: "WhatsApp Automation", href: "#whatsapp" },
+      { label: "AI Voice Agents", href: "#voice" },
+      { label: "EMR Integrations", href: "#integrations" },
+      { label: "Pricing", href: "#pricing" },
     ],
   },
   {
     title: "Company",
     links: [
-      { label: "About", href: "/about" },
-      { label: "Vision", href: "#vision" },
-      { label: "Contact", href: "/contact" },
+      { label: "About Us", href: "/about" },
+      { label: "Contact Sales", href: "mailto:sales@curezy.in" },
+      { label: "Careers", href: "#careers" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "Play Store", href: "https://play.google.com/store/apps/details?id=com.curezy.app" },
-      { label: "Delete Account", href: "/delete-account" },
+      { label: "Help Center", href: "#help" },
+      { label: "API Documentation", href: "#api" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy", href: "/privacy-policy" },
-      { label: "Terms", href: "/terms-of-service" },
-      { label: "Refund", href: "/refund-policy" },
-      { label: "Shipping", href: "/shipping-policy" },
+      { label: "Privacy Policy", href: "/privacy-policy" },
+      { label: "Terms of Service", href: "/terms-of-service" },
+      { label: "HIPAA Compliance", href: "/hipaa" },
     ],
   },
 ];
@@ -48,7 +47,7 @@ export default function LandingFooter() {
               <span className="font-display font-semibold text-lg">Curezy</span>
             </div>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              Building the AI Care Operating System for continuous healthcare.
+              The intelligent care automation platform for modern healthcare providers.
             </p>
             <div className="flex items-center gap-3 mt-5">
               <a href="mailto:admin@curezy.in" className="w-9 h-9 rounded-full border hairline grid place-items-center hover:border-[hsl(var(--ai-cyan))] transition-colors">
