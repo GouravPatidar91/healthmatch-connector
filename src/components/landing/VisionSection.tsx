@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 export default function VisionSection() {
   return (
     <section id="vision" className="py-24 md:py-32 navy-bg text-white relative overflow-hidden">
-      <div className="absolute inset-0 opacity-30"
-           style={{ background: "radial-gradient(600px 300px at 20% 30%, hsl(var(--ai-cyan)/0.4), transparent 60%), radial-gradient(600px 300px at 80% 70%, hsl(var(--ai-violet)/0.3), transparent 60%)" }} />
+      <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_20%_30%,_hsl(var(--ai-cyan)/0.4)_0%,_transparent_60%),_radial-gradient(ellipse_at_80%_70%,_hsl(var(--ai-violet)/0.3)_0%,_transparent_60%)]" />
       <div className="container relative">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium bg-white/10 border border-white/15 text-white/80 mb-6">

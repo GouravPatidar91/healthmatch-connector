@@ -12,3 +12,4 @@ Allow: /
 
 User-agent: *
 Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=no

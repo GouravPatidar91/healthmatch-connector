@@ -46,8 +46,7 @@ export default function FeaturesGrid() {
                 </div>
                 <h3 className="font-display text-lg font-semibold mb-1.5">{f.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-                <div className="absolute inset-0 rounded-3xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
-                     style={{ background: "radial-gradient(400px 200px at var(--x,50%) var(--y,50%), hsl(var(--ai-cyan)/0.08), transparent 60%)" }} />
+                <div className="absolute inset-0 rounded-3xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle_at_center,_hsl(var(--ai-cyan)/0.08)_0%,_transparent_60%)]" />
               </motion.div>
             );
           })}

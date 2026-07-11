@@ -19,8 +19,7 @@ export default function FinalCTA() {
     <section id="cta" className="py-24 md:py-32">
       <div className="container">
         <div className="max-w-3xl mx-auto text-center glass rounded-[32px] p-10 md:p-16 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-40 pointer-events-none"
-               style={{ background: "radial-gradient(500px 250px at 50% 0%, hsl(var(--ai-cyan)/0.2), transparent 60%)" }} />
+          <div className="absolute inset-0 opacity-40 pointer-events-none bg-[radial-gradient(ellipse_at_top,_hsl(var(--ai-cyan)/0.2)_0%,_transparent_60%)]" />
           <div className="relative">
             <h2 className="font-display text-4xl md:text-5xl leading-[1.05] font-semibold">
               The future of healthcare is <span className="text-gradient-ai">continuous.</span>
