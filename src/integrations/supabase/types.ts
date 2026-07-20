@@ -226,6 +226,7 @@ export type Database = {
           consultation_completed_at: string | null
           consultation_duration: number | null
           consultation_started_at: string | null
+          consultation_type: string | null
           created_at: string
           date: string
           doctor_id: string
@@ -248,6 +249,7 @@ export type Database = {
           consultation_completed_at?: string | null
           consultation_duration?: number | null
           consultation_started_at?: string | null
+          consultation_type?: string | null
           created_at?: string
           date: string
           doctor_id: string
@@ -270,6 +272,7 @@ export type Database = {
           consultation_completed_at?: string | null
           consultation_duration?: number | null
           consultation_started_at?: string | null
+          consultation_type?: string | null
           created_at?: string
           date?: string
           doctor_id?: string
@@ -498,6 +501,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      conversation_sessions: {
+        Row: {
+          context: Json
+          created_at: string
+          current_step: string
+          flow_name: string
+          id: string
+          language: string
+          patient_phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          current_step?: string
+          flow_name: string
+          id?: string
+          language?: string
+          patient_phone: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          current_step?: string
+          flow_name?: string
+          id?: string
+          language?: string
+          patient_phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       coupons: {
         Row: {
@@ -1812,6 +1851,48 @@ export type Database = {
           },
         ]
       }
+      patient_follow_ups: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          doctor_name: string | null
+          flow_type: string
+          id: string
+          metadata: Json | null
+          patient_name: string | null
+          patient_phone: string
+          scheduled_for: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          doctor_name?: string | null
+          flow_type: string
+          id?: string
+          metadata?: Json | null
+          patient_name?: string | null
+          patient_phone: string
+          scheduled_for: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          doctor_name?: string | null
+          flow_type?: string
+          id?: string
+          metadata?: Json | null
+          patient_name?: string | null
+          patient_phone?: string
+          scheduled_for?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patient_visits: {
         Row: {
           confidence: number | null
@@ -2140,6 +2221,7 @@ export type Database = {
           address: string | null
           age: number | null
           allergies: string | null
+          area: string | null
           avatar_url: string | null
           blood_group: string | null
           city: string | null
@@ -2156,6 +2238,7 @@ export type Database = {
           id: string
           is_admin: boolean | null
           is_doctor: boolean | null
+          language: string | null
           last_name: string | null
           medical_history: string | null
           medications: string | null
@@ -2164,11 +2247,13 @@ export type Database = {
           region: string | null
           updated_at: string
           weight: number | null
+          whatsapp_name: string | null
         }
         Insert: {
           address?: string | null
           age?: number | null
           allergies?: string | null
+          area?: string | null
           avatar_url?: string | null
           blood_group?: string | null
           city?: string | null
@@ -2185,6 +2270,7 @@ export type Database = {
           id: string
           is_admin?: boolean | null
           is_doctor?: boolean | null
+          language?: string | null
           last_name?: string | null
           medical_history?: string | null
           medications?: string | null
@@ -2193,11 +2279,13 @@ export type Database = {
           region?: string | null
           updated_at?: string
           weight?: number | null
+          whatsapp_name?: string | null
         }
         Update: {
           address?: string | null
           age?: number | null
           allergies?: string | null
+          area?: string | null
           avatar_url?: string | null
           blood_group?: string | null
           city?: string | null
@@ -2214,6 +2302,7 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           is_doctor?: boolean | null
+          language?: string | null
           last_name?: string | null
           medical_history?: string | null
           medications?: string | null
@@ -2222,6 +2311,7 @@ export type Database = {
           region?: string | null
           updated_at?: string
           weight?: number | null
+          whatsapp_name?: string | null
         }
         Relationships: []
       }
@@ -2766,6 +2856,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      whatsapp_message_log: {
+        Row: {
+          body: string | null
+          created_at: string
+          direction: string
+          id: string
+          message_id: string | null
+          message_type: string | null
+          patient_phone: string
+          raw_payload: Json | null
+          session_id: string | null
+          status: string | null
+          template_name: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          direction: string
+          id?: string
+          message_id?: string | null
+          message_type?: string | null
+          patient_phone: string
+          raw_payload?: Json | null
+          session_id?: string | null
+          status?: string | null
+          template_name?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          message_id?: string | null
+          message_type?: string | null
+          patient_phone?: string
+          raw_payload?: Json | null
+          session_id?: string | null
+          status?: string | null
+          template_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_message_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       withdrawal_requests: {
         Row: {
