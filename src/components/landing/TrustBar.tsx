@@ -26,7 +26,7 @@ export default function TrustBar() {
             aria-label="ElevenLabs Startup Grants"
           >
             <img
-              src="https://eleven-public-cdn.elevenlabs.io/payloadcms/pwsc4vchsqt-ElevenLabsGrants.webp"
+              src="/elevenlabs-grants.webp"
               alt="ElevenLabs Grants"
               className="w-[170px] h-auto object-contain"
             />
