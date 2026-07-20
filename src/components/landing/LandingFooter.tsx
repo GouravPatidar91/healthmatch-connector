@@ -60,7 +60,7 @@ export default function LandingFooter() {
                 <img
                   src="/elevenlabs-grants.webp"
                   alt="ElevenLabs Grants"
-                  className="w-[150px] h-auto object-contain"
+                  className="w-[200px] h-auto object-contain"
                 />
               </a>
             </div>
