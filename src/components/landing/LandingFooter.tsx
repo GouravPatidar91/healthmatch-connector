@@ -49,6 +49,21 @@ export default function LandingFooter() {
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
               The intelligent care automation platform for modern healthcare providers.
             </p>
+            <div className="mt-5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Supported by</p>
+              <a
+                href="https://elevenlabs.io/startup-grants"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="ElevenLabs Startup Grants"
+              >
+                <img
+                  src="https://eleven-public-cdn.elevenlabs.io/payloadcms/pwsc4vchsqt-ElevenLabsGrants.webp"
+                  alt="ElevenLabs Grants"
+                  className="w-[150px] h-auto object-contain"
+                />
+              </a>
+            </div>
             <div className="flex items-center gap-3 mt-5">
               <a href="mailto:admin@curezy.in" className="w-9 h-9 rounded-full border hairline grid place-items-center hover:border-[hsl(var(--ai-cyan))] transition-colors">
                 <Mail className="w-4 h-4" />
