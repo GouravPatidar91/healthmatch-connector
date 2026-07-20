@@ -16,6 +16,22 @@ export default function TrustBar() {
             ))}
           </div>
         </div>
+
+        <div className="mt-10 pt-8 border-t hairline flex flex-col sm:flex-row items-center justify-center gap-4">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Backed by</p>
+          <a
+            href="https://elevenlabs.io/startup-grants"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="ElevenLabs Startup Grants"
+          >
+            <img
+              src="/elevenlabs-grants.webp"
+              alt="ElevenLabs Grants"
+              className="w-[200px] h-auto object-contain"
+            />
+          </a>
+        </div>
       </div>
     </section>
   );
