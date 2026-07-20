@@ -58,7 +58,7 @@ export default function LandingFooter() {
                 aria-label="ElevenLabs Startup Grants"
               >
                 <img
-                  src="https://eleven-public-cdn.elevenlabs.io/payloadcms/pwsc4vchsqt-ElevenLabsGrants.webp"
+                  src="/elevenlabs-grants.webp"
                   alt="ElevenLabs Grants"
                   className="w-[150px] h-auto object-contain"
                 />
