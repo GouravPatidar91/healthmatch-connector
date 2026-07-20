@@ -28,7 +28,7 @@ export default function TrustBar() {
             <img
               src="/elevenlabs-grants.webp"
               alt="ElevenLabs Grants"
-              className="w-[170px] h-auto object-contain"
+              className="w-[200px] h-auto object-contain"
             />
           </a>
         </div>
