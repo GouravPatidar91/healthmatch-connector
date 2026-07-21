@@ -2,45 +2,45 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const faqs = [
   {
-    q: "What exactly is an AI Health Twin?",
-    a: "It's a continuously-updated digital profile of your health — built from your prescriptions, reports, symptoms and follow-ups — that gives every AI response and care recommendation real context.",
+    q: "How is Curezy different from a regular WhatsApp bot?",
+    a: "Curezy isn't a script — it's an AI Care OS. It listens, triages, engages via voice and WhatsApp, and closes the loop into your clinic's workflow with EMR-ready integrations.",
   },
   {
-    q: "Is my health data private and secure?",
-    a: "Yes. All data is encrypted at rest and in transit, access is role-based and consent-driven, and our practices are aligned with India's Digital Personal Data Protection (DPDP) Act.",
+    q: "Do my patients need to install an app?",
+    a: "No. Every core interaction — reminders, follow-ups, voice check-ins — works over WhatsApp and phone calls patients already use.",
   },
   {
-    q: "Do I need a smartphone to use Curezy?",
-    a: "The Curezy app gives you the best experience, but many follow-ups and reminders work over WhatsApp and voice calls — no app required.",
+    q: "Is my clinic's data private and secure?",
+    a: "Yes. End-to-end encryption, role-based access, and DPDP + HIPAA-aligned practices. You control what's shared, with whom, and when.",
   },
   {
-    q: "Can my doctor or clinic use Curezy too?",
-    a: "Absolutely. Curezy has a dedicated dashboard for providers to manage patients, review Health Twins and automate follow-ups.",
+    q: "How quickly can we go live?",
+    a: "Most clinics onboard within 48 hours. We handle number setup, voice agent training on your tone, and staff walk-throughs.",
   },
   {
-    q: "Does Curezy replace my doctor?",
-    a: "No. Curezy is a care operating system that supports doctors and patients between visits — it does not diagnose or replace clinical judgement.",
+    q: "Does Curezy replace my staff or doctors?",
+    a: "No. Curezy handles repetitive engagement so your team can focus on clinical care. Escalations always route to a human.",
   },
 ];
 
 export default function FAQSection() {
   return (
-    <section id="faq" className="py-24 md:py-32 bg-gradient-to-b from-[hsl(var(--ai-cyan)/0.04)] to-white">
+    <section id="faq" className="py-24 md:py-32">
       <div className="container">
-        <div className="max-w-2xl mx-auto text-center mb-14">
-          <div className="pill mb-4">FAQ</div>
-          <h2 className="font-display text-4xl md:text-5xl leading-[1.05] font-semibold">
-            Answers, in <span className="text-gradient-ai">plain language.</span>
+        <div className="max-w-2xl mb-14">
+          <div className="eyebrow mb-4">FAQ</div>
+          <h2 className="font-display text-4xl md:text-6xl leading-[1.02] font-semibold tracking-[-0.03em] text-white">
+            Answers, in <span className="text-white/40">plain language.</span>
           </h2>
         </div>
-        <div className="max-w-3xl mx-auto glass rounded-3xl p-4 md:p-6">
+        <div className="max-w-3xl glass-dark-card rounded-3xl p-4 md:p-6">
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((f, i) => (
-              <AccordionItem key={i} value={`item-${i}`} className="border-b hairline last:border-0">
-                <AccordionTrigger className="text-left font-display font-semibold text-base hover:no-underline py-5">
+              <AccordionItem key={i} value={`item-${i}`} className="border-b border-white/[0.08] last:border-0">
+                <AccordionTrigger className="text-left font-display font-semibold text-base hover:no-underline py-5 text-white">
                   {f.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-5">
+                <AccordionContent className="text-sm text-white/60 leading-relaxed pb-5">
                   {f.a}
                 </AccordionContent>
               </AccordionItem>

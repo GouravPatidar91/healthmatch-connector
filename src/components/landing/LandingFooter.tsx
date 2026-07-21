@@ -5,10 +5,10 @@ const cols = [
   {
     title: "Platform",
     links: [
-      { label: "WhatsApp Automation", href: "#whatsapp" },
-      { label: "AI Voice Agents", href: "#voice" },
-      { label: "EMR Integrations", href: "#integrations" },
-      { label: "Pricing", href: "#pricing" },
+      { label: "WhatsApp Automation", href: "#solutions" },
+      { label: "AI Voice Agents", href: "#solutions" },
+      { label: "EMR Integrations", href: "#solutions" },
+      { label: "Case study", href: "#case" },
     ],
   },
   {
@@ -20,10 +20,10 @@ const cols = [
     ],
   },
   {
-    title: "Resources",
+    title: "App",
     links: [
+      { label: "Download App", href: "/download" },
       { label: "Help Center", href: "#help" },
-      { label: "API Documentation", href: "#api" },
     ],
   },
   {
@@ -31,63 +31,64 @@ const cols = [
     links: [
       { label: "Privacy Policy", href: "/privacy-policy" },
       { label: "Terms of Service", href: "/terms-of-service" },
-      { label: "HIPAA Compliance", href: "/hipaa" },
+      { label: "Delete Account", href: "/delete-account" },
     ],
   },
 ];
 
 export default function LandingFooter() {
   return (
-    <footer className="border-t hairline bg-white">
+    <footer className="border-t border-white/[0.06]">
       <div className="container py-16">
         <div className="grid md:grid-cols-6 gap-10">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <img src="/curezy logo.png" alt="Curezy" className="h-9 w-auto object-contain" />
-              <span className="font-display font-semibold text-lg">Curezy</span>
+              <img src="/curezy logo.png" alt="Curezy" className="h-8 w-auto object-contain" />
+              <span className="font-display font-semibold text-lg text-white">Curezy</span>
             </div>
-            <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              The intelligent care automation platform for modern healthcare providers.
+            <p className="text-sm text-white/50 max-w-xs leading-relaxed">
+              The AI Care Operating System for modern clinics. WhatsApp + Voice, automated end-to-end.
             </p>
-            <div className="mt-5">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Supported by</p>
+            <div className="mt-6">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2">Backed by</p>
               <a
                 href="https://elevenlabs.io/startup-grants"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="ElevenLabs Startup Grants"
+                className="opacity-80 hover:opacity-100 transition-opacity inline-block"
               >
                 <img
                   src="/elevenlabs-grants.webp"
                   alt="ElevenLabs Grants"
-                  className="w-[200px] h-auto object-contain"
+                  className="w-[180px] h-auto object-contain invert"
                 />
               </a>
             </div>
-            <div className="flex items-center gap-3 mt-5">
-              <a href="mailto:admin@curezy.in" className="w-9 h-9 rounded-full border hairline grid place-items-center hover:border-[hsl(var(--ai-cyan))] transition-colors">
+            <div className="flex items-center gap-3 mt-6">
+              <a href="mailto:admin@curezy.in" className="w-9 h-9 rounded-full border border-white/[0.1] grid place-items-center text-white/70 hover:text-white hover:border-white/30 transition-colors">
                 <Mail className="w-4 h-4" />
               </a>
-              <a href="#" className="w-9 h-9 rounded-full border hairline grid place-items-center hover:border-[hsl(var(--ai-cyan))] transition-colors">
+              <a href="#" className="w-9 h-9 rounded-full border border-white/[0.1] grid place-items-center text-white/70 hover:text-white hover:border-white/30 transition-colors">
                 <Linkedin className="w-4 h-4" />
               </a>
-              <a href="#" className="w-9 h-9 rounded-full border hairline grid place-items-center hover:border-[hsl(var(--ai-cyan))] transition-colors">
+              <a href="#" className="w-9 h-9 rounded-full border border-white/[0.1] grid place-items-center text-white/70 hover:text-white hover:border-white/30 transition-colors">
                 <Github className="w-4 h-4" />
               </a>
             </div>
           </div>
           {cols.map((c) => (
             <div key={c.title}>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4">{c.title}</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-white/40 mb-4">{c.title}</div>
               <ul className="space-y-2.5">
                 {c.links.map((l) => (
                   <li key={l.label}>
                     {l.href.startsWith("/") ? (
-                      <Link to={l.href} className="text-sm text-foreground/80 hover:text-foreground transition-colors">
+                      <Link to={l.href} className="text-sm text-white/70 hover:text-white transition-colors">
                         {l.label}
                       </Link>
                     ) : (
-                      <a href={l.href} className="text-sm text-foreground/80 hover:text-foreground transition-colors">
+                      <a href={l.href} className="text-sm text-white/70 hover:text-white transition-colors">
                         {l.label}
                       </a>
                     )}
@@ -97,9 +98,9 @@ export default function LandingFooter() {
             </div>
           ))}
         </div>
-        <div className="mt-14 pt-6 border-t hairline flex flex-col md:flex-row items-center justify-between gap-3">
-          <div className="text-xs text-muted-foreground">© {new Date().getFullYear()} Curezy LLP. All rights reserved.</div>
-          <div className="text-xs text-muted-foreground">Made with care in India.</div>
+        <div className="mt-14 pt-6 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="text-xs text-white/40">© {new Date().getFullYear()} Curezy LLP. All rights reserved.</div>
+          <div className="text-xs text-white/40">Made with care in India.</div>
         </div>
       </div>
     </footer>
