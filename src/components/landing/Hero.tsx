@@ -1,71 +1,65 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, PlayCircle } from "lucide-react";
-import HealthTwinOrb from "./HealthTwinOrb";
+import { ArrowRight } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden hero-bg pt-32 pb-24 md:pt-40 md:pb-32">
-      <div className="absolute inset-0 grid-bg opacity-40 pointer-events-none" />
-
+    <section className="relative pt-40 pb-24 md:pt-52 md:pb-32">
       <div className="container relative">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-          <div>
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="pill mb-6"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Enterprise Patient Engagement & Care Automation
-            </motion.div>
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 rounded-full bg-[#2563ff] text-white text-[11px] font-semibold px-3 py-1 mb-8 shadow-[0_0_30px_-5px_rgba(37,99,255,0.6)]"
+          >
+            New · AI Care OS for Clinics
+          </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.05 }}
-              className="font-display text-[44px] sm:text-5xl md:text-6xl lg:text-[64px] leading-[1.02] font-semibold tracking-tight"
-            >
-              <span className="text-gradient-ai animate-gradient-shift">Automate Patient Engagement.</span>{" "}
-              <br className="hidden md:block" />
-              <span className="font-serif-accent text-muted-foreground">Recover</span> Lost Clinic Revenue.
-            </motion.h1>
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.05 }}
+            className="font-display text-white text-[44px] sm:text-6xl md:text-7xl lg:text-[84px] leading-[0.98] font-semibold tracking-[-0.045em]"
+          >
+            We make AI work for your clinic.
+            <br />
+            <span className="text-white/50">Not against your patients.</span>
+          </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="mt-6 text-lg text-muted-foreground max-w-xl leading-relaxed"
-            >
-              Curezy is the AI-powered care automation platform that drives medication adherence, reschedules missed follow-ups, and manages routine queries entirely through WhatsApp and Voice.
-            </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="mt-8 text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed"
+          >
+            Curezy automates patient engagement, medication adherence, and follow-ups over
+            WhatsApp and Voice — so your team focuses on care, not chasing.
+          </motion.p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.25 }}
-              className="mt-8 flex flex-wrap items-center gap-3"
-            >
-              <a href="#demo" className="btn-primary-ai">
-                Book a Demo
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <a href="#roi" className="btn-ghost-ai">
-                <PlayCircle className="w-4 h-4" />
-                Calculate ROI
-              </a>
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.25 }}
+            className="mt-10 flex flex-wrap items-center justify-center gap-3"
+          >
+            <a href="#cta" className="btn-white-pill">
+              Book a demo <ArrowRight className="w-4 h-4" />
+            </a>
+            <a href="#solutions" className="btn-glass-pill">
+              View solutions
+            </a>
+          </motion.div>
 
-            <div className="mt-8 flex items-center gap-5 text-xs text-muted-foreground font-medium uppercase tracking-wider">
-              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> HIPAA & DPDP Compliant</div>
-              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ai-cyan))]" /> EMR Integration</div>
-              <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ai-violet))]" /> Zero App Downloads</div>
-            </div>
-          </div>
-
-          <div className="relative">
-            <HealthTwinOrb />
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.14em] text-white/40 font-medium"
+          >
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> HIPAA & DPDP</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#2563ff]" /> EMR-ready</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-violet-400" /> Zero downloads</span>
+          </motion.div>
         </div>
       </div>
     </section>
