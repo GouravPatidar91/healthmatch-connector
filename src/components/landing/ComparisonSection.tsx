@@ -73,7 +73,7 @@ export default function ComparisonSection() {
             <div className="relative">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-white">
-                  <img src="/logo.png" alt="" className="h-4 w-4 object-contain" />
+                  <img src="/curezy logo.png" alt="" className="h-4 w-auto object-contain" />
                   Curezy AI Care OS
                 </div>
                 <span className="rounded-full border border-[#7cd4ff]/40 bg-[#7cd4ff]/10 px-2.5 py-1 text-[10px] uppercase tracking-widest text-[#7cd4ff]">

@@ -1,39 +1,78 @@
 import { motion } from "framer-motion";
-import { Clock, Heart, Zap, Sparkles, ShieldCheck, TrendingUp } from "lucide-react";
+import { DollarSign, Lightbulb, Hourglass, FastForward, Target, BarChart3 } from "lucide-react";
 
-const benefits = [
-  { icon: Clock, title: "Time Saving.", desc: "Automate follow-ups instantly.", pos: "top-left" },
-  { icon: Heart, title: "Better Adherence.", desc: "Patients rarely miss a dose.", pos: "top-right" },
-  { icon: Zap, title: "Faster Consults.", desc: "AI pre-assessment ready.", pos: "mid-left" },
-  { icon: Sparkles, title: "Predictive Insights.", desc: "See risks before they arise.", pos: "mid-left-2" },
-  { icon: ShieldCheck, title: "Higher Trust.", desc: "Encrypted, compliant, private.", pos: "mid-right" },
-  { icon: TrendingUp, title: "Easy Scaling.", desc: "Grow without extra headcount.", pos: "mid-right-2" },
-];
-
+/* Knotch-style benefit tile — dark card, round icon badge, bold title,
+   muted description on the next line, tight sans font. */
 const Tile = ({
   icon: Icon,
   title,
   desc,
   delay = 0,
+  className = "",
 }: {
   icon: any;
   title: string;
   desc: string;
   delay?: number;
+  className?: string;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true, margin: "-80px" }}
     transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
-    className="relative overflow-hidden rounded-[22px] border border-white/[0.07] bg-gradient-to-b from-white/[0.04] to-white/[0.015] p-5 backdrop-blur-xl"
+    className={`group relative overflow-hidden rounded-[22px] border border-white/[0.06] bg-gradient-to-b from-white/[0.035] to-white/[0.01] p-5 backdrop-blur-xl ${className}`}
   >
-    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-    <div className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-white/80">
-      <Icon className="h-4 w-4" />
+    {/* top hairline */}
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+    {/* soft top glow */}
+    <div className="pointer-events-none absolute inset-x-0 -top-16 h-32 bg-[radial-gradient(closest-side,rgba(120,150,255,0.12),transparent_70%)]" />
+
+    {/* icon badge — dark round pill with 1px inner ring */}
+    <div className="relative grid h-7 w-7 place-items-center rounded-full bg-[#0a0d16] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+      <Icon className="h-3.5 w-3.5 text-white/80" strokeWidth={1.75} />
     </div>
-    <div className="mt-3 font-display text-[17px] font-semibold text-white">{title}</div>
-    <div className="mt-1 text-sm text-white/45">{desc}</div>
+
+    <div className="mt-5">
+      <div className="font-display text-[17px] font-semibold leading-tight tracking-[-0.01em] text-white">
+        {title}
+      </div>
+      <div className="mt-1 font-display text-[17px] font-semibold leading-tight tracking-[-0.01em] text-white/45">
+        {desc}
+      </div>
+    </div>
+  </motion.div>
+);
+
+/* Center logo tile — Knotch has a big black square with a soft radial glow
+   and the brand mark centered. */
+const CenterLogoTile = () => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.92 }}
+    whileInView={{ opacity: 1, scale: 1 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+    className="relative h-full min-h-[220px]"
+  >
+    {/* outer glow */}
+    <div className="pointer-events-none absolute -inset-6 rounded-[36px] bg-[radial-gradient(closest-side,rgba(120,150,255,0.28),transparent_70%)]" />
+    <div className="relative h-full overflow-hidden rounded-[22px] border border-white/[0.08] bg-gradient-to-b from-[#0a0d16] to-[#050810]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.4)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(closest-side,black,transparent_75%)]" />
+      <div className="relative grid h-full place-items-center p-6">
+        <motion.div
+          animate={{ y: [-3, 3, -3] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="grid h-16 w-16 place-items-center rounded-2xl bg-white/[0.02] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),0_0_60px_-5px_rgba(120,150,255,0.6)]"
+        >
+          <img
+            src="/curezy logo.png"
+            alt="Curezy"
+            className="h-8 w-8 object-contain"
+          />
+        </motion.div>
+      </div>
+    </div>
   </motion.div>
 );
 
@@ -48,59 +87,44 @@ export default function BenefitsCross() {
           </h2>
         </div>
 
-        {/* Knotch-style cross layout */}
+        {/* Knotch cross layout: 5-col grid, top row uses cols 2/3/4,
+            bottom row uses all 5, center col 3 spans both rows. */}
         <div className="relative mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-5">
-            {/* Row 1 */}
-            <div className="md:col-span-1 md:col-start-1">
-              <Tile icon={benefits[0].icon} title={benefits[0].title} desc={benefits[0].desc} />
+          {/* Mobile — simple stack */}
+          <div className="grid gap-4 md:hidden">
+            <Tile icon={DollarSign} title="Cost Efficient." desc="Reduce manual workload." />
+            <Tile icon={Lightbulb} title="Better Insights." desc="Understand patient data quickly." delay={0.05} />
+            <Tile icon={Hourglass} title="Time Saving." desc="Automate follow-ups instantly." delay={0.1} />
+            <Tile icon={FastForward} title="Faster Consults." desc="Speed up your care flow." delay={0.15} />
+            <Tile icon={Target} title="Higher Accuracy." desc="Minimize clinical errors." delay={0.2} />
+            <Tile icon={BarChart3} title="Easy Scaling." desc="Grow without extra effort." delay={0.25} />
+          </div>
+
+          {/* Desktop — Knotch cross */}
+          <div className="hidden md:grid md:grid-cols-5 md:grid-rows-2 md:gap-5">
+            {/* Top row */}
+            <div className="md:col-start-2 md:row-start-1">
+              <Tile icon={DollarSign} title="Cost Efficient." desc="Reduce manual workload." />
             </div>
-            <div className="md:col-span-1 md:col-start-2">
-              <Tile icon={benefits[2].icon} title={benefits[2].title} desc={benefits[2].desc} delay={0.05} />
+            <div className="md:col-start-3 md:row-span-2 md:row-start-1">
+              <CenterLogoTile />
+            </div>
+            <div className="md:col-start-4 md:row-start-1">
+              <Tile icon={Lightbulb} title="Better Insights." desc="Understand patient data quickly." delay={0.1} />
             </div>
 
-            {/* Center logo tile — spans two rows on md */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-              className="hidden md:block md:col-span-1 md:col-start-3 md:row-span-2"
-            >
-              <div className="relative h-full min-h-[240px] overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0a0d16]/60">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(closest-side,rgba(80,140,255,0.35),transparent_70%)]" />
-                <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(circle,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:22px_22px]" />
-                <div className="relative grid h-full place-items-center p-6">
-                  <motion.div
-                    animate={{ y: [-4, 4, -4] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="grid h-20 w-20 place-items-center rounded-2xl border border-white/[0.14] bg-gradient-to-br from-[#0f1730] to-[#1a2450] shadow-[0_0_80px_-10px_rgba(120,150,255,0.6)]"
-                  >
-                    <img src="/logo.png" alt="Curezy" className="h-10 w-10 object-contain" />
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-
-            <div className="md:col-span-1 md:col-start-4">
-              <Tile icon={benefits[4].icon} title={benefits[4].title} desc={benefits[4].desc} delay={0.1} />
+            {/* Bottom row */}
+            <div className="md:col-start-1 md:row-start-2">
+              <Tile icon={Hourglass} title="Time Saving." desc="Automate follow-ups instantly." delay={0.15} />
             </div>
-            <div className="md:col-span-1 md:col-start-5">
-              <Tile icon={benefits[1].icon} title={benefits[1].title} desc={benefits[1].desc} delay={0.15} />
+            <div className="md:col-start-2 md:row-start-2">
+              <Tile icon={FastForward} title="Faster Consults." desc="Speed up your care flow." delay={0.2} />
             </div>
-
-            {/* Row 2 */}
-            <div className="md:col-span-1 md:col-start-1 md:row-start-2">
-              <Tile icon={benefits[3].icon} title={benefits[3].title} desc={benefits[3].desc} delay={0.2} />
+            <div className="md:col-start-4 md:row-start-2">
+              <Tile icon={Target} title="Higher Accuracy." desc="Minimize clinical errors." delay={0.25} />
             </div>
-            <div className="md:col-span-1 md:col-start-2 md:row-start-2">
-              <Tile icon={benefits[5].icon} title={benefits[5].title} desc={benefits[5].desc} delay={0.25} />
-            </div>
-            <div className="md:col-span-1 md:col-start-4 md:row-start-2">
-              <Tile icon={Heart} title="Continuous Care." desc="Beyond the consult, always on." delay={0.3} />
-            </div>
-            <div className="md:col-span-1 md:col-start-5 md:row-start-2">
-              <Tile icon={Zap} title="Zero Manual Work." desc="Care runs while you sleep." delay={0.35} />
+            <div className="md:col-start-5 md:row-start-2">
+              <Tile icon={BarChart3} title="Easy Scaling." desc="Grow without extra effort." delay={0.3} />
             </div>
           </div>
         </div>
