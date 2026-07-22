@@ -20,6 +20,7 @@ export interface UnifiedAppointment {
   paymentMode?: string;
   paymentStatus?: string;
   paymentAmount?: number;
+  consultationType?: string;
 }
 
 export const useUnifiedDoctorAppointments = () => {
@@ -150,6 +151,7 @@ export const useUnifiedDoctorAppointments = () => {
             paymentMode: (appointment as any).payment_mode,
             paymentStatus: (appointment as any).payment_status,
             paymentAmount: (appointment as any).payment_amount,
+            consultationType: (appointment as any).consultation_type || 'online',
           });
         }
         console.log('✅ Processed', directAppointments.length, 'direct appointments');
@@ -193,7 +195,8 @@ export const useUnifiedDoctorAppointments = () => {
             userId: slot.user_id,
             doctorId: slot.doctor_id,
             startTime: slot.start_time,
-            endTime: slot.end_time
+            endTime: slot.end_time,
+            consultationType: slot.payment_mode === 'pay_at_clinic' ? 'clinic' : 'online'
           });
         }
         console.log('✅ Processed', slotAppointments.length, 'slot appointments');

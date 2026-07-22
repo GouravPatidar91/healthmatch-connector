@@ -19,6 +19,17 @@ import { CalendarIcon, CheckCircle, Clock, X, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import DoctorPaymentCollectionDialog from "./DoctorPaymentCollectionDialog";
 
+const formatTimeTo12Hour = (timeStr: string) => {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hour = parseInt(parts[0]);
+  const minute = parts[1];
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12 || 12;
+  return `${hour}:${minute} ${ampm}`;
+};
+
 const AppointmentCalendar = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -182,7 +193,7 @@ const AppointmentCalendar = () => {
                         variant="default"
                         className="px-3 py-1 bg-sage-100 text-sage-800"
                       >
-                        {slot.start_time} - {slot.end_time} (Available)
+                        {formatTimeTo12Hour(slot.start_time)} - {formatTimeTo12Hour(slot.end_time)} (Available)
                       </Badge>
                     ))
                   ) : (
@@ -197,7 +208,8 @@ const AppointmentCalendar = () => {
                     <TableHead className="text-slate-custom">Time</TableHead>
                     <TableHead className="text-slate-custom">Patient</TableHead>
                     <TableHead className="text-slate-custom">Reason</TableHead>
-                    <TableHead className="text-slate-custom">Type</TableHead>
+                    <TableHead className="text-slate-custom">Slot Type</TableHead>
+                    <TableHead className="text-slate-custom">Consultation Type</TableHead>
                     <TableHead className="text-slate-custom">Status</TableHead>
                     <TableHead className="w-[120px] text-slate-custom">Actions</TableHead>
                   </TableRow>
@@ -207,7 +219,7 @@ const AppointmentCalendar = () => {
                     appointmentsForSelectedDate.map((appointment) => (
                       <TableRow key={appointment.id} className="border-sage-200">
                         <TableCell className="font-medium text-slate-custom">
-                          {appointment.time}
+                          {formatTimeTo12Hour(appointment.time)}
                         </TableCell>
                         <TableCell className="text-slate-custom">
                           {appointment.patientName}
@@ -223,6 +235,14 @@ const AppointmentCalendar = () => {
                         <TableCell className="text-slate-custom">
                           <Badge variant="outline" className="capitalize">
                             {appointment.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-slate-custom">
+                          <Badge 
+                            variant="outline" 
+                            className={`capitalize ${appointment.consultationType === 'clinic' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200'}`}
+                          >
+                            {appointment.consultationType === 'clinic' ? '🏥 Clinic Visit' : '🌐 Online Consult'}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -304,7 +324,7 @@ const AppointmentCalendar = () => {
                             {daySlots.slice(0, 2).map(slot => (
                               <div key={slot.id} className="p-1 text-xs border border-sage-200 rounded flex items-center bg-sage-50">
                                 <Clock className="h-3 w-3 mr-1" />
-                                <span className="text-slate-custom">{slot.start_time}</span>
+                                <span className="text-slate-custom">{formatTimeTo12Hour(slot.start_time)}</span>
                               </div>
                             ))}
                             {daySlots.length > 2 && (
@@ -321,7 +341,7 @@ const AppointmentCalendar = () => {
                             {dayAppointments.slice(0, 2).map(appointment => (
                               <div key={appointment.id} className="p-1 text-xs border border-sage-200 rounded flex items-center bg-white">
                                 <Clock className="h-3 w-3 mr-1" />
-                                <span className="text-slate-custom truncate">{appointment.time} - {appointment.patientName}</span>
+                                <span className="text-slate-custom truncate">{formatTimeTo12Hour(appointment.time)} - {appointment.patientName}</span>
                               </div>
                             ))}
                             {dayAppointments.length > 2 && (
