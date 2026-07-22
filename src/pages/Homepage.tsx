@@ -4,6 +4,8 @@ import Hero from "@/components/landing/Hero";
 import TrustBar from "@/components/landing/TrustBar";
 import HowItWorks from "@/components/landing/HowItWorks";
 import SolutionsBento from "@/components/landing/SolutionsBento";
+import BenefitsCross from "@/components/landing/BenefitsCross";
+import ComparisonSection from "@/components/landing/ComparisonSection";
 import CaseStudy from "@/components/landing/CaseStudy";
 import ImpactStats from "@/components/landing/ImpactStats";
 import Testimonials from "@/components/landing/Testimonials";
@@ -21,6 +23,8 @@ export default function Homepage() {
         <TrustBar />
         <HowItWorks />
         <SolutionsBento />
+        <BenefitsCross />
+        <ComparisonSection />
         <CaseStudy />
         <ImpactStats />
         <Testimonials />

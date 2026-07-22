@@ -152,6 +152,7 @@ export type Database = {
           patient_name: string | null
           payment_mode: string | null
           payment_status: string | null
+          provider_id: string | null
           reason: string | null
           start_time: string
           status: string
@@ -175,6 +176,7 @@ export type Database = {
           patient_name?: string | null
           payment_mode?: string | null
           payment_status?: string | null
+          provider_id?: string | null
           reason?: string | null
           start_time: string
           status?: string
@@ -198,6 +200,7 @@ export type Database = {
           patient_name?: string | null
           payment_mode?: string | null
           payment_status?: string | null
+          provider_id?: string | null
           reason?: string | null
           start_time?: string
           status?: string
@@ -210,6 +213,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_slots_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
             referencedColumns: ["id"]
           },
           {
@@ -234,9 +244,11 @@ export type Database = {
           doctor_specialty: string | null
           id: string
           notes: string | null
+          patient_phone: string | null
           payment_amount: number | null
           payment_mode: string | null
           payment_status: string | null
+          provider_id: string | null
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           reason: string | null
@@ -257,9 +269,11 @@ export type Database = {
           doctor_specialty?: string | null
           id?: string
           notes?: string | null
+          patient_phone?: string | null
           payment_amount?: number | null
           payment_mode?: string | null
           payment_status?: string | null
+          provider_id?: string | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           reason?: string | null
@@ -280,9 +294,11 @@ export type Database = {
           doctor_specialty?: string | null
           id?: string
           notes?: string | null
+          patient_phone?: string | null
           payment_amount?: number | null
           payment_mode?: string | null
           payment_status?: string | null
+          provider_id?: string | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           reason?: string | null
@@ -297,6 +313,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
             referencedColumns: ["id"]
           },
           {
@@ -502,6 +525,38 @@ export type Database = {
           },
         ]
       }
+      conversation_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message_text: string
+          sender: string
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_text: string
+          sender: string
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_text?: string
+          sender?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_sessions: {
         Row: {
           context: Json
@@ -537,6 +592,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      conversation_summary: {
+        Row: {
+          action_items: string[] | null
+          created_at: string
+          id: string
+          intent: string | null
+          next_follow_up_date: string | null
+          outcome: string | null
+          risk: string | null
+          sentiment: string | null
+          session_id: string | null
+          summary: string | null
+        }
+        Insert: {
+          action_items?: string[] | null
+          created_at?: string
+          id?: string
+          intent?: string | null
+          next_follow_up_date?: string | null
+          outcome?: string | null
+          risk?: string | null
+          sentiment?: string | null
+          session_id?: string | null
+          summary?: string | null
+        }
+        Update: {
+          action_items?: string[] | null
+          created_at?: string
+          id?: string
+          intent?: string | null
+          next_follow_up_date?: string | null
+          outcome?: string | null
+          risk?: string | null
+          sentiment?: string | null
+          session_id?: string | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_summary_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       coupons: {
         Row: {
@@ -1851,6 +1953,68 @@ export type Database = {
           },
         ]
       }
+      patient_ai_profile: {
+        Row: {
+          clinic_id: string | null
+          conversation_count: number | null
+          created_at: string
+          feedback_score: number | null
+          id: string
+          interaction_history: Json | null
+          last_call: string | null
+          medical_context: string | null
+          medication_status: string | null
+          patient_phone: string
+          patient_sentiment: string | null
+          preferred_language: string | null
+          recent_summary: string | null
+          risk_score: number | null
+          tone: string | null
+        }
+        Insert: {
+          clinic_id?: string | null
+          conversation_count?: number | null
+          created_at?: string
+          feedback_score?: number | null
+          id?: string
+          interaction_history?: Json | null
+          last_call?: string | null
+          medical_context?: string | null
+          medication_status?: string | null
+          patient_phone: string
+          patient_sentiment?: string | null
+          preferred_language?: string | null
+          recent_summary?: string | null
+          risk_score?: number | null
+          tone?: string | null
+        }
+        Update: {
+          clinic_id?: string | null
+          conversation_count?: number | null
+          created_at?: string
+          feedback_score?: number | null
+          id?: string
+          interaction_history?: Json | null
+          last_call?: string | null
+          medical_context?: string | null
+          medication_status?: string | null
+          patient_phone?: string
+          patient_sentiment?: string | null
+          preferred_language?: string | null
+          recent_summary?: string | null
+          risk_score?: number | null
+          tone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_ai_profile_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_follow_ups: {
         Row: {
           appointment_id: string | null
@@ -1892,6 +2056,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      patient_leads: {
+        Row: {
+          id: string
+          last_interaction_summary: string | null
+          lead_source: string | null
+          name: string | null
+          phone: string
+          provider_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          last_interaction_summary?: string | null
+          lead_source?: string | null
+          name?: string | null
+          phone: string
+          provider_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          last_interaction_summary?: string | null
+          lead_source?: string | null
+          name?: string | null
+          phone?: string
+          provider_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_leads_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       patient_visits: {
         Row: {
@@ -2312,6 +2517,92 @@ export type Database = {
           updated_at?: string
           weight?: number | null
           whatsapp_name?: string | null
+        }
+        Relationships: []
+      }
+      provider_call_logs: {
+        Row: {
+          action_items: string[] | null
+          agent_type: string
+          created_at: string
+          id: string
+          patient_name: string | null
+          patient_phone: string
+          pii_redacted: boolean | null
+          provider_id: string | null
+          recording_url: string | null
+          sentiment: string | null
+          summary: string | null
+          transcript: Json | null
+        }
+        Insert: {
+          action_items?: string[] | null
+          agent_type: string
+          created_at?: string
+          id?: string
+          patient_name?: string | null
+          patient_phone: string
+          pii_redacted?: boolean | null
+          provider_id?: string | null
+          recording_url?: string | null
+          sentiment?: string | null
+          summary?: string | null
+          transcript?: Json | null
+        }
+        Update: {
+          action_items?: string[] | null
+          agent_type?: string
+          created_at?: string
+          id?: string
+          patient_name?: string | null
+          patient_phone?: string
+          pii_redacted?: boolean | null
+          provider_id?: string | null
+          recording_url?: string | null
+          sentiment?: string | null
+          summary?: string | null
+          transcript?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_call_logs_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      providers: {
+        Row: {
+          business_name: string
+          created_at: string
+          elevenlabs_agent_id: string | null
+          emergency_forward_phone: string | null
+          id: string
+          inbound_phone: string | null
+          languages: string[] | null
+          subdomain: string | null
+        }
+        Insert: {
+          business_name: string
+          created_at?: string
+          elevenlabs_agent_id?: string | null
+          emergency_forward_phone?: string | null
+          id?: string
+          inbound_phone?: string | null
+          languages?: string[] | null
+          subdomain?: string | null
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          elevenlabs_agent_id?: string | null
+          emergency_forward_phone?: string | null
+          id?: string
+          inbound_phone?: string | null
+          languages?: string[] | null
+          subdomain?: string | null
         }
         Relationships: []
       }
